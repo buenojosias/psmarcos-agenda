@@ -14,10 +14,12 @@ return new class() extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('whatsapp', 20)->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_active')->default(false);
             $table->json('roles')->nullable();
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->rememberToken();
             $table->timestamps();
         });

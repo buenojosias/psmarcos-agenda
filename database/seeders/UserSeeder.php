@@ -13,6 +13,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Josias Bueno',
             'email' => 'josias@email.com',
+            'whatsapp' => '41996881818',
             'password' => bcrypt('123456'),
             'is_active' => true,
             'roles' => ['user'],
