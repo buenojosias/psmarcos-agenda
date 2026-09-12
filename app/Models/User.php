@@ -74,4 +74,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Community::class);
     }
+
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class)->withPivot('is_coordinator');
+    }
 }

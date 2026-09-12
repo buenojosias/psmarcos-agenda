@@ -20,6 +20,11 @@ class Community extends Model
         return $this->hasMany(Place::class);
     }
 
+    public function groups(): HasMany
+    {
+        return $this->hasMany(Group::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
