@@ -11,11 +11,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory(24)->insert();
-
-        User::factory()->create([
-            'name'  => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            CommunitySeeder::class,
+            UserSeeder::class,
+            PlaceSeeder::class,
         ]);
     }
 }
