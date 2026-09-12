@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('community_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('community_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->string('type', 30);
             $table->string('slug')->unique();

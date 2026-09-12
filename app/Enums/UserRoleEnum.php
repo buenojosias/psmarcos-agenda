@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enums\Enums;
+namespace App\Enums;
 
 enum UserRoleEnum: string
 {
@@ -11,7 +11,7 @@ enum UserRoleEnum: string
     case PRIEST = 'priest';
     case ADMIN = 'admin';
 
-    public function getLabel(): string
+    public function label(): string
     {
         return match ($this) {
             self::MEMBER => 'Membro/coordenador(a) de pastoral',

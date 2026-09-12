@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('group_user', function (Blueprint $table) {
             $table->foreignId('group_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->boolean('is_coordinator')->default(true);
+            $table->boolean('is_coordinator')->default(false);
+            $table->unique(['group_id', 'user_id']);
         });
     }
 
