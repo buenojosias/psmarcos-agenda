@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('places', function (Blueprint $table) {
             $table->id();
             $table->foreignId('community_id')->constrained()->onDelete('cascade');
-            $table->foreignId('main_place_id')->nullable()->constrained('places')->onDelete('cascade');
+            $table->foreignId('main_place_id')->nullable()->constrained('places')->nullOnDelete();
             $table->string('name');
             $table->timestamps();
         });

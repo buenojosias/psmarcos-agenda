@@ -14,11 +14,11 @@ class UserSeeder extends Seeder
             'name' => 'Josias Bueno',
             'email' => 'josias@email.com',
             'whatsapp' => '41996881818',
-            'password' => bcrypt('123456'),
+            'password' => '123456',
             'is_active' => true,
             'roles' => ['user'],
         ]);
 
-        User::factory(3)->insert();
+        User::factory()->count(3)->create();
     }
 }

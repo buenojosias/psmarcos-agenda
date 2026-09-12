@@ -10,7 +10,7 @@ class Community extends Model
 {
      protected $fillable = [
         'name',
-        'abbreiviation',
+        'abbreviation',
         'alias',
         'address',
     ];
