@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
-    use SoftDeletes, HasUlids;
+    use SoftDeletes;
     
     protected $fillable = [
         'group_id',
@@ -63,7 +63,7 @@ class Event extends Model
         return $this->hasMany(PlaceReservation::class);
     }
 
-    public function primaryPlace(): HasOne
+    public function primaryReservation(): HasOne
     {
         return $this->hasOne(PlaceReservation::class)->where('is_primary', true);
     }

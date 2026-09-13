@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->ulid('operation_code')->nullable()->index();
             $table->string('action', 30);
             $table->string('from_status', 20)->nullable();
             $table->string('to_status', 20)->nullable();
