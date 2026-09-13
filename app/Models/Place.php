@@ -28,4 +28,9 @@ class Place extends Model
     {
         return $this->hasMany(Place::class, 'main_place_id');
     }
+
+    public function reservatios(): HasMany
+    {
+        return $this->hasMany(PlaceReservation::class);
+    }
 }
