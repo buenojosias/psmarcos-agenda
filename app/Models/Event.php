@@ -43,6 +43,21 @@ class Event extends Model
         return $this->belongsTo(Group::class);
     }
 
+    public function detail(): HasOne
+    {
+        return $this->hasOne(EventDetail::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EventNote::class);
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(EventLog::class);
+    }
+
     public function reservations(): HasMany
     {
         return $this->hasMany(PlaceReservation::class);

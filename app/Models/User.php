@@ -79,4 +79,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Group::class)->withPivot('is_coordinator');
     }
+
+    public function eventNotes(): HasMany
+    {
+        return $this->hasMany(EventNote::class);
+    }
+
+    public function eventLogs(): HasMany
+    {
+        return $this->hasMany(EventLog::class);
+    }
 }
