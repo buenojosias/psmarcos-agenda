@@ -4,14 +4,16 @@ namespace App\Models;
 
 use App\Enums\EventStatusEnum;
 use App\Enums\EventTypeEnum;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasUlids;
     
     protected $fillable = [
         'group_id',
@@ -46,8 +48,8 @@ class Event extends Model
         return $this->hasMany(PlaceReservation::class);
     }
 
-    public function primaryPlace(): HasMany
+    public function primaryPlace(): HasOne
     {
-        return $this->hasMany(PlaceReservation::class)->where('is_primary', true);
+        return $this->hasOne(PlaceReservation::class)->where('is_primary', true);
     }
 }

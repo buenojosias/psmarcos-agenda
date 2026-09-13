@@ -26,7 +26,7 @@ class PlaceReservation extends Model
         return $this->belongsTo(Event::class);
     }
 
-    public function place()
+    public function place(): BelongsTo
     {
         return $this->belongsTo(Place::class);
     }

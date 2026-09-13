@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->nullable()->constrained()->cascadeOnDelete(); // Apenas as missas terão group_id nulo
+            $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete(); // Apenas as missas terão group_id nulo
             $table->string('name'); // Nome de identificação do evento
-            $table->string('type', 20)->nullable(); // Tipo do evento, vindo do enum
-            $table->string('recurrence_code', 20)->nullable(); // Identificador para eventos recorrentes, a fim de editar ou cancelar em massa (ex: Encontros semanais)
+            $table->string('type', 20); // Tipo do evento, vindo do enum
+            $table->ulid('recurrence_code')->nullable()->index(); // Identificador para eventos recorrentes, a fim de editar ou cancelar em massa (ex: Encontros semanais)
             $table->dateTime('starts_at'); // Horário de início efetivo do evento
             $table->dateTime('ends_at'); // Horário de término efetivo do evento
             $table->string('status', 20)->default('pending'); // Status do agendamento, vindo do enum

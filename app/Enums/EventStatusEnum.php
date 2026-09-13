@@ -16,9 +16,8 @@ enum EventStatusEnum: string
             self::PENDING => 'Pendente',
             self::CONFIRMED => 'Confirmado',
             self::CANCELED => 'Cancelado',
-            self::RESCHEDULED => 'Remarcado',
+            self::RESCHEDULED => 'Alterado - aguardando nova aprovação',
             self::REJECTED => 'Rejeitado',
         };
     }
-    
 }
