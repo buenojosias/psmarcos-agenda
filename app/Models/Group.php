@@ -19,6 +19,7 @@ class Group extends Model
         'type',
         'slug',
         'description',
+        'logo'
     ];
 
     protected $casts = [
