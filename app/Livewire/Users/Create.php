@@ -9,6 +9,7 @@ use Livewire\Component;
 use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 
 class Create extends Component
 {
@@ -58,6 +59,8 @@ class Create extends Component
 
     public function save(): void
     {
+        Gate::authorize('create', User::class);
+
         $this->validate();
 
         $this->user->password          = bcrypt($this->password);

@@ -10,7 +10,10 @@ use function Pest\Laravel\assertModelExists;
 use function Pest\Laravel\assertModelMissing;
 use function Pest\Laravel\assertDatabaseMissing;
 
-beforeEach(fn () => $this->user = User::factory()->create());
+beforeEach(function () {
+    $this->actingAs(User::factory()->create(['roles' => ['admin'], 'is_active' => true]));
+    $this->user = User::factory()->create();
+});
 
 it('renders the delete component', function () {
     Livewire::test(Delete::class, ['user' => $this->user])

@@ -8,7 +8,10 @@ use App\Livewire\Users\Create;
 
 use function Pest\Laravel\assertDatabaseHas;
 
-beforeEach(fn () => User::query()->delete());
+beforeEach(function () {
+    User::query()->delete();
+    $this->actingAs(User::factory()->create(['roles' => ['admin'], 'is_active' => true]));
+});
 
 it('renders the create user component', function () {
     Livewire::test(Create::class)

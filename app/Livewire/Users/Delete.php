@@ -8,6 +8,7 @@ use App\Models\User;
 use Livewire\Component;
 use App\Livewire\Traits\Alert;
 use Livewire\Attributes\Renderless;
+use Illuminate\Support\Facades\Gate;
 
 class Delete extends Component
 {
@@ -27,6 +28,8 @@ class Delete extends Component
     #[Renderless]
     public function confirm(): void
     {
+        Gate::authorize('delete', $this->user);
+
         $this->question()
             ->confirm(method: 'delete')
             ->cancel()
@@ -35,6 +38,8 @@ class Delete extends Component
 
     public function delete(): void
     {
+        Gate::authorize('delete', $this->user);
+
         $this->user->delete();
 
         $this->dispatch('deleted');

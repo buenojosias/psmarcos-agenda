@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 beforeEach(function () {
-    $this->auth = User::factory()->create();
+    $this->auth = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Auth::login($this->auth);
 

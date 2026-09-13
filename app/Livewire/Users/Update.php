@@ -10,6 +10,7 @@ use Livewire\Attributes\On;
 use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 
 class Update extends Component
 {
@@ -31,6 +32,8 @@ class Update extends Component
     #[On('load::user')]
     public function load(User $user): void
     {
+        Gate::authorize('update', $user);
+
         $this->user  = $user;
         $this->modal = true;
     }
@@ -61,6 +64,8 @@ class Update extends Component
 
     public function save(): void
     {
+        Gate::authorize('update', $this->user);
+
         $this->validate();
 
         $this->user->password = when($this->password !== null, bcrypt($this->password), $this->user->password);

@@ -7,6 +7,8 @@ use Livewire\Livewire;
 use App\Livewire\Users\Update;
 
 beforeEach(function () {
+    $this->actingAs(User::factory()->create(['roles' => ['admin'], 'is_active' => true]));
+
     $this->original = User::factory()->create([
         'name'  => 'Original Name',
         'email' => 'original@example.com',
