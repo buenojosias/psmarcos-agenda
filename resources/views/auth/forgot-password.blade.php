@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <x-card shadowless bordered :header="__('Recovery your password')">
+    <x-card shadowless bordered header="Recuperar senha">
         @if (session('status'))
             <div class="mb-4">
                 <x-alert :text="session('status')" color="green" />
@@ -7,13 +7,13 @@
         @endif
 
         <p class="mb-4 text-sm text-gray-600">
-            {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link.') }}
+            Esqueceu sua senha? Sem problemas. Basta nos informar seu endereço de e-mail e enviaremos um link para redefinir a senha.
         </p>
 
         <form id="forgot-password" method="POST" action="{{ route('password.email') }}" class="space-y-4">
             @csrf
 
-            <x-input label="Email *"
+            <x-input label="E-mail *"
                      type="email"
                      name="email"
                      :value="old('email')"
@@ -27,8 +27,8 @@
                 <x-button submit form="forgot-password" :text="__('Email Password Reset Link')" block round/>
 
                 <span class="text-sm text-gray-600 text-center">
-                    Remembered your password?
-                    <x-link :href="route('login')" :text="__('Back to log in')" sm bold />
+                    Lembrou sua senha?
+                    <x-link :href="route('login')" text="Voltar para login" sm bold />
                 </span>
             </div>
         </x-slot:footer>

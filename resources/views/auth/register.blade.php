@@ -1,30 +1,30 @@
 <x-guest-layout>
-    <x-card shadowless bordered :header="__('Create your account')">
+    <x-card shadowless bordered header="Criar conta">
         <form id="register" method="POST" action="{{ route('register.store') }}" class="space-y-4">
             @csrf
 
-            <x-input label="Name *"
+            <x-input label="Nome *"
                      name="name"
                      :value="old('name')"
                      required
                      autofocus
                      autocomplete="name" />
 
-            <x-input label="Email *"
+            <x-input label="E-mail *"
                      type="email"
                      name="email"
                      :value="old('email')"
                      required
                      autocomplete="username" />
 
-            <x-password label="Password *"
+            <x-password label="Senha *"
                         name="password"
                         required
                         rules
                         generator="password_confirmation"
                         autocomplete="new-password" />
 
-            <x-password label="Confirm Password *"
+            <x-password label="Confirmar Senha *"
                         name="password_confirmation"
                         required
                         autocomplete="new-password" />
@@ -35,8 +35,8 @@
                 <x-button submit form="register" :text="__('Register')" block round />
 
                 <span class="text-center text-sm text-gray-600">
-                    Already have an account?
-                    <x-link :href="route('login')" :text="__('Log in!')" sm bold />
+                    Já tem uma conta?
+                    <x-link :href="route('login')" text="Entrar!" sm bold />
                 </span>
             </div>
         </x-slot:footer>

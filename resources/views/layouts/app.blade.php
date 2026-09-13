@@ -14,9 +14,13 @@
         @livewireStyles
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
+    @php
+        $fullName = auth()->user()->name;
+        $firstName = explode(' ', $fullName)[0];
+    @endphp
     <body class="font-sans antialiased"
           x-cloak
-          x-data="{ name: @js(auth()->user()->name) }"
+          x-data="{ name: @js($firstName) }"
           x-on:name-updated.window="name = $event.detail.name"
           x-bind:class="{ 'dark bg-dark-800': darkTheme, 'bg-white': !darkTheme }">
     <x-layout>
@@ -31,7 +35,7 @@
                         <x-slot:action>
                             <div>
                                 <button class="cursor-pointer" x-on:click="show = !show">
-                                    <span class="text-base font-semibold text-primary-500" x-text="`Hello, ${name}!`"></span>
+                                    <span class="text-base font-semibold text-primary-500" x-text="`Olá, ${name}!`"></span>
                                 </button>
                             </div>
                         </x-slot:action>
@@ -51,12 +55,12 @@
             <x-side-bar smart collapsible>
                 <x-slot:brand>
                     <div class="my-4 flex items-center justify-center">
-                        <img src="{{ asset('/assets/images/tsui.png') }}" width="40" height="40" />
+                        <img src="{{ asset('/assets/images/psm.png') }}" class="dark:invert" width="40" height="40" />
                     </div>
                 </x-slot:brand>
                 <x-slot:brand-collapsed>
                     <div class="my-4 flex items-center justify-center">
-                        <img src="{{ asset('/assets/images/tsui.png') }}" width="20" height="20" />
+                        <img src="{{ asset('/assets/images/psm.png') }}" class="dark:invert" width="20" height="20" />
                     </div>
                 </x-slot:brand-collapsed>
                 <x-side-bar.item text="Dashboard" icon="home" :route="route('dashboard')" />

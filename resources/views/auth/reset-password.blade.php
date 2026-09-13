@@ -5,7 +5,7 @@
 
             <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-            <x-input label="Email *"
+            <x-input label="E-mail *"
                      type="email"
                      name="email"
                      :value="old('email', $request->email)"

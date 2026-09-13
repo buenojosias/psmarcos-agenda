@@ -19,7 +19,7 @@
             <x-button submit form="disable-two-factor" :text="__('Disable')" color="red" round loading="disable" />
         </div>
     @elseif ($this->pending)
-        <x-alert :text="__('Scan the QR code with your authenticator app, then enter the 6-digit code to finish enabling two-factor authentication.')"
+        <x-alert text=""
                  color="primary"
                  icon="qr-code" />
 
@@ -42,7 +42,7 @@
         </div>
     @else
         <p class="text-sm text-dark-600 dark:text-gray-100">
-            {{ __('When two-factor authentication is enabled, you will be prompted for a secure, random token during authentication. You can retrieve this token from your phone\'s Google Authenticator application.') }}
+            Quando a autenticação de dois fatores estiver ativada, será solicitado um token seguro e aleatório durante a autenticação. Você pode obter esse token no aplicativo Google Authenticator do seu celular.
         </p>
 
         <form id="enable-two-factor" wire:submit="enable" class="space-y-2">

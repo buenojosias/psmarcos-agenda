@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <x-card shadowless bordered :header="__('Welcome back!')">
+    <x-card shadowless bordered header="Bem-vindo(a) novamente">
         @if (session('status'))
             <div class="mb-4">
                 <x-alert :text="session('status')" color="green" />
@@ -9,21 +9,21 @@
         <form id="login" method="POST" action="{{ route('login.store') }}" class="space-y-4">
             @csrf
 
-            <x-input label="Email *"
+            <x-input label="E-mail *"
                      type="email"
                      name="email"
-                     :value="old('email', 'test@example.com')"
+                     :value="old('email')"
                      required
                      autofocus
                      autocomplete="username" />
 
-            <x-password label="Password *"
+            <x-password label="Senha *"
                         name="password"
                         required
                         autocomplete="current-password" />
 
             <div class="flex items-center justify-between">
-                <x-checkbox label="Remember me" id="remember_me" name="remember"/>
+                <x-checkbox label="Lembrar-me" id="remember_me" name="remember"/>
 
                 <x-link :href="route('password.request')" :text="__('Forgot your password?')" sm underline colorless/>
             </div>
@@ -34,8 +34,8 @@
                 <x-button submit form="login" :text="__('Log in')" block round/>
 
                 <span class="text-sm text-gray-600 text-center">
-                    Don't have an account?
-                    <x-link :href="route('register')" :text="__('Create account!')" sm bold />
+                    Não tem uma conta?
+                    <x-link :href="route('register')" text="Criar conta" sm bold />
                 </span>
             </div>
         </x-slot:footer>

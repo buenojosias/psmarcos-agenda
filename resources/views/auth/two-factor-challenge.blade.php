@@ -6,20 +6,20 @@
 
                 <div x-show="!recovery">
                     <p class="mb-4 text-sm text-gray-600">
-                        {{ __('Please confirm access to your account by entering the authentication code provided by your authenticator application.') }}
+                        Por favor, confirme o acesso à sua conta inserindo o código de autenticação fornecido pelo seu aplicativo autenticador.
                     </p>
 
                     <div class="flex justify-center">
-                        <x-pin name="code" label="Code *" :length="6" numbers />
+                        <x-pin name="code" label="Código *" :length="6" numbers />
                     </div>
                 </div>
 
                 <div x-show="recovery" x-cloak>
                     <p class="mb-4 text-sm text-gray-600">
-                        {{ __('Please confirm access to your account by entering one of your emergency recovery codes.') }}
+                        Por favor, confirme o acesso à sua conta inserindo um dos seus códigos de recuperação de emergência.
                     </p>
 
-                    <x-input name="recovery_code" label="Recovery Code *" autocomplete="one-time-code" />
+                    <x-input name="recovery_code" label="Código de Recuperação *" autocomplete="one-time-code" />
                 </div>
             </form>
 
