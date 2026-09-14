@@ -20,4 +20,15 @@ enum EventStatusEnum: string
             self::REJECTED => 'Rejeitado',
         };
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::PENDING => 'yellow',
+            self::CONFIRMED => 'green',
+            self::CANCELED => 'gray',
+            self::RESCHEDULED => 'blue',
+            self::REJECTED => 'red',
+        };
+    }
 }

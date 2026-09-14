@@ -34,9 +34,7 @@
                     <x-dropdown>
                         <x-slot:action>
                             <div>
-                                <button class="cursor-pointer" x-on:click="show = !show">
-                                    <span class="text-base font-semibold text-primary-500" x-text="`Olá, ${name}!`"></span>
-                                </button>
+                                <x-avatar :model="auth()->user()" color="fff" borderless sm x-on:click="show = !show" class="cursor-pointer" />                                    
                             </div>
                         </x-slot:action>
                         <x-slot:header>

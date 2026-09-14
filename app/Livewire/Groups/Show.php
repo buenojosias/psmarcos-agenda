@@ -26,6 +26,7 @@ class Show extends Component
             'events as rejected_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::REJECTED->value),
             'events as pending_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::PENDING->value),
             'events as rescheduled_events_count' => fn ($query) => $query->where('status', EventStatusEnum::RESCHEDULED->value),
+            'events as canceled_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::CANCELED->value),
         ]);
 
         return view('livewire.groups.show');
