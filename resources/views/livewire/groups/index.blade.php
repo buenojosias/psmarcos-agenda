@@ -14,6 +14,10 @@
             @interact('column_community', $row)
                 {{ $row->community?->name ?? '—' }}
             @endinteract
+
+            @interact('column_name', $row)
+                <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+            @endinteract
         </x-table>
     </x-card>
 </div>

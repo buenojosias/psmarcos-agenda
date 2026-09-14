@@ -22,10 +22,13 @@ it('lists groups with their type and community', function () {
         'type'         => GroupTypeEnum::PASTORAL,
     ]);
 
+    $group = Group::where('slug', 'pastoral-da-saude')->firstOrFail();
+
     $this->actingAs(User::factory()->create())
         ->get(route('groups.index'))
         ->assertOk()
         ->assertSee('Pastoral da Saúde')
+        ->assertSee(route('groups.show', $group))
         ->assertSee('Pastoral')
         ->assertSee('Comunidade São José');
 });
