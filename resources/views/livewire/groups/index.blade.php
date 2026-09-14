@@ -1,9 +1,12 @@
 <div>
-    @can('create', \App\Models\Group::class)
-        <div class="mb-4">
-            <livewire:groups.create @created="$refresh" />
-        </div>
-    @endcan
+    <div class="header">
+        <h1>Grupos</h1>
+        @can('create', \App\Models\Group::class)
+            <div class="mb-4 md:mb-0 mt-2">
+                <livewire:groups.create @created="$refresh" />
+            </div>
+        @endcan
+    </div>
 
     <x-card shadowless bordered header="Grupos">
         <x-table :$headers :$sort :rows="$this->rows" filter paginate loading :quantity="[10, 25, 50]">

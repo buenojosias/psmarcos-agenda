@@ -1,7 +1,7 @@
 <div>
-    <x-button text="Criar grupo" wire:click="$toggle('modal')" round />
+    <x-button text="Cadastrar grupo" wire:click="$toggle('modal')" />
 
-    <x-modal title="Criar grupo" wire>
+    <x-modal title="Cadastrar grupo" wire>
         <form id="group-create" wire:submit="save" class="space-y-4">
             <x-input label="Nome *" wire:model="name" required />
 
@@ -20,7 +20,7 @@
         </form>
 
         <x-slot:footer>
-            <x-button submit form="group-create" text="Salvar" loading="save" round />
+            <x-button submit form="group-create" text="Salvar" loading="save" />
         </x-slot:footer>
     </x-modal>
 </div>
