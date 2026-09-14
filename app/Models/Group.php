@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GroupTypeEnum;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Group extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'community_id',
@@ -36,7 +37,8 @@ class Group extends Model
         return $this->belongsToMany(User::class)->withPivot('is_coordinator');
     }
 
-    public function events(): HasMany    {
+    public function events(): HasMany
+    {
         return $this->hasMany(Event::class);
     }
 }

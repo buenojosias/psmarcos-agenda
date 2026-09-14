@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,6 +14,8 @@ class DatabaseSeeder extends Seeder
             CommunitySeeder::class,
             UserSeeder::class,
             PlaceSeeder::class,
+            GroupSeeder::class,
+            EventSeeder::class,
         ]);
     }
 }
