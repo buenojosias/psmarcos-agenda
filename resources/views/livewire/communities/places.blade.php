@@ -3,47 +3,69 @@
         <div wire:key="place-{{ $place->id }}">
             <x-card shadowless bordered paddingless x-data="{ expanded: false }">
                 <div class="px-3 py-2 flex items-center justify-between gap-x-4">
-                    <span>{{ $place->name }}</span>
+                    <button
+                        type="button"
+                        class="text-left text-primary-600 hover:underline dark:text-primary-400"
+                        wire:click="$dispatchTo('places.next-reservations', 'show-place-reservations', { placeId: {{ $place->id }} })"
+                    >
+                        {{ $place->name }}
+                    </button>
+
                     <div class="flex items-center gap-x-2">
                         @if ($place->subplaces->isNotEmpty())
                             <x-button @click="expanded = !expanded" icon="chevron-down" flat />
                         @endif
-                        @can('create', \App\Models\Place::class)
-                            <x-dropdown icon="ellipsis-vertical" flat>
+
+                        <x-dropdown icon="ellipsis-vertical" flat>
+                            <x-dropdown.items text="Ver reservas" href="{{ route('places.reservations', $place) }}" />
+
+                            @can('create', \App\Models\Place::class)
                                 <x-dropdown.items text="Adicionar subespaço"
                                     wire:click="$dispatchTo('places.create', 'create-place', { mainPlaceId: {{ $place->id }} })" />
-                                @can('update', $place)
-                                    <x-dropdown.items text="Editar"
-                                        wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $place->id }} })" />
-                                @endcan
-                                @can('delete', $place)
-                                    <x-dropdown.items text="Excluir" separator
-                                        wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $place->id }} })" />
-                                @endcan
-                            </x-dropdown>
-                        @endcan
+                            @endcan
+
+                            @can('update', $place)
+                                <x-dropdown.items text="Editar"
+                                    wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $place->id }} })" />
+                            @endcan
+
+                            @can('delete', $place)
+                                <x-dropdown.items text="Excluir" separator
+                                    wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $place->id }} })" />
+                            @endcan
+                        </x-dropdown>
                     </div>
                 </div>
+
                 @if ($place->subplaces->isNotEmpty())
                     <div class="m-4 space-y-2" x-show="expanded" x-collapse>
                         <x-label label="Sub espaços" />
+
                         @foreach ($place->subplaces as $subplace)
                             <div wire:key="subplace-{{ $subplace->id }}">
                                 <x-card shadowless bordered paddingless>
                                     <div class="px-4 py-2 flex items-center justify-between gap-x-4">
-                                        <span>{{ $subplace->name }}</span>
-                                        @can('create', \App\Models\Place::class)
-                                            <x-dropdown icon="ellipsis-vertical" flat>
-                                                @can('update', $subplace)
-                                                    <x-dropdown.items text="Editar"
-                                                        wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $subplace->id }} })" />
-                                                @endcan
-                                                @can('delete', $subplace)
-                                                    <x-dropdown.items text="Excluir" separator
-                                                        wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $subplace->id }} })" />
-                                                @endcan
-                                            </x-dropdown>
-                                        @endcan
+                                        <button
+                                            type="button"
+                                            class="text-left text-primary-600 hover:underline dark:text-primary-400"
+                                            wire:click="$dispatchTo('places.next-reservations', 'show-place-reservations', { placeId: {{ $subplace->id }} })"
+                                        >
+                                            {{ $subplace->name }}
+                                        </button>
+
+                                        <x-dropdown icon="ellipsis-vertical" flat>
+                                            <x-dropdown.items text="Ver reservas" href="{{ route('places.reservations', $subplace) }}" />
+
+                                            @can('update', $subplace)
+                                                <x-dropdown.items text="Editar"
+                                                    wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $subplace->id }} })" />
+                                            @endcan
+
+                                            @can('delete', $subplace)
+                                                <x-dropdown.items text="Excluir" separator
+                                                    wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $subplace->id }} })" />
+                                            @endcan
+                                        </x-dropdown>
                                     </div>
                                 </x-card>
                             </div>
@@ -55,11 +77,15 @@
     @empty
         <p class="text-sm text-gray-500 dark:text-dark-400">Nenhum espaço está cadastrado para esta comunidade.</p>
     @endforelse
+
     @can('create', \App\Models\Place::class)
         <div class="mt-4">
             <x-button text="Adicionar espaço" wire:click="$dispatchTo('places.create', 'create-place')" />
         </div>
+
         <livewire:places.create :community="$community" @created="$refresh" />
         <livewire:places.delete :community="$community" @deleted="$refresh" />
     @endcan
+
+    <livewire:places.next-reservations />
 </div>
