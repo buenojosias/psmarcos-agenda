@@ -4,6 +4,9 @@
             <h1>{{ $group->name }}</h1>
             <a href="{{ route('groups.index') }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar aos grupos</a>
         </div>
+        @can('update', $group)
+            <livewire:groups.edit :group="$group" @group-updated="refreshGroup" />
+        @endcan
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">

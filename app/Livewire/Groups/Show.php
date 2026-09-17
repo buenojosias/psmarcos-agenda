@@ -18,6 +18,11 @@ class Show extends Component
         $this->group = $group->load('community');
     }
 
+    public function refreshGroup(): void
+    {
+        $this->group->refresh()->load('community');
+    }
+
     public function render(): View
     {
         $this->group->loadCount([

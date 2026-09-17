@@ -25,6 +25,11 @@ class GroupPolicy
         ]);
     }
 
+    public function update(User $user, Group $group): bool
+    {
+        return $this->manageUsers($user, $group);
+    }
+
     public function manageUsers(User $user, Group $group): bool
     {
         return $user->is_active && ($user->hasAnyRole([
