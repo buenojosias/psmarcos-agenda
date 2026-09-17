@@ -10,6 +10,11 @@ use App\Enums\UserRoleEnum;
 
 class PlacePolicy
 {
+    public function delete(User $user, Place $place): bool
+    {
+        return $this->create($user);
+    }
+
     public function update(User $user, Place $place): bool
     {
         return $this->create($user);

@@ -1,5 +1,5 @@
 <div>
-    <x-modal title="Editar espaço" wire>
+    <x-modal title="Editar espaço" size="md" wire>
         <form id="place-edit-{{ $community->id }}" wire:submit="save" class="space-y-4">
             <x-input label="Nome do espaço *" wire:model="name" maxlength="255" required />
         </form>

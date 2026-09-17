@@ -24,3 +24,10 @@ it('allows only active Admin CPP and Secretary users to update spaces', function
 
     expect(Gate::forUser($user)->allows('update', new Place))->toBe($allowed);
 })->with(UserRoleEnum::cases())->with([true, false]);
+
+it('allows only active Admin CPP and Secretary users to delete spaces', function (UserRoleEnum $role, bool $active) {
+    $user    = User::factory()->make(['roles' => [$role->value], 'is_active' => $active]);
+    $allowed = $active && in_array($role, [UserRoleEnum::ADMIN, UserRoleEnum::CPP, UserRoleEnum::SECRETARY], true);
+
+    expect(Gate::forUser($user)->allows('delete', new Place))->toBe($allowed);
+})->with(UserRoleEnum::cases())->with([true, false]);

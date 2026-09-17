@@ -16,7 +16,10 @@
                                     <x-dropdown.items text="Editar"
                                         wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $place->id }} })" />
                                 @endcan
-                                <x-dropdown.items text="Excluir" separator />
+                                @can('delete', $place)
+                                    <x-dropdown.items text="Excluir" separator
+                                        wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $place->id }} })" />
+                                @endcan
                             </x-dropdown>
                         @endcan
                     </div>
@@ -35,7 +38,10 @@
                                                     <x-dropdown.items text="Editar"
                                                         wire:click="$dispatchTo('places.edit', 'edit-place', { placeId: {{ $subplace->id }} })" />
                                                 @endcan
-                                                <x-dropdown.items text="Excluir" separator />
+                                                @can('delete', $subplace)
+                                                    <x-dropdown.items text="Excluir" separator
+                                                        wire:click="$dispatchTo('places.delete', 'delete-place', { placeId: {{ $subplace->id }} })" />
+                                                @endcan
                                             </x-dropdown>
                                         @endcan
                                     </div>
@@ -50,7 +56,10 @@
         <p class="text-sm text-gray-500 dark:text-dark-400">Nenhum espaço está cadastrado para esta comunidade.</p>
     @endforelse
     @can('create', \App\Models\Place::class)
-        <x-button text="Adicionar espaço" wire:click="$dispatchTo('places.create', 'create-place')" />
+        <div class="mt-4">
+            <x-button text="Adicionar espaço" wire:click="$dispatchTo('places.create', 'create-place')" />
+        </div>
         <livewire:places.create :community="$community" @created="$refresh" />
+        <livewire:places.delete :community="$community" @deleted="$refresh" />
     @endcan
 </div>
