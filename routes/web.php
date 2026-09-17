@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Models\Group;
+use App\Models\Community;
 use Illuminate\Http\Request;
 use App\Livewire\Users\Index;
 use App\Livewire\User\Profile;
@@ -14,6 +15,9 @@ Route::middleware(['auth'])->group(function () {
     Route::view('/', 'dashboard')->name('dashboard');
 
     Route::get('/usuarios', Index::class)->can('viewAny', User::class)->name('users.index');
+
+    Route::get('/comunidades', App\Livewire\Communities\Index::class)->can('viewAny', Community::class)->name('communities.index');
+    Route::get('/comunidades/{community}', App\Livewire\Communities\Show::class)->can('view', 'community')->name('communities.show');
 
     Route::get('/grupos', App\Livewire\Groups\Index::class)->name('groups.index');
     Route::get('/grupos/{group}', App\Livewire\Groups\Show::class)->name('groups.show');

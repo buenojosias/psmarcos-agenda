@@ -63,6 +63,9 @@
                 </x-slot:brand-collapsed>
                 <x-side-bar.item text="Dashboard" icon="home" :route="route('dashboard')" />
                 <x-side-bar.item text="Grupos" icon="user-group" :route="route('groups.index')" />
+                @can('viewAny', \App\Models\Community::class)
+                    <x-side-bar.item text="Comunidades" icon="building-library" :route="route('communities.index')" />
+                @endcan
                 @can('viewAny', \App\Models\User::class)
                     <x-side-bar.item text="Usuários" icon="users" :route="route('users.index')" />
                 @endcan
