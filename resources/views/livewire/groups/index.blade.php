@@ -8,19 +8,17 @@
         @endcan
     </div>
 
-    <x-card shadowless bordered header="Grupos">
-        <x-table :$headers :$sort :rows="$this->rows" filter paginate loading :quantity="[10, 25, 50]">
-            @interact('column_type', $row)
-                {{ $row->type->label() }}
-            @endinteract
+    <x-table :$headers :$sort :rows="$this->rows" filter paginate loading :quantity="[10, 25, 50]">
+        @interact('column_type', $row)
+            {{ $row->type->label() }}
+        @endinteract
 
-            @interact('column_community', $row)
-                {{ $row->community?->name ?? '—' }}
-            @endinteract
+        @interact('column_community', $row)
+            {{ $row->community?->name ?? '—' }}
+        @endinteract
 
-            @interact('column_name', $row)
-                <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
-            @endinteract
-        </x-table>
-    </x-card>
+        @interact('column_name', $row)
+            <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+        @endinteract
+    </x-table>
 </div>
