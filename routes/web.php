@@ -10,10 +10,8 @@ use App\Livewire\User\Profile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Builder;
 
-Route::view('/', 'welcome')->name('welcome');
-
 Route::middleware(['auth'])->group(function () {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::view('/', 'dashboard')->name('dashboard');
 
     Route::get('/usuarios', Index::class)->can('viewAny', User::class)->name('users.index');
 

@@ -66,7 +66,6 @@
                 @can('viewAny', \App\Models\User::class)
                     <x-side-bar.item text="Usuários" icon="users" :route="route('users.index')" />
                 @endcan
-                <x-side-bar.item text="Welcome Page" icon="arrow-uturn-left" :route="route('welcome')" />
             </x-side-bar>
         </x-slot:menu>
         {{ $slot }}
