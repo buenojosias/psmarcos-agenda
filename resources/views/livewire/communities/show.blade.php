@@ -38,7 +38,9 @@
         </x-tab.items>
 
         <x-tab.items tab="spaces" title="Espaços">
-            <p class="text-sm text-gray-500 dark:text-dark-400">A gestão dos espaços da comunidade será disponibilizada em breve.</p>
+            @if ($tab === 'spaces')
+                <livewire:communities.places :community="$community" :key="'community-places-'.$community->id" />
+            @endif
         </x-tab.items>
 
         <x-tab.items tab="calendar" title="Calendário">

@@ -55,7 +55,7 @@ it('defaults to information and synchronizes tab changes with Livewire', functio
         ->assertSee(['Informações', 'Grupos', 'Espaços', 'Calendário'])
         ->set('tab', 'groups')->assertSet('tab', 'groups')
         ->set('tab', 'spaces')->assertSet('tab', 'spaces')
-        ->assertSee('A gestão dos espaços da comunidade será disponibilizada em breve.')
+        ->assertSee('Carregando espaços...')
         ->set('tab', 'calendar')->assertSet('tab', 'calendar')
         ->assertSee('O calendário da comunidade será disponibilizado em breve.')
         ->set('tab', 'invalid')->assertSet('tab', 'information');
@@ -103,4 +103,35 @@ it('queries groups only while their tab is active', function () {
 
     $component->set('tab', 'groups')->assertSee('Grupo carregado sob demanda');
     expect($groupQueries)->toBe(2);
+});
+
+it('defers places queries until the spaces component loads', function (string $tab) {
+    $user      = User::factory()->create(['is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    $community->places()->create(['name' => 'Salão sob demanda']);
+    $queries = 0;
+    DB::listen(function (QueryExecuted $query) use (&$queries): void {
+        if (preg_match('/from ["`]?places["`]?/i', $query->sql)) {
+            $queries++;
+        }
+    });
+
+    $component = Livewire::actingAs($user)->withQueryParams(['tab' => $tab])
+        ->test(Show::class, ['community' => $community])
+        ->assertDontSee('Salão sob demanda');
+
+    expect($queries)->toBe(0);
+
+    $component->set('tab', 'information')->set('tab', 'spaces')->assertSee('Carregando espaços...');
+    expect($queries)->toBe(0);
+})->with(['information', 'groups', 'calendar', 'spaces']);
+
+it('loads the spaces listing when opening its URL with lazy loading resolved', function () {
+    $user      = User::factory()->create(['is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    $community->places()->create(['name' => 'Salão sob demanda']);
+
+    Livewire::actingAs($user)->withoutLazyLoading()->withQueryParams(['tab' => 'spaces'])
+        ->test(Show::class, ['community' => $community])
+        ->assertSee('Salão sob demanda');
 });
