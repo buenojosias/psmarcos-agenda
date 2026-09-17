@@ -135,3 +135,16 @@ it('loads the spaces listing when opening its URL with lazy loading resolved', f
         ->test(Show::class, ['community' => $community])
         ->assertSee('Salão sob demanda');
 });
+
+it('includes the space editor only for permitted users', function (bool $allowed) {
+    $user      = User::factory()->create(['roles' => [$allowed ? 'secretary' : 'member'], 'is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+
+    $component = Livewire::actingAs($user)->test(Show::class, ['community' => $community]);
+
+    if ($allowed) {
+        $component->assertSeeLivewire(App\Livewire\Places\Edit::class);
+    } else {
+        $component->assertDontSeeLivewire(App\Livewire\Places\Edit::class);
+    }
+})->with([true, false]);

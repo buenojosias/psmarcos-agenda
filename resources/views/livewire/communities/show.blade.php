@@ -47,4 +47,8 @@
             <p class="text-sm text-gray-500 dark:text-dark-400">O calendário da comunidade será disponibilizado em breve.</p>
         </x-tab.items>
     </x-tab>
+
+    @can('create', \App\Models\Place::class)
+        <livewire:places.edit :community="$community" />
+    @endcan
 </div>

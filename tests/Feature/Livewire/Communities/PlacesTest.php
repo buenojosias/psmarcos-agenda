@@ -73,3 +73,34 @@ it('starts cards minimized only for places with children', function (bool $hasCh
             ->assertSeeHtml('tallstackui_card(false)');
     }
 })->with([true, false]);
+
+it('shows creation controls only to permitted users', function (bool $allowed) {
+    $user = User::factory()->create([
+        'roles'     => [$allowed ? 'secretary' : 'member'],
+        'is_active' => true,
+    ]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    $community->places()->create(['name' => 'Salão']);
+
+    $component = Livewire::actingAs($user)->withoutLazyLoading()
+        ->test(Places::class, ['community' => $community]);
+
+    if ($allowed) {
+        $component->assertSee('Adicionar espaço')->assertSee('Adicionar subespaço')
+            ->assertSeeLivewire(App\Livewire\Places\Create::class);
+    } else {
+        $component->assertDontSee('Adicionar espaço')->assertDontSee('Adicionar subespaço')
+            ->assertDontSeeLivewire(App\Livewire\Places\Create::class);
+    }
+})->with([true, false]);
+
+it('refreshes space names after an update', function () {
+    $user      = User::factory()->create(['is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    $place     = $community->places()->create(['name' => 'Nome anterior']);
+    $component = Livewire::actingAs($user)->withoutLazyLoading()
+        ->test(Places::class, ['community' => $community])->assertSee('Nome anterior');
+    $place->update(['name' => 'Nome atualizado']);
+
+    $component->dispatch('place-updated')->assertSee('Nome atualizado')->assertDontSee('Nome anterior');
+});

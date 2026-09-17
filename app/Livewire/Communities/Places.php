@@ -6,6 +6,7 @@ namespace App\Livewire\Communities;
 
 use Livewire\Component;
 use App\Models\Community;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Lazy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +22,7 @@ class Places extends Component
         return '<div role="status" class="text-sm text-gray-500 dark:text-dark-400">Carregando espaços...</div>';
     }
 
+    #[On('place-updated')]
     public function render(): View
     {
         Gate::authorize('view', $this->community);
