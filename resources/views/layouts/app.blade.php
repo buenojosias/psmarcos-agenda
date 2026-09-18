@@ -63,6 +63,10 @@
                 </x-slot:brand-collapsed>
                 <x-side-bar.item text="Dashboard" icon="home" :current="request()->routeIs('dashboard')" :route="route('dashboard')" />
                 <x-side-bar.item text="Grupos" icon="user-group" :current="request()->routeIs('groups.*')" :route="route('groups.index')" />
+                @can('viewAny', \App\Models\Event::class)
+                    <x-side-bar.item text="Eventos" icon="calendar-days" :current="request()->routeIs('events.index')" :route="route('events.index')" />
+                    <x-side-bar.item text="Missas" icon="building-library" :current="request()->routeIs('events.masses')" :route="route('events.masses')" />
+                @endcan
                 @can('viewAny', \App\Models\Community::class)
                     <x-side-bar.item text="Comunidades" icon="building-library" :current="request()->routeIs('communities.*')" :route="route('communities.index')" />
                 @endcan

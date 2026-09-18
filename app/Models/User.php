@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Enums\UserRoleEnum;
+
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -53,21 +55,29 @@ class User extends Authenticatable
         return in_array($role, $this->getRolesArray(), true);
     }
 
+    public function isMemberOnly(): bool
+    {
+        $roles = array_unique($this->getRolesArray());
+
+        return count($roles) === 1 && in_array(UserRoleEnum::MEMBER->value, $roles, true);
+    }
+
     /** aceita string ou array */
     public function hasAnyRole(array|string $roles): bool
     {
         $roles = (array) $roles;
+
         return count(array_intersect($roles, $this->getRolesArray())) > 0;
     }
 
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by_user_id');
+        return $this->belongsTo(self::class, 'created_by_user_id');
     }
 
     public function children(): HasMany
     {
-        return $this->hasMany(User::class, 'created_by_user_id');
+        return $this->hasMany(self::class, 'created_by_user_id');
     }
 
     public function communities(): BelongsToMany

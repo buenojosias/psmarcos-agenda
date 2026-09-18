@@ -13,13 +13,14 @@ use Illuminate\Auth\Access\Response;
 
 class EventPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->is_active === true;
+    }
+
     public function view(User $user, Event $event): Response
     {
-        return $event->status === EventStatusEnum::CONFIRMED
-            || $user->hasRole(UserRoleEnum::PASCOM->value)
-            || $this->isCreator($user, $event)
-            || $this->review($user, $event)
-            || $user->groups()->whereKey($event->group_id)->exists()
+        return Event::query()->visibleTo($user)->whereKey($event->id)->exists()
                 ? Response::allow()
                 : Response::denyAsNotFound();
     }

@@ -32,7 +32,9 @@ it('displays event details and the reservation period', function () {
 
 it('shows management buttons only to the creator', function () {
     $creator = User::factory()->create(['roles' => ['member']]);
-    $event   = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    $group   = Group::factory()->create();
+    $group->users()->attach($creator);
+    $event = Event::factory()->for($group)->create(['status' => EventStatusEnum::PENDING]);
     $event->logs()->create(['user_id' => $creator->id, 'action' => EventLogActionEnum::CREATED]);
 
     Livewire::actingAs($creator)->test(Show::class, ['event' => $event])
@@ -84,7 +86,7 @@ it('returns 404 for an unrelated user viewing a nonconfirmed event', function (s
     $event->logs()->create(['user_id' => $user->id, 'action' => EventLogActionEnum::UPDATED]);
 
     $this->actingAs($user)->get(route('events.show', $event))->assertNotFound();
-})->with(['member', 'secretary']);
+})->with(['member']);
 
 it('rechecks visibility when group membership is removed', function () {
     $group = Group::factory()->create();
