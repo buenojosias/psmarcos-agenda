@@ -7,7 +7,7 @@
     ['index' => 'status', 'label' => 'Status', 'sortable' => false],
 ]" :rows="$events" paginate loading empty="Nenhum evento encontrado.">
     @interact('column_name', $row)
-        <div class="font-medium">{{ $row->name }}</div>
+        <a href="{{ route('events.show', $row) }}" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
         <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->type->label() }}</div>
     @endinteract
 

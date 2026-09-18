@@ -2,12 +2,18 @@
     <div class="header"><h1>Eventos</h1></div>
 
     <div class="md:hidden">
-        <x-button text="Filtros" icon="funnel" outline block color="black" x-on:click="filtersOpen = !filtersOpen"
+        <x-button text="Filtros" icon="funnel" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"
                   x-bind:aria-expanded="filtersOpen" aria-controls="event-filters" />
     </div>
 
-    <div id="event-filters" class="hidden gap-4 md:grid md:grid-cols-3"
-         x-bind:class="{ 'hidden': !filtersOpen, 'grid': filtersOpen }">
+    <x-card id="event-filters" bordered class="grid gap-4 md:grid! md:grid-cols-3"
+         x-cloak x-show="filtersOpen"
+         x-transition:enter="transition duration-300 ease-out motion-reduce:transition-none"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition duration-200 ease-in motion-reduce:transition-none"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2">
         @include('livewire.events.filters')
 
         <x-select.native wire:model.live="scope" label="Exibir">
@@ -31,7 +37,7 @@
                 <option wire:key="group-{{ $eventGroup->id }}" value="{{ $eventGroup->id }}">{{ $eventGroup->name }}</option>
             @endforeach
         </x-select.native>
-    </div>
+    </x-card>
 
     @include('livewire.events.listing')
 </div>
