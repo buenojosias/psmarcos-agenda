@@ -1,7 +1,7 @@
-<div class="space-y-4">
+<div class="space-y-6">
     <div class="header"><h1>Missas</h1></div>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-3">
         <x-select.native wire:model.live="weekday" label="Dia da semana">
             <option value="">Todos os dias</option>
             <option value="0">Domingo</option>
@@ -11,6 +11,13 @@
             <option value="4">Quinta-feira</option>
             <option value="5">Sexta-feira</option>
             <option value="6">Sábado</option>
+        </x-select.native>
+
+        <x-select.native wire:model.live="community_id" label="Comunidade">
+            <option value="0">Todas as comunidades</option>
+            @foreach ($communities as $community)
+                <option wire:key="community-{{ $community->id }}" value="{{ $community->id }}">{{ $community->name }}</option>
+            @endforeach
         </x-select.native>
 
         <x-select.native wire:model.live="motivation" label="Motivação">

@@ -9,12 +9,12 @@ use Livewire\Livewire;
 use App\Enums\EventTypeEnum;
 use App\Enums\EventStatusEnum;
 use App\Livewire\Events\Index;
-use App\Livewire\Events\Masses;
+use App\Livewire\Masses\Index as Masses;
 
 it('requires authentication and active accounts', function (string $route) {
     $this->get(route($route))->assertRedirect(route('login'));
     $this->actingAs(User::factory()->create(['is_active' => false]))->get(route($route))->assertForbidden();
-})->with(['events.index', 'events.masses']);
+})->with(['events.index', 'masses.index']);
 
 it('separates events and masses through the authenticated routes', function () {
     $event = Event::factory()->create(['type' => EventTypeEnum::MEETING, 'name' => 'Reunião da pastoral']);
@@ -22,7 +22,7 @@ it('separates events and masses through the authenticated routes', function () {
     $this->actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]));
 
     $this->get(route('events.index'))->assertSee($event->name)->assertDontSeeText($mass->name);
-    $this->get(route('events.masses'))->assertSee($mass->name)->assertDontSeeText($event->name);
+    $this->get(route('masses.index'))->assertSee($mass->name)->assertDontSeeText($event->name);
 });
 
 it('applies member visibility before status and manually supplied review filters', function () {
