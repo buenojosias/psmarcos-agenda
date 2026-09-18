@@ -32,6 +32,7 @@ class Events extends Component
                 UserRoleEnum::ADMIN->value,
                 UserRoleEnum::SECRETARY->value,
                 UserRoleEnum::PRIEST->value,
+                UserRoleEnum::PASCOM->value,
             ]) || ($user->hasRole(UserRoleEnum::MEMBER->value)
                 && $this->group->users()->whereKey($user->id)->exists())
         );
