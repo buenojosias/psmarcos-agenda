@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/grupos', App\Livewire\Groups\Index::class)->name('groups.index');
     Route::get('/grupos/{group}', App\Livewire\Groups\Show::class)->name('groups.show');
+    Route::get('/grupos/{group}/eventos', App\Livewire\Groups\Events::class)->name('groups.events.index');
 
     Route::get('/grupos/{group}/usuarios/buscar', function (Request $request, Group $group) {
         $search = mb_substr(mb_trim($request->string('search')->toString()), 0, 100);

@@ -61,7 +61,7 @@
                     </x-slot:action>
                 </x-list.items>
                 <div class="p-2 border-t border-gray-200 dark:border-dark-700 text-center">
-                    <x-link text="Ver eventos" href="#" x-on:click.prevent />    
+                    <x-link text="Ver eventos" :href="route('groups.events.index', $group)" />    
                 </div>
             </x-list>
         </div>
