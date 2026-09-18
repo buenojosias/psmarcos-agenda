@@ -1,7 +1,13 @@
-<div class="space-y-4">
+<div class="space-y-6" x-data="{ filtersOpen: false }">
     <div class="header"><h1>Eventos</h1></div>
 
-    <div class="grid gap-4 md:grid-cols-3">
+    <div class="md:hidden">
+        <x-button text="Filtros" icon="funnel" outline block color="black" x-on:click="filtersOpen = !filtersOpen"
+                  x-bind:aria-expanded="filtersOpen" aria-controls="event-filters" />
+    </div>
+
+    <div id="event-filters" class="hidden gap-4 md:grid md:grid-cols-3"
+         x-bind:class="{ 'hidden': !filtersOpen, 'grid': filtersOpen }">
         @include('livewire.events.filters')
 
         <x-select.native wire:model.live="scope" label="Exibir">
