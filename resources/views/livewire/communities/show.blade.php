@@ -26,12 +26,16 @@
                 <x-table :headers="[
                     ['index' => 'name', 'label' => 'Nome', 'sortable' => false],
                     ['index' => 'type', 'label' => 'Tipo', 'sortable' => false],
+                    ['index' => 'actions', 'label' => '', 'sortable' => false],
                 ]" :rows="$groups" empty="Nenhum grupo está vinculado a esta comunidade.">
                     @interact('column_name', $row)
                         <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
                     @endinteract
                     @interact('column_type', $row)
                         {{ $row->type->label() }}
+                    @endinteract
+                    @interact('column_actions', $row)
+                        <x-link :href="route('groups.events.index', $row)" x-tooltip="Eventos" icon="calendar-days" />
                     @endinteract
                 </x-table>
             @endif

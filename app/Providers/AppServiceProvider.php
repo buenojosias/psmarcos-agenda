@@ -29,5 +29,16 @@ class AppServiceProvider extends ServiceProvider
             ->layout()
             ->block('main')
             ->replace('p-10', 'p-6 sm:p-8 lg:p-10');
+
+        TallStackUi::customize()
+            ->button()
+            ->block('wrapper.sizes.md')
+            ->replace('text-md', 'text-sm')
+            ->append('font-semibold')
+            ->and()
+            ->button()
+            ->block('wrapper.sizes.sm')
+            ->replace('text-md', 'text-xs')
+            ->append('font-semibold');
     }
 }

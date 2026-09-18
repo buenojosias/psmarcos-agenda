@@ -29,6 +29,7 @@ class Index extends Component
         ['index' => 'name', 'label' => 'Nome'],
         ['index' => 'type', 'label' => 'Tipo', 'sortable' => false],
         ['index' => 'community', 'label' => 'Comunidade', 'sortable' => false],
+        ['index' => 'actions', 'label' => '', 'sortable' => false],
     ];
 
     public function render(): View

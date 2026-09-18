@@ -61,13 +61,13 @@
                         <img src="{{ asset('/assets/images/psm.png') }}" class="dark:invert" width="20" height="20" />
                     </div>
                 </x-slot:brand-collapsed>
-                <x-side-bar.item text="Dashboard" icon="home" :route="route('dashboard')" />
-                <x-side-bar.item text="Grupos" icon="user-group" :route="route('groups.index')" />
+                <x-side-bar.item text="Dashboard" icon="home" :current="request()->routeIs('dashboard')" :route="route('dashboard')" />
+                <x-side-bar.item text="Grupos" icon="user-group" :current="request()->routeIs('groups.*')" :route="route('groups.index')" />
                 @can('viewAny', \App\Models\Community::class)
-                    <x-side-bar.item text="Comunidades" icon="building-library" :route="route('communities.index')" />
+                    <x-side-bar.item text="Comunidades" icon="building-library" :current="request()->routeIs('communities.*')" :route="route('communities.index')" />
                 @endcan
                 @can('viewAny', \App\Models\User::class)
-                    <x-side-bar.item text="Usuários" icon="users" :route="route('users.index')" />
+                    <x-side-bar.item text="Usuários" icon="users" :current="request()->routeIs('users.*')" :route="route('users.index')" />
                 @endcan
             </x-side-bar>
         </x-slot:menu>

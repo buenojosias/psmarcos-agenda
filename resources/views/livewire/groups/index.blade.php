@@ -20,5 +20,9 @@
         @interact('column_name', $row)
             <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
         @endinteract
+
+        @interact('column_actions', $row)
+            <x-link x-tooltip="Eventos" :href="route('groups.events.index', $row)" icon="calendar-days" />
+        @endinteract
     </x-table>
 </div>
