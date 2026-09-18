@@ -164,11 +164,11 @@ it('rechecks group membership on subsequent requests', function () {
         ->set('scope', 'mine')->assertViewHas('events', fn ($rows) => $rows->isEmpty());
 });
 
-it('filters masses by status without exposing pending masses to members', function (array $roles, int $count) {
-    Event::factory()->create(['type' => EventTypeEnum::MASS, 'group_id' => null, 'status' => EventStatusEnum::PENDING]);
+it('filters masses by motivation without exposing pending masses to members', function (array $roles, int $count) {
+    Event::factory()->create(['name' => 'Missa com Novena', 'type' => EventTypeEnum::MASS, 'group_id' => null, 'status' => EventStatusEnum::PENDING]);
     Event::factory()->create(['type' => EventTypeEnum::MASS, 'group_id' => null, 'status' => EventStatusEnum::CONFIRMED]);
 
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => $roles]))
-        ->withQueryParams(['status' => 'pending'])->test(Masses::class)
+        ->withQueryParams(['motivation' => 'Missa com Novena'])->test(Masses::class)
         ->assertViewHas('events', fn ($rows) => $rows->total() === $count);
 })->with([[['member'], 0], [['admin'], 1]]);
