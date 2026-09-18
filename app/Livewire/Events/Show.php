@@ -6,6 +6,7 @@ namespace App\Livewire\Events;
 
 use App\Models\Event;
 use Livewire\Component;
+use App\Models\PlaceReservation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 
@@ -26,7 +27,11 @@ class Show extends Component
         return view('livewire.events.show', [
             'canManage'    => Gate::allows('manage', $this->event),
             'canReview'    => Gate::allows('review', $this->event),
-            'reservations' => $this->event->reservations()->with('place.community')->orderBy('reserved_from')->get(),
+            'reservations' => $this->event->reservations()->with('place.community')
+                ->orderByDesc('is_primary')->orderBy('reserved_from')->orderBy('id')->get()
+                ->each(function (PlaceReservation $reservation): void {
+                    $reservation->setAttribute('highlight', $reservation->is_primary ? 'primary' : null);
+                }),
         ]);
     }
 }

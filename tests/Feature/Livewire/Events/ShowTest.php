@@ -96,3 +96,25 @@ it('rechecks visibility when group membership is removed', function () {
 
     $component->call('$refresh')->assertNotFound();
 });
+
+it('lists the primary space first even when other reservations start earlier', function () {
+    $event     = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+
+    foreach ([
+        ['name' => 'Cozinha', 'is_primary' => false, 'hour' => '08:00'],
+        ['name' => 'Auditório', 'is_primary' => true, 'hour' => '10:00'],
+        ['name' => 'Sala de apoio', 'is_primary' => false, 'hour' => '09:00'],
+    ] as $space) {
+        $place = $community->places()->create(['name' => $space['name']]);
+        $event->reservations()->create([
+            'place_id'      => $place->id,
+            'is_primary'    => $space['is_primary'],
+            'reserved_from' => '2026-10-02 '.$space['hour'],
+            'reserved_to'   => '2026-10-02 12:00',
+        ]);
+    }
+
+    Livewire::actingAs(User::factory()->create())->test(Show::class, ['event' => $event])
+        ->assertSeeInOrder(['Auditório', 'Espaço principal', 'Cozinha', 'Sala de apoio']);
+});
