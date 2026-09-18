@@ -5,7 +5,7 @@
                 <div class="px-3 py-2 flex items-center justify-between gap-x-4">
                     <button
                         type="button"
-                        class="text-left text-primary-600 hover:underline dark:text-primary-400"
+                        class="text-left text-primary-600 hover:underline cursor-pointer dark:text-primary-400"
                         wire:click="$dispatchTo('places.next-reservations', 'show-place-reservations', { placeId: {{ $place->id }} })"
                     >
                         {{ $place->name }}
@@ -47,7 +47,7 @@
                                     <div class="px-4 py-2 flex items-center justify-between gap-x-4">
                                         <button
                                             type="button"
-                                            class="text-left text-primary-600 hover:underline dark:text-primary-400"
+                                            class="text-left text-primary-600 hover:underline cursor-pointer dark:text-primary-400"
                                             wire:click="$dispatchTo('places.next-reservations', 'show-place-reservations', { placeId: {{ $subplace->id }} })"
                                         >
                                             {{ $subplace->name }}
