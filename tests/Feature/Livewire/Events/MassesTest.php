@@ -8,6 +8,7 @@ use App\Models\Event;
 use Livewire\Livewire;
 use App\Models\Community;
 use App\Enums\EventTypeEnum;
+use App\Models\MassSchedule;
 use Illuminate\Database\Eloquent\Model;
 use App\Livewire\Masses\Index as Masses;
 
@@ -34,16 +35,16 @@ it('filters each weekday in the database and combines it with motivation', funct
         });
 })->with(['0', '1', '2', '3', '4', '5', '6']);
 
-it('offers distinct motivations only from visible upcoming masses', function () {
+it('shows visible scheduled masses with a motivation search input', function () {
     $this->freezeTime();
     $user = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
     Mass::factory()->count(2)->create(['motivation' => 'Missa Dominical']);
     Mass::factory()->create(['motivation' => 'Missa da Catequese', 'canceled_at' => now()]);
     Event::factory()->create(['name' => 'Reunião', 'type' => EventTypeEnum::MEETING]);
-    Mass::factory()->create(['motivation' => 'Missa antiga', 'starts_at' => now()->subHours(2), 'ends_at' => now()->subHour()]);
+    Mass::factory()->create(['motivation' => 'Missa antiga', 'starts_at' => now()->subDay(), 'ends_at' => now()->subDay()->addHour()]);
 
     Livewire::actingAs($user)->test(Masses::class)
-        ->assertViewHas('motivations', fn ($values) => $values->all() === ['Missa Dominical'])
+        ->assertViewHas('masses', fn ($rows) => $rows->total() === 2)
         ->assertDontSee('Missa da Catequese')->assertDontSee('Missa antiga');
 });
 
@@ -61,7 +62,7 @@ it('shows only motivation start time and the primary reservation community witho
 
     try {
         $component = Livewire::actingAs($user)->test(Masses::class)
-            ->assertSee('Missa Dominical')->assertSee($mass->starts_at->format('d/m/Y H:i'))
+            ->assertSee('Missa Dominical')->assertSee($mass->starts_at->format('d/m/Y'))->assertSee($mass->starts_at->format('H:i'))
             ->assertSee('Matriz')->assertSee('Comunidade não informada')
             ->assertDontSee('Espaço reservado')
             ->assertDontSee('Grupo organizador')->assertDontSee('Tipo')->assertDontSee('Status')
@@ -77,15 +78,18 @@ it('shows only motivation start time and the primary reservation community witho
     }
 });
 
-it('orders upcoming and ongoing masses chronologically and excludes ended masses', function () {
-    $this->freezeTime();
+it('orders masses from today chronologically and optionally includes past dates', function () {
+    $this->travelTo(now()->setTime(12, 0));
     $user    = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $future  = Mass::factory()->create(['starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHour()]);
     $ongoing = Mass::factory()->create(['starts_at' => now()->subHour(), 'ends_at' => now()->addHour()]);
-    Mass::factory()->create(['starts_at' => now()->subHours(2), 'ends_at' => now()]);
+    $ended   = Mass::factory()->create(['starts_at' => now()->subHours(2), 'ends_at' => now()]);
+    $past    = Mass::factory()->create(['starts_at' => now()->subDay(), 'ends_at' => now()->subDay()->addHour()]);
 
     Livewire::actingAs($user)->test(Masses::class)
-        ->assertViewHas('masses', fn ($rows) => $rows->modelKeys() === [$ongoing->id, $future->id]);
+        ->assertViewHas('masses', fn ($rows) => $rows->modelKeys() === [$ended->id, $ongoing->id, $future->id])
+        ->set('showPast', true)
+        ->assertViewHas('masses', fn ($rows) => $rows->modelKeys() === [$past->id, $ended->id, $ongoing->id, $future->id]);
 });
 
 it('normalizes malformed filters and keeps user input bound as values', function (mixed $weekday, mixed $motivation, string $expectedMotivation) {
@@ -100,13 +104,13 @@ it('normalizes malformed filters and keeps user input bound as values', function
     ['0 OR 1=1', str_repeat('a', 300), str_repeat('a', 255)],
 ]);
 
-it('does not interpret motivation as SQL or a partial match', function () {
+it('binds motivation safely and allows partial matches', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     Mass::factory()->create(['motivation' => 'Missa Dominical']);
 
     Livewire::actingAs($user)->withQueryParams(['motivation' => "' OR 1=1 --"])->test(Masses::class)
         ->assertViewHas('masses', fn ($rows) => $rows->isEmpty())
-        ->set('motivation', 'Missa')->assertViewHas('masses', fn ($rows) => $rows->isEmpty());
+        ->set('motivation', 'Dominic')->assertViewHas('masses', fn ($rows) => $rows->total() === 1);
 });
 
 it('paginates masses and resets the page for either filter', function (string $filter, string $value) {
@@ -158,4 +162,70 @@ it('returns no masses for an unknown community and resets pagination when commun
     Livewire::actingAs($user)->test(Masses::class)->call('setPage', 2)
         ->set('community_id', '999999')->assertSet('paginators.page', 1)
         ->assertViewHas('masses', fn ($rows) => $rows->isEmpty());
+});
+
+it('filters an inclusive date range and resets pagination when dates change', function () {
+    $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
+    $user   = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $masses = collect(['2026-09-19 08:00', '2026-09-20 00:00', '2026-09-21 23:59', '2026-09-22 08:00'])
+        ->map(fn (string $date) => Mass::factory()->create(['starts_at' => $date, 'ends_at' => Carbon\Carbon::parse($date)->addHour()]));
+
+    Livewire::actingAs($user)->test(Masses::class)
+        ->call('setPage', 2)
+        ->set('dateRange', ['2026-09-20', '2026-09-21'])
+        ->assertSet('paginators.page', 1)
+        ->assertViewHas('masses', fn ($rows) => $rows->modelKeys() === [$masses[1]->id, $masses[2]->id])
+        ->set('showPast', true)
+        ->set('dateRange', ['2026-09-19', '2026-09-19'])
+        ->assertViewHas('masses', fn ($rows) => $rows->modelKeys() === [$masses[0]->id])
+        ->set('dateRange', null)
+        ->assertViewHas('masses', fn ($rows) => $rows->total() === 4);
+});
+
+it('ignores incomplete or malformed date ranges', function (mixed $range) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    Mass::factory()->create();
+
+    Livewire::actingAs($user)->test(Masses::class)->set('dateRange', $range)
+        ->assertViewHas('masses', fn ($rows) => $rows->total() === 1);
+})->with([[['2026-09-20']], [['invalid', '2026-09-21']], [['2026-02-30', '2026-09-21']], [null]]);
+
+it('groups active current schedules by weekday and community in chronological order', function () {
+    $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
+    $user           = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $late           = MassSchedule::factory()->create(['weekday' => 0, 'starts_at' => '18:00:00', 'motivation' => 'Celebração vespertina']);
+    $early          = MassSchedule::factory()->create(['community_id' => $late->community_id, 'weekday' => 0, 'starts_at' => '08:00:00', 'valid_from' => today(), 'valid_until' => today()]);
+    $otherCommunity = Community::create(['name' => 'Capela semanal', 'alias' => 'capela-semanal', 'abbreviation' => 'CS']);
+    $monday         = MassSchedule::factory()->create(['community_id' => $otherCommunity->id, 'weekday' => 1, 'starts_at' => '07:00:00']);
+    MassSchedule::factory()->create(['is_active' => false, 'motivation' => 'Horário inativo']);
+    MassSchedule::factory()->create(['valid_until' => today()->subDay(), 'motivation' => 'Horário expirado']);
+    MassSchedule::factory()->create(['valid_from' => today()->addDay(), 'motivation' => 'Horário futuro']);
+
+    Livewire::actingAs($user)->test(Masses::class)
+        ->assertSee('Missas programadas')->assertSee('Cronograma semanal')
+        ->assertSee('Por dia da semana')->assertSee('Por comunidade')
+        ->assertSee('Celebração vespertina')->assertSee('18:00')
+        ->assertDontSee('Horário inativo')->assertDontSee('Horário expirado')->assertDontSee('Horário futuro')
+        ->assertViewHas('schedulesByWeekday', fn ($groups) => $groups->keys()->all() === [0, 1]
+            && $groups[0]->modelKeys() === [$early->id, $late->id]
+            && $groups[1]->modelKeys() === [$monday->id])
+        ->assertViewHas('schedulesByCommunity', fn ($groups) => $groups->count() === 2
+            && $groups[$late->community_id]->modelKeys() === [$early->id, $late->id]);
+});
+
+it('keeps the date picker empty and partial states stable across renders', function () {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Masses::class)
+        ->assertSet('dateRange', null)
+        ->call('$refresh')->assertSet('dateRange', null)
+        ->set('dateRange', ['2026-09-20', null])
+        ->assertSet('dateRange', ['2026-09-20', null])
+        ->call('$refresh')->assertSet('dateRange', ['2026-09-20', null])
+        ->set('dateRange', ['2026-09-20', '2026-09-22'])
+        ->assertSet('dateRange', ['2026-09-20', '2026-09-22'])
+        ->set('dateRange', null)
+        ->call('$refresh')->assertSet('dateRange', null)
+        ->set('dateRange', [null, null])
+        ->assertSet('dateRange', null);
 });

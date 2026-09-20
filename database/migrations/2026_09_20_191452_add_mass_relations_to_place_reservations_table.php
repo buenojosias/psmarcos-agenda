@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('place_reservations', function (Blueprint $table) {
-            $table->dropUnique('place_reservations_event_id_place_id_unique');
             $table->dropForeign(['event_id']);
+            $table->dropUnique('place_reservations_event_id_place_id_unique');
         });
 
         Schema::table('place_reservations', function (Blueprint $table) {
@@ -44,10 +44,10 @@ return new class extends Migration
         }
 
         Schema::table('place_reservations', function (Blueprint $table) {
-            $table->dropUnique('place_reservations_mass_id_place_id_unique');
-            $table->dropUnique('place_reservations_event_id_place_id_unique');
             $table->dropForeign(['mass_id']);
             $table->dropForeign(['event_id']);
+            $table->dropUnique('place_reservations_mass_id_place_id_unique');
+            $table->dropUnique('place_reservations_event_id_place_id_unique');
             $table->dropColumn('mass_id');
         });
 

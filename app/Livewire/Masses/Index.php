@@ -8,11 +8,13 @@ use App\Models\Mass;
 use App\Models\Event;
 use Livewire\Component;
 use App\Models\Community;
+use App\Models\MassSchedule;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Validator;
 
 class Index extends Component
 {
@@ -27,9 +29,26 @@ class Index extends Component
     #[Url(except: '')]
     public mixed $motivation = '';
 
+    public bool $showPast = false;
+
+    public mixed $dateRange = null;
+
     public function updated(string $property): void
     {
-        if (in_array($property, ['weekday', 'community_id', 'motivation'], true)) {
+        if (explode('.', $property)[0] === 'dateRange') {
+            $dates = is_array($this->dateRange) ? array_values($this->dateRange) : [];
+
+            if (Validator::make(['dates' => $dates], [
+                'dates'   => ['array', 'max:2'],
+                'dates.*' => ['nullable', 'date_format:Y-m-d'],
+            ])->fails() || empty($dates[0])) {
+                $this->dateRange = null;
+            } else {
+                $this->dateRange = [$dates[0], $dates[1] ?? null];
+            }
+        }
+
+        if (in_array(explode('.', $property)[0], ['weekday', 'community_id', 'motivation', 'showPast', 'dateRange'], true)) {
             $this->resetPage();
         }
     }
@@ -47,15 +66,18 @@ class Index extends Component
         $this->community_id = $communityId === false ? 0 : $communityId;
 
         $query = Mass::query()
-            ->visibleTo(auth()->user())
-            ->upcoming();
+            ->visibleTo(auth()->user());
 
-        $motivations = (clone $query)
-            ->whereNotNull('motivation')
-            ->select('motivation')
-            ->distinct()
-            ->orderBy('motivation')
-            ->pluck('motivation');
+        if (! $this->showPast) {
+            $query->where('starts_at', '>=', today());
+        }
+
+        $dates = is_array($this->dateRange) ? array_values($this->dateRange) : [];
+
+        if (count($dates) === 2 && $dates[0] !== null && $dates[1] !== null) {
+            sort($dates);
+            $query->whereDate('starts_at', '>=', $dates[0])->whereDate('starts_at', '<=', $dates[1]);
+        }
         $communities = Community::query()->select('id', 'name')->orderBy('name')->get();
 
         if ($this->weekday !== '') {
@@ -67,7 +89,7 @@ class Index extends Component
         }
 
         if ($this->motivation !== '') {
-            $query->where('motivation', $this->motivation);
+            $query->whereLike('motivation', '%'.$this->motivation.'%');
         }
 
         if ($this->community_id !== 0) {
@@ -75,10 +97,18 @@ class Index extends Component
                 ->where('community_id', $this->community_id));
         }
 
+        $schedules = MassSchedule::query()->with('community:id,name')
+            ->where('is_active', true)
+            ->where(fn (Builder $query) => $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', today()))
+            ->where(fn (Builder $query) => $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', today()))
+            ->orderBy('weekday')->orderBy('starts_at')->orderBy('id')->get();
+
         return view('livewire.masses.index', [
-            'motivations' => $motivations,
-            'communities' => $communities,
-            'masses'      => $query->with([
+            'weekdays'             => ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+            'schedulesByWeekday'   => $schedules->groupBy('weekday'),
+            'schedulesByCommunity' => $schedules->sortBy('community.name')->groupBy('community_id'),
+            'communities'          => $communities,
+            'masses'               => $query->with([
                 'primaryReservation:id,mass_id,place_id',
                 'primaryReservation.place:id,community_id',
                 'primaryReservation.place.community:id,name',
