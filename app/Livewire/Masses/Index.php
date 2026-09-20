@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Masses;
 
+use App\Models\Mass;
 use App\Models\Event;
 use Livewire\Component;
 use App\Models\Community;
-use App\Enums\EventTypeEnum;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use Illuminate\Contracts\View\View;
@@ -46,12 +46,16 @@ class Index extends Component
             : false;
         $this->community_id = $communityId === false ? 0 : $communityId;
 
-        $query = Event::query()
+        $query = Mass::query()
             ->visibleTo(auth()->user())
-            ->where('type', EventTypeEnum::MASS)
             ->upcoming();
 
-        $motivations = (clone $query)->select('name')->distinct()->orderBy('name')->pluck('name');
+        $motivations = (clone $query)
+            ->whereNotNull('motivation')
+            ->select('motivation')
+            ->distinct()
+            ->orderBy('motivation')
+            ->pluck('motivation');
         $communities = Community::query()->select('id', 'name')->orderBy('name')->get();
 
         if ($this->weekday !== '') {
@@ -63,7 +67,7 @@ class Index extends Component
         }
 
         if ($this->motivation !== '') {
-            $query->where('name', $this->motivation);
+            $query->where('motivation', $this->motivation);
         }
 
         if ($this->community_id !== 0) {
@@ -74,8 +78,8 @@ class Index extends Component
         return view('livewire.masses.index', [
             'motivations' => $motivations,
             'communities' => $communities,
-            'events'      => $query->with([
-                'primaryReservation:id,event_id,place_id',
+            'masses'      => $query->with([
+                'primaryReservation:id,mass_id,place_id',
                 'primaryReservation.place:id,community_id',
                 'primaryReservation.place.community:id,name',
             ])->orderBy('starts_at')->orderBy('id')->paginate(10),

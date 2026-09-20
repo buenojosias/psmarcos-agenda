@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Community extends Model
 {
-     protected $fillable = [
+    protected $fillable = [
         'name',
         'abbreviation',
         'alias',
@@ -18,6 +20,23 @@ class Community extends Model
     public function places(): HasMany
     {
         return $this->hasMany(Place::class);
+    }
+
+    public function massSchedules(): HasMany
+    {
+        return $this->hasMany(MassSchedule::class);
+    }
+
+    public function masses(): HasMany
+    {
+        return $this->hasMany(Mass::class);
+    }
+
+    public function massPlaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Place::class, 'community_mass_place')
+            ->withPivot('is_primary')
+            ->withTimestamps();
     }
 
     public function groups(): HasMany

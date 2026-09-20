@@ -29,12 +29,12 @@
     </div>
 
     <x-table :headers="[
-        ['index' => 'name', 'label' => 'Motivação', 'sortable' => false],
+        ['index' => 'motivation', 'label' => 'Motivação', 'sortable' => false],
         ['index' => 'starts_at', 'label' => 'Horário', 'sortable' => false],
         ['index' => 'community', 'label' => 'Comunidade', 'sortable' => false],
-    ]" :rows="$events" paginate loading empty="Nenhuma missa encontrada.">
-        @interact('column_name', $row)
-            <a href="{{ route('events.show', $row) }}" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+    ]" :rows="$masses" paginate loading empty="Nenhuma missa encontrada.">
+        @interact('column_motivation', $row)
+            <span class="font-medium">{{ $row->motivation ?? 'Missa' }}</span>
         @endinteract
 
         @interact('column_starts_at', $row)

@@ -23,10 +23,10 @@ class Index extends Listing
 
     public function render(): View
     {
-        $query         = $this->listingQuery()->where('type', '!=', EventTypeEnum::MASS);
+        $query         = $this->listingQuery();
         $user          = auth()->user();
         $type          = is_string($this->type) ? EventTypeEnum::tryFrom($this->type) : null;
-        $this->type    = $type !== null && $type !== EventTypeEnum::MASS ? $type->value : '';
+        $this->type    = $type?->value ?? '';
         $allowedScopes = $user->isMemberOnly() ? ['all', 'mine'] : ['all', 'mine', 'review'];
         $this->scope   = in_array($this->scope, $allowedScopes, true) ? $this->scope : 'all';
         $groupId       = filter_var($this->group, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -41,7 +41,7 @@ class Index extends Listing
         return view('livewire.events.index', [
             ...$this->listingData($query),
             'groups' => Group::query()->orderBy('name')->get(['id', 'name']),
-            'types'  => array_filter(EventTypeEnum::cases(), fn (EventTypeEnum $type): bool => $type !== EventTypeEnum::MASS),
+            'types'  => EventTypeEnum::cases(),
         ]);
     }
 }

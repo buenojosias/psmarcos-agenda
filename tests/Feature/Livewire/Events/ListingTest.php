@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Mass;
 use App\Models\User;
 use App\Models\Event;
 use App\Models\Group;
@@ -18,11 +19,11 @@ it('requires authentication and active accounts', function (string $route) {
 
 it('separates events and masses through the authenticated routes', function () {
     $event = Event::factory()->create(['type' => EventTypeEnum::MEETING, 'name' => 'Reunião da pastoral']);
-    $mass  = Event::factory()->create(['type' => EventTypeEnum::MASS, 'name' => 'Celebração dominical']);
+    $mass  = Mass::factory()->create(['motivation' => 'Celebração dominical']);
     $this->actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]));
 
-    $this->get(route('events.index'))->assertSee($event->name)->assertDontSeeText($mass->name);
-    $this->get(route('masses.index'))->assertSee($mass->name)->assertDontSeeText($event->name);
+    $this->get(route('events.index'))->assertSee($event->name)->assertDontSeeText($mass->motivation);
+    $this->get(route('masses.index'))->assertSee($mass->motivation)->assertDontSeeText($event->name);
 });
 
 it('applies member visibility before status and manually supplied review filters', function () {
@@ -58,12 +59,11 @@ it('shows only pending and rescheduled events awaiting review', function () {
 });
 
 it('shows members only confirmed masses and elevated users all masses', function (array $roles, int $count) {
-    foreach (EventStatusEnum::cases() as $status) {
-        Event::factory()->create(['group_id' => null, 'type' => EventTypeEnum::MASS, 'status' => $status]);
-    }
+    Mass::factory()->create(['motivation' => 'Missa Dominical']);
+    Mass::factory()->count(4)->create(['canceled_at' => now()]);
 
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => $roles]))->test(Masses::class)
-        ->assertViewHas('events', fn ($rows) => $rows->total() === $count);
+        ->assertViewHas('masses', fn ($rows) => $rows->total() === $count);
 })->with([[['member'], 1], [['admin'], 5], [['member', 'pascom'], 5]]);
 
 it('renders status badges according to ownership and roles', function (array $roles, bool $own, bool $badge) {
@@ -108,7 +108,7 @@ it('normalizes invalid URL filters including arrays', function (mixed $invalid) 
         ->assertSet('scope', 'all')->assertSet('group', '');
 })->with(['invalid', [['nested' => 'invalid']]]);
 
-it('filters by name type and group and normalizes mass type on the general list', function () {
+it('filters by name type and group and normalizes invalid type on the general list', function () {
     $group = Group::factory()->create();
     $match = Event::factory()->for($group)->create(['name' => 'Encontro litúrgico', 'type' => EventTypeEnum::MEETING]);
     Event::factory()->for($group)->create(['name' => 'Encontro musical', 'type' => EventTypeEnum::REHEARSAL]);
@@ -165,10 +165,10 @@ it('rechecks group membership on subsequent requests', function () {
 });
 
 it('filters masses by motivation without exposing pending masses to members', function (array $roles, int $count) {
-    Event::factory()->create(['name' => 'Missa com Novena', 'type' => EventTypeEnum::MASS, 'group_id' => null, 'status' => EventStatusEnum::PENDING]);
-    Event::factory()->create(['type' => EventTypeEnum::MASS, 'group_id' => null, 'status' => EventStatusEnum::CONFIRMED]);
+    Mass::factory()->create(['motivation' => 'Missa com Novena', 'canceled_at' => now()]);
+    Mass::factory()->create(['motivation' => 'Missa Dominical']);
 
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => $roles]))
         ->withQueryParams(['motivation' => 'Missa com Novena'])->test(Masses::class)
-        ->assertViewHas('events', fn ($rows) => $rows->total() === $count);
+        ->assertViewHas('masses', fn ($rows) => $rows->total() === $count);
 })->with([[['member'], 0], [['admin'], 1]]);

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             CommunitySeeder::class,
             UserSeeder::class,
             PlaceSeeder::class,
+            MassSeeder::class,
             GroupSeeder::class,
             EventSeeder::class,
             EventDetailSeeder::class,

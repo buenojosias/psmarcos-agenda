@@ -22,13 +22,13 @@
 
         @interact('column_event', $row)
             <div>
-                <div class="font-medium">{{ $row->event->name }}</div>
-                <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->event->type->label() }}</div>
+                <div class="font-medium">{{ $row->event?->name ?? ($row->mass?->motivation ?? 'Missa') }}</div>
+                <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->event?->type->label() ?? 'Missa' }}</div>
             </div>
         @endinteract
 
         @interact('column_group', $row)
-            {{ $row->event->group?->name ?? 'Paróquia' }}
+            {{ $row->event?->group?->name ?? 'Paróquia' }}
         @endinteract
     </x-table>
 </div>

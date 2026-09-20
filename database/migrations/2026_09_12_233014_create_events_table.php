@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -10,7 +12,7 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete(); // Apenas as missas terão group_id nulo
+            $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name'); // Nome de identificação do evento
             $table->string('type', 20); // Tipo do evento, vindo do enum
             $table->ulid('recurrence_code')->nullable()->index(); // Identificador para eventos recorrentes, a fim de editar ou cancelar em massa (ex: Encontros semanais)

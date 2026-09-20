@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Places;
 
-use App\Enums\EventStatusEnum;
 use App\Models\Place;
-use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use App\Enums\EventStatusEnum;
+use Illuminate\Contracts\View\View;
 
 class Reservations extends Component
 {
@@ -22,12 +22,16 @@ class Reservations extends Component
     {
         return view('livewire.places.reservations', [
             'reservations' => $this->place->reservations()
-                ->with(['event.group'])
+                ->with(['event.group', 'mass'])
                 ->where('reserved_to', '>=', now())
-                ->whereHas('event', fn ($query) => $query->whereNotIn('status', [
-                    EventStatusEnum::CANCELED->value,
-                    EventStatusEnum::REJECTED->value,
-                ]))
+                ->where(function ($query): void {
+                    $query
+                        ->whereHas('event', fn ($query) => $query->whereNotIn('status', [
+                            EventStatusEnum::CANCELED->value,
+                            EventStatusEnum::REJECTED->value,
+                        ]))
+                        ->orWhereHas('mass', fn ($query) => $query->whereNull('canceled_at'));
+                })
                 ->orderBy('reserved_from')
                 ->get(),
         ]);
