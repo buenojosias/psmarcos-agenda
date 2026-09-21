@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name'); // Nome de identificação do evento
             $table->string('type', 20); // Tipo do evento, vindo do enum
             $table->ulid('recurrence_code')->nullable()->index(); // Identificador para eventos recorrentes, a fim de editar ou cancelar em massa (ex: Encontros semanais)

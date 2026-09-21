@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Models\Place;
 use App\Models\PlaceReservation;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -19,6 +20,7 @@ class EventSeeder extends Seeder
     {
         $groups = Group::query()->get();
         $places = Place::query()->get();
+        $users = User::query()->get();
 
         if ($groups->isEmpty() || $places->isEmpty()) {
             return;
@@ -43,6 +45,7 @@ class EventSeeder extends Seeder
 
                 $event = Event::factory()->create([
                     'group_id' => $group->id,
+                    'created_by_user_id' => $users->random()->id,
                     'name' => $series === 1
                         ? 'Encontro mensal - '.$group->name
                         : 'Reunião mensal - '.$group->name,
@@ -95,6 +98,7 @@ class EventSeeder extends Seeder
 
             $event = Event::factory()->create([
                 'group_id' => $groups->random()->id,
+                'created_by_user_id' => $users->random()->id,
                 'name' => $name,
                 'type' => $uniqueTypes[$index],
                 'recurrence_code' => null,

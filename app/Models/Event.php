@@ -20,6 +20,7 @@ class Event extends Model
 
     protected $fillable = [
         'group_id',
+        'created_by_user_id',
         'name',
         'type',
         'recurrence_code',
@@ -46,6 +47,11 @@ class Event extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     /**

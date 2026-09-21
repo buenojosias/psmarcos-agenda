@@ -90,6 +90,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Group::class)->withPivot('is_coordinator');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class, 'created_by_user_id');
+    }
+
     public function eventNotes(): HasMany
     {
         return $this->hasMany(EventNote::class);
