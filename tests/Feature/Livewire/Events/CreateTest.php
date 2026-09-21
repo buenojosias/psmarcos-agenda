@@ -158,9 +158,10 @@ it('shows optional details for advertisable events without requiring a descripti
         ->set('registration_required', true)
         ->assertSee('Link de inscrição')
         ->assertSee('Prazo de inscrição')
-        ->set([...occasionalEventData($group), 'advertisable' => true, 'description' => '<p><br></p>'])
+        ->set([...occasionalEventData($group), 'advertisable' => true, 'description' => ''])
         ->call('validateDraft')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('ts-ui:dialog');
 
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
@@ -270,6 +271,21 @@ it('requires at least one place before validating availability', function () {
     $this->assertDatabaseCount('place_reservations', 0);
 });
 
+it('requires a community before validating availability', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    Livewire::actingAs($user)->test(Occasional::class)
+        ->set(occasionalEventData($group))
+        ->set('community_id', '')
+        ->call('validateDraft')
+        ->assertHasErrors(['community_id'])
+        ->assertSet('draftValidated', false);
+
+    $this->assertDatabaseCount('events', 0);
+    $this->assertDatabaseCount('place_reservations', 0);
+});
+
 it('persists a validated occasional event and redirects to its page', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
@@ -279,8 +295,12 @@ it('persists a validated occasional event and redirects to its page', function (
         ->call('validateDraft')
         ->assertHasNoErrors()
         ->assertSet('draftValidated', true)
-        ->assertSee('Salvar evento')
-        ->call('save');
+        ->assertDispatched('ts-ui:dialog')
+        ->assertDontSee('Dados validados. O evento ainda não foi cadastrado.');
+
+    $this->assertDatabaseCount('events', 0);
+
+    $component->call('save');
 
     $event = Event::query()->sole();
 
@@ -289,8 +309,17 @@ it('persists a validated occasional event and redirects to its page', function (
         'type'        => 'success',
         'title'       => 'Evento cadastrado',
         'description' => 'O evento foi cadastrado com sucesso.',
-    ])->and($event->status)->toBe(EventStatusEnum::PENDING)
-        ->and($event->detail)->not->toBeNull()
+    ])->and($component->get('group_id'))->toBe('')
+        ->and($component->get('name'))->toBe('')
+        ->and($component->get('type'))->toBe('')
+        ->and($component->get('starts_at'))->toBe('')
+        ->and($component->get('ends_at'))->toBe('')
+        ->and($component->get('community_id'))->toBe('')
+        ->and($component->get('place_ids'))->toBe([])
+        ->and($component->get('place_hours'))->toBe([])
+        ->and($component->get('draftValidated'))->toBeFalse()
+        ->and($event->status)->toBe(EventStatusEnum::PENDING)
+        ->and($event->detail)->toBeNull()
         ->and($event->reservations)->toHaveCount(1)
         ->and($event->reservations->sole()->is_primary)->toBeTrue()
         ->and($event->logs->sole()->action)->toBe(EventLogActionEnum::CREATED);

@@ -50,7 +50,7 @@
 
     <x-card header="Ambientes" shadowless bordered>
         <div class="grid gap-4 md:grid-cols-2">
-            <x-select.native wire:model.live="community_id" label="Comunidade">
+            <x-select.native wire:model.live="community_id" label="Comunidade *" required>
                 <option value="">Selecione uma comunidade</option>
                 @foreach ($communities as $community)
                     <option wire:key="event-community-{{ $community['value'] }}" value="{{ $community['value'] }}">{{ $community['label'] }}</option>
@@ -73,11 +73,7 @@
     </x-card>
 
     <div class="flex justify-end">
-        @if ($draftValidated)
-            <x-button text="Salvar evento" wire:click="save" loading="save" />
-        @else
-            <x-button submit text="Salvar" loading="validateDraft" />
-        @endif
+        <x-button submit text="Salvar" loading="validateDraft" />
     </div>
 
     <x-slide title="Conflitos de ambientes" size="lg" wire="conflictsSlide" persistent>

@@ -14,6 +14,7 @@ use App\Enums\EventStatusEnum;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class CreateEventAction
 {
@@ -44,7 +45,21 @@ class CreateEventAction
                 Gate::forUser($user)->authorize('confirmImmediately', Event::class);
             }
 
-            $places     = Place::query()->whereKey($data['place_ids'])->get();
+            $placeIds = collect($data['place_ids'])
+                ->map(fn (mixed $placeId): int => (int) $placeId)
+                ->unique()
+                ->values();
+            $places = Place::query()->whereKey($placeIds)->get();
+
+            if (
+                $places->count() !== $placeIds->count()
+                || $places->contains(fn (Place $place): bool => (int) $place->community_id !== (int) $data['community_id'])
+            ) {
+                throw ValidationException::withMessages([
+                    'place_ids' => 'Todos os ambientes devem pertencer à comunidade selecionada.',
+                ]);
+            }
+
             $placeHours = $places->mapWithKeys(function (Place $place) use ($data): array {
                 $hours = $data['place_hours'][$place->id];
 
@@ -78,7 +93,7 @@ class CreateEventAction
                 'advertisable'    => $data['advertisable'],
             ]);
 
-            $event->detail()->create([
+            $detailData = [
                 'subtitle'                   => filled($data['subtitle']) ? $data['subtitle'] : null,
                 'description'                => filled($data['description']) ? $data['description'] : null,
                 'target_audience'            => filled($data['target_audience']) ? $data['target_audience'] : null,
@@ -89,7 +104,26 @@ class CreateEventAction
                 'participation_cost'         => filled($data['participation_cost']) ? $data['participation_cost'] : null,
                 'contact_name'               => filled($data['contact_name']) ? $data['contact_name'] : null,
                 'contact_phone'              => filled($data['contact_phone']) ? $data['contact_phone'] : null,
-            ]);
+            ];
+            $hasDetails = collect($detailData)->contains(function (mixed $value, string $field): bool {
+                if ($field === 'registration_required') {
+                    return $value === true;
+                }
+
+                if (! is_string($value)) {
+                    return filled($value);
+                }
+
+                $content = $field === 'description'
+                    ? strip_tags(html_entity_decode($value, ENT_QUOTES | ENT_HTML5))
+                    : $value;
+
+                return preg_replace('/[\s\x{00A0}]+/u', '', $content) !== '';
+            });
+
+            if ($hasDetails) {
+                $event->detail()->create($detailData);
+            }
 
             $startsAt = CarbonImmutable::parse($data['starts_at']);
             $endsAt   = CarbonImmutable::parse($data['ends_at']);

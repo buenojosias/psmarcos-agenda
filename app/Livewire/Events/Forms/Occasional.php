@@ -121,10 +121,8 @@ class Occasional extends Component
         $this->draftValidated = false;
     }
 
-    public function validateDraft(
-        CheckPlaceAvailabilityAction $checkPlaceAvailability,
-        CreateEventAction $createEvent,
-    ): void {
+    public function validateDraft(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
+    {
         Gate::authorize('create', Event::class);
         $this->draftValidated = false;
         $this->conflictsSlide = false;
@@ -163,7 +161,11 @@ class Occasional extends Component
         }
 
         $this->draftValidated = true;
-        $this->save($createEvent);
+        $this->dialog()
+            ->success('Dados válidos', 'Os dados estão válidos e não há conflito de ambientes.')
+            ->confirm('Salvar evento', 'save')
+            ->cancel('Alterar informações')
+            ->send();
     }
 
     public function adjustConflicts(): void
@@ -230,6 +232,8 @@ class Occasional extends Component
             return;
         }
 
+        $this->reset();
+
         $this->toast()
             ->success('Evento cadastrado', 'O evento foi cadastrado com sucesso.')
             ->flash()
@@ -280,7 +284,7 @@ class Occasional extends Component
             'participation_cost'         => ['nullable', 'string', 'max:255'],
             'contact_name'               => ['nullable', 'string', 'max:255'],
             'contact_phone'              => ['nullable', 'string', 'max:20'],
-            'community_id'               => ['nullable', 'integer', Rule::exists('communities', 'id')],
+            'community_id'               => ['required', 'integer', Rule::exists('communities', 'id')],
             'place_ids'                  => ['required', 'array', 'min:1'],
             'place_ids.*'                => ['integer', Rule::exists('places', 'id')->where('community_id', $this->community_id)],
             'place_hours'                => ['array'],

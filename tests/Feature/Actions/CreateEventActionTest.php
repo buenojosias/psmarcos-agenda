@@ -13,6 +13,7 @@ use App\Models\PlaceReservation;
 use App\Enums\EventLogActionEnum;
 use App\Actions\CreateEventAction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
@@ -113,6 +114,32 @@ it('creates a pending internal occasional event with details reservations and lo
         ->and($log->operation_code)->not->toBeNull();
 });
 
+it('does not create event details when every detail field is effectively empty', function () {
+    ['data' => $data] = eventCreationData();
+    $user             = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $data             = [
+        ...$data,
+        'subtitle'                   => '',
+        'description'                => '<p><br></p><p>&nbsp;</p>',
+        'target_audience'            => '',
+        'participation_instructions' => '',
+        'registration_required'      => false,
+        'registration_url'           => '',
+        'registration_deadline'      => '',
+        'participation_cost'         => '',
+        'contact_name'               => '',
+        'contact_phone'              => '',
+    ];
+
+    $result = app(CreateEventAction::class)->handle($data, $user);
+
+    expect($result['created'])->toBeTrue()
+        ->and($result['event'])->toBeInstanceOf(Event::class)
+        ->and($result['event']->detail()->exists())->toBeFalse();
+    $this->assertDatabaseCount('events', 1);
+    $this->assertDatabaseCount('event_details', 0);
+});
+
 it('creates a confirmed event and approval log for an authorized user', function () {
     ['data' => $data] = eventCreationData(confirmImmediately: true);
     $user             = User::factory()->create(['roles' => ['cpp'], 'is_active' => true]);
@@ -150,6 +177,25 @@ it('rechecks group authorization before persisting', function () {
 
     expect(fn () => app(CreateEventAction::class)->handle($data, $user))
         ->toThrow(AuthorizationException::class);
+
+    $this->assertDatabaseCount('events', 0);
+    $this->assertDatabaseCount('event_details', 0);
+    $this->assertDatabaseCount('place_reservations', 0);
+    $this->assertDatabaseCount('event_logs', 0);
+});
+
+it('rejects places from a different community without persistence', function () {
+    ['data' => $data] = eventCreationData();
+    $user             = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $otherCommunity   = Community::create([
+        'name'         => fake()->unique()->company(),
+        'alias'        => fake()->unique()->slug(),
+        'abbreviation' => mb_strtoupper(fake()->unique()->lexify('???')),
+    ]);
+    $data['community_id'] = $otherCommunity->id;
+
+    expect(fn () => app(CreateEventAction::class)->handle($data, $user))
+        ->toThrow(ValidationException::class);
 
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
