@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Events\Forms;
 
+use App\Models\User;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\Place;
@@ -133,10 +134,9 @@ class Occasional extends Component
 
         return view('livewire.events.forms.occasional', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
-            'groups'                => Group::query()
-                ->when($user->isMemberOnly(), fn ($query) => $query->whereIn('id', $user->groups()->select('groups.id')))
-                ->orderBy('name')->get(['id', 'name']),
-            'communities' => Community::query()->orderBy('name')->get(['id', 'name'])
+            'groups'                => $this->groups($user),
+            'isMemberOnly'          => $user->isMemberOnly(),
+            'communities'           => Community::query()->orderBy('id')->get(['id', 'name'])
                 ->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id]),
             'places'         => $this->places(),
             'selectedPlaces' => $this->selectedPlaces(),
@@ -201,12 +201,51 @@ class Occasional extends Component
             ->map(fn (Place $place): array => [
                 'label' => $place->main === null ? $place->name : $place->main->name.': '.$place->name,
                 'value' => $place->id,
-            ]);
+            ])
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
     }
 
     /** @return Collection<int, Place> */
     private function selectedPlaces(): Collection
     {
         return Place::query()->with('main:id,name')->whereKey($this->place_ids)->orderBy('name')->orderBy('id')->get();
+    }
+
+    /** @return SupportCollection<int, array{label: string, value: list<array{label: string, value: int}>}> */
+    private function groups(User $user): SupportCollection
+    {
+        $groups = Group::query()
+            ->with('community:id,name')
+            ->when($user->isMemberOnly(), fn ($query) => $query->whereIn('id', $user->groups()->select('groups.id')))
+            ->orderBy('name')
+            ->get(['id', 'community_id', 'name']);
+
+        $ungrouped = $groups->whereNull('community_id');
+        $grouped   = $groups->whereNotNull('community_id')
+            ->groupBy(fn (Group $group): string => $group->community->name)
+            ->sortKeys()
+            ->map(fn (SupportCollection $groups, string $community): array => [
+                'label' => $community,
+                'value' => $this->groupOptions($groups),
+            ]);
+
+        if ($ungrouped->isNotEmpty()) {
+            $grouped->prepend([
+                'label' => 'Sem comunidade',
+                'value' => $this->groupOptions($ungrouped),
+            ]);
+        }
+
+        return $grouped->values();
+    }
+
+    /** @return list<array{label: string, value: int}> */
+    private function groupOptions(SupportCollection $groups): array
+    {
+        return $groups->map(fn (Group $group): array => [
+            'label' => $group->name,
+            'value' => $group->id,
+        ])->values()->all();
     }
 }

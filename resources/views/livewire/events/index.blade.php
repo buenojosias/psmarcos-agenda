@@ -1,5 +1,10 @@
 <div class="space-y-6" x-data="{ filtersOpen: false }">
-    <div class="header"><h1>Eventos</h1></div>
+    <div class="header">
+        <h1>Eventos</h1>
+        <div class="mb-4 md:mb-0 mt-2">
+            <x-button text="Adicionar evento" href="{{ route('events.create') }}" />
+        </div>
+    </div>
 
     <div class="md:hidden">
         <x-button text="Filtros" icon="funnel" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"

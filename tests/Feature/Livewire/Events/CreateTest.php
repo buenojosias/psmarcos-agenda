@@ -64,15 +64,13 @@ it('allows all active users to create events and limits immediate confirmation b
     ['admin', true],
 ]);
 
-it('shows only a member exclusive user groups and enforces that restriction on validation', function () {
+it('allows a member exclusive user to select only their groups', function () {
     $user      = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
     $allowed   = Group::factory()->create(['name' => 'Grupo vinculado']);
     $unrelated = Group::factory()->create(['name' => 'Grupo não vinculado']);
     $user->groups()->attach($allowed);
 
     Livewire::actingAs($user)->test(Occasional::class)
-        ->assertSee('Grupo vinculado')
-        ->assertDontSee('Grupo não vinculado')
         ->set(occasionalEventData($unrelated))
         ->call('validateDraft')
         ->assertForbidden();
@@ -83,12 +81,37 @@ it('shows only a member exclusive user groups and enforces that restriction on v
         ->assertHasNoErrors();
 });
 
+it('groups event organizers by community with ungrouped options first', function () {
+    $user           = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+    $community      = eventCommunity();
+    $ungrouped      = Group::factory()->create(['community_id' => null, 'name' => 'Grupo sem comunidade']);
+    $communityGroup = Group::factory()->create(['community_id' => $community->id, 'name' => 'Grupo da comunidade']);
+    $user->groups()->attach([$ungrouped->id, $communityGroup->id]);
+
+    $component = Livewire::actingAs($user)->test(Occasional::class);
+
+    expect($component->viewData('groups')->all())->toBe([
+        [
+            'label' => 'Sem comunidade',
+            'value' => [['label' => 'Grupo sem comunidade', 'value' => $ungrouped->id]],
+        ],
+        [
+            'label' => $community->name,
+            'value' => [['label' => 'Grupo da comunidade', 'value' => $communityGroup->id]],
+        ],
+    ]);
+    expect($component->viewData('isMemberOnly'))->toBeTrue();
+});
+
 it('allows a user with another role to select any group', function () {
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
     $group = Group::factory()->create(['name' => 'Grupo disponível']);
 
-    Livewire::actingAs($user)->test(Occasional::class)
-        ->assertSee('Grupo disponível')
+    $component = Livewire::actingAs($user)->test(Occasional::class);
+
+    expect($component->viewData('isMemberOnly'))->toBeFalse();
+
+    $component
         ->set(occasionalEventData($group))
         ->call('validateDraft')
         ->assertHasNoErrors();
@@ -105,15 +128,21 @@ it('does not expose immediate confirmation to unauthorized users and protects it
         ->assertForbidden();
 });
 
-it('shows details for advertisable events without requiring a description or persisting it', function () {
+it('shows optional details for advertisable events without requiring a description or persisting it', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
 
     Livewire::actingAs($user)->test(Occasional::class)
-        ->assertDontSee('Detalhes')
+        ->assertDontSee('Detalhes do evento')
         ->set('advertisable', true)
-        ->assertSee('Detalhes')
+        ->assertSee('Detalhes do evento')
+        ->assertSee('Não é obrigatório preencher estes campos neste momento')
         ->assertSee('Informe uma descrição para a divulgação do evento.')
+        ->assertDontSee('Link de inscrição')
+        ->assertDontSee('Prazo de inscrição')
+        ->set('registration_required', true)
+        ->assertSee('Link de inscrição')
+        ->assertSee('Prazo de inscrição')
         ->set([...occasionalEventData($group), 'advertisable' => true, 'description' => '<p><br></p>'])
         ->call('validateDraft')
         ->assertHasNoErrors();
@@ -121,6 +150,52 @@ it('shows details for advertisable events without requiring a description or per
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
     $this->assertDatabaseCount('place_reservations', 0);
+});
+
+it('orders communities by their ID in the environment selector', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $first = Community::create([
+        'name'         => 'Comunidade Zeta',
+        'alias'        => 'comunidade-zeta',
+        'abbreviation' => 'ZET',
+    ]);
+    $second = Community::create([
+        'name'         => 'Comunidade Alfa',
+        'alias'        => 'comunidade-alfa',
+        'abbreviation' => 'ALF',
+    ]);
+
+    $component = Livewire::actingAs($user)->test(Occasional::class);
+
+    expect($component->viewData('communities')->all())->toBe([
+        ['label' => $first->name, 'value' => $first->id],
+        ['label' => $second->name, 'value' => $second->id],
+    ]);
+});
+
+it('orders spaces by their displayed names with rooms after their main space', function () {
+    $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $community = eventCommunity();
+    $zebra     = $community->places()->create(['name' => 'Zebra']);
+    $alpha     = $community->places()->create(['name' => 'Alfa']);
+    $center    = $community->places()->create(['name' => 'Centro Catequético']);
+    $nave      = $community->places()->create(['name' => 'Nave']);
+    $roomTen   = $community->places()->create(['name' => 'Sala 10', 'main_place_id' => $center->id]);
+    $roomTwo   = $community->places()->create(['name' => 'Sala 2', 'main_place_id' => $center->id]);
+    $roomOne   = $community->places()->create(['name' => 'Sala 1', 'main_place_id' => $center->id]);
+
+    $component = Livewire::actingAs($user)->test(Occasional::class)
+        ->set('community_id', $community->id);
+
+    expect($component->viewData('places')->all())->toBe([
+        ['label' => $alpha->name, 'value' => $alpha->id],
+        ['label' => 'Centro Catequético', 'value' => $center->id],
+        ['label' => 'Centro Catequético: Sala 1', 'value' => $roomOne->id],
+        ['label' => 'Centro Catequético: Sala 2', 'value' => $roomTwo->id],
+        ['label' => 'Centro Catequético: Sala 10', 'value' => $roomTen->id],
+        ['label' => 'Nave', 'value' => $nave->id],
+        ['label' => $zebra->name, 'value' => $zebra->id],
+    ]);
 });
 
 it('maintains a buffer configuration for each selected place without creating reservations', function () {
