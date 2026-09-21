@@ -11,8 +11,10 @@ use App\Models\Place;
 use Livewire\Component;
 use App\Models\Community;
 use App\Enums\EventTypeEnum;
+use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
+use App\Actions\CreateEventAction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +23,8 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class Occasional extends Component
 {
+    use Alert;
+
     public mixed $group_id = '';
 
     public string $name = '';
@@ -117,8 +121,10 @@ class Occasional extends Component
         $this->draftValidated = false;
     }
 
-    public function validateDraft(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
-    {
+    public function validateDraft(
+        CheckPlaceAvailabilityAction $checkPlaceAvailability,
+        CreateEventAction $createEvent,
+    ): void {
         Gate::authorize('create', Event::class);
         $this->draftValidated = false;
         $this->conflictsSlide = false;
@@ -157,6 +163,7 @@ class Occasional extends Component
         }
 
         $this->draftValidated = true;
+        $this->save($createEvent);
     }
 
     public function adjustConflicts(): void
@@ -203,6 +210,34 @@ class Occasional extends Component
         $this->resetErrorBag('place_ids');
     }
 
+    public function save(CreateEventAction $createEvent): void
+    {
+        if (! $this->draftValidated) {
+            return;
+        }
+
+        $user = user();
+        abort_if($user === null, 401);
+
+        $validated = $this->validate($this->rules(), $this->messages());
+        $result    = $createEvent->handle($validated, $user);
+
+        if (! $result['created']) {
+            $this->placeConflicts = $result['conflicts'];
+            $this->conflictsSlide = true;
+            $this->draftValidated = false;
+
+            return;
+        }
+
+        $this->toast()
+            ->success('Evento cadastrado', 'O evento foi cadastrado com sucesso.')
+            ->flash()
+            ->send();
+
+        $this->redirectRoute('events.show', ['event' => $result['event']]);
+    }
+
     public function render(): View
     {
         Gate::authorize('create', Event::class);
@@ -246,7 +281,7 @@ class Occasional extends Component
             'contact_name'               => ['nullable', 'string', 'max:255'],
             'contact_phone'              => ['nullable', 'string', 'max:20'],
             'community_id'               => ['nullable', 'integer', Rule::exists('communities', 'id')],
-            'place_ids'                  => ['array'],
+            'place_ids'                  => ['required', 'array', 'min:1'],
             'place_ids.*'                => ['integer', Rule::exists('places', 'id')->where('community_id', $this->community_id)],
             'place_hours'                => ['array'],
             'place_hours.*.before'       => ['required', 'numeric', 'min:0', 'multiple_of:0.25'],

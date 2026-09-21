@@ -8,11 +8,17 @@ use App\Models\Group;
 use Livewire\Livewire;
 use App\Models\Community;
 use App\Enums\EventTypeEnum;
+use App\Enums\EventStatusEnum;
+use App\Models\PlaceReservation;
+use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
 use App\Livewire\Events\Forms\Occasional;
 
 function occasionalEventData(Group $group): array
 {
+    $community = eventCommunity();
+    $place     = $community->places()->create(['name' => fake()->unique()->word()]);
+
     return [
         'group_id'            => $group->id,
         'name'                => 'Encontro de formação',
@@ -22,6 +28,11 @@ function occasionalEventData(Group $group): array
         'is_public'           => true,
         'advertisable'        => false,
         'confirm_immediately' => false,
+        'community_id'        => $community->id,
+        'place_ids'           => [$place->id],
+        'place_hours'         => [
+            $place->id => ['before' => 0, 'after' => 0],
+        ],
     ];
 }
 
@@ -241,6 +252,81 @@ it('validates the event interval and individual place buffers without persistenc
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
     $this->assertDatabaseCount('place_reservations', 0);
+});
+
+it('requires at least one place before validating availability', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    Livewire::actingAs($user)->test(Occasional::class)
+        ->set(occasionalEventData($group))
+        ->set('place_ids', [])
+        ->call('validateDraft')
+        ->assertHasErrors(['place_ids'])
+        ->assertSet('draftValidated', false)
+        ->assertSet('placeConflicts', []);
+
+    $this->assertDatabaseCount('events', 0);
+    $this->assertDatabaseCount('place_reservations', 0);
+});
+
+it('persists a validated occasional event and redirects to its page', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    $component = Livewire::actingAs($user)->test(Occasional::class)
+        ->set(occasionalEventData($group))
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('draftValidated', true)
+        ->assertSee('Salvar evento')
+        ->call('save');
+
+    $event = Event::query()->sole();
+
+    $component->assertRedirect(route('events.show', $event));
+    expect(session('ts-ui:toast'))->toMatchArray([
+        'type'        => 'success',
+        'title'       => 'Evento cadastrado',
+        'description' => 'O evento foi cadastrado com sucesso.',
+    ])->and($event->status)->toBe(EventStatusEnum::PENDING)
+        ->and($event->detail)->not->toBeNull()
+        ->and($event->reservations)->toHaveCount(1)
+        ->and($event->reservations->sole()->is_primary)->toBeTrue()
+        ->and($event->logs->sole()->action)->toBe(EventLogActionEnum::CREATED);
+});
+
+it('reopens the conflict slide without persisting when final availability changes', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = occasionalEventData($group);
+
+    $component = Livewire::actingAs($user)->test(Occasional::class)
+        ->set($data)
+        ->call('validateDraft')
+        ->assertSet('draftValidated', true);
+
+    $existingEvent = Event::factory()->create([
+        'starts_at' => '2026-10-10 09:00:00',
+        'ends_at'   => '2026-10-10 11:00:00',
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $existingEvent->id,
+        'place_id'      => $data['place_ids'][0],
+        'reserved_from' => '2026-10-10 09:00:00',
+        'reserved_to'   => '2026-10-10 11:00:00',
+        'is_primary'    => true,
+    ]);
+    $eventCount = Event::count();
+
+    $component->call('save')
+        ->assertSet('conflictsSlide', true)
+        ->assertSet('draftValidated', false);
+
+    expect($component->get('placeConflicts'))->toHaveCount(1)
+        ->and(Event::count())->toBe($eventCount);
+    $this->assertDatabaseCount('event_details', 0);
+    $this->assertDatabaseCount('event_logs', 0);
 });
 
 it('filters places by community and clears the selection when the community changes', function () {

@@ -72,12 +72,12 @@
         </div>
     </x-card>
 
-    @if ($draftValidated)
-        <p class="text-sm text-green-700 dark:text-green-300" role="status">Dados validados. O evento ainda não foi cadastrado.</p>
-    @endif
-
     <div class="flex justify-end">
-        <x-button submit text="Validar dados" loading="validateDraft" />
+        @if ($draftValidated)
+            <x-button text="Salvar evento" wire:click="save" loading="save" />
+        @else
+            <x-button submit text="Salvar" loading="validateDraft" />
+        @endif
     </div>
 
     <x-slide title="Conflitos de ambientes" size="lg" wire="conflictsSlide" persistent>
