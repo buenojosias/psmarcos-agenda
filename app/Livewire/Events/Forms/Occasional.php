@@ -12,9 +12,11 @@ use Livewire\Component;
 use App\Models\Community;
 use App\Enums\EventTypeEnum;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Collection;
+use App\Actions\CheckPlaceAvailabilityAction;
 use Illuminate\Support\Collection as SupportCollection;
 
 class Occasional extends Component
@@ -65,6 +67,12 @@ class Occasional extends Component
 
     public bool $draftValidated = false;
 
+    /** @var list<array<string, mixed>> */
+    #[Locked]
+    public array $placeConflicts = [];
+
+    public bool $conflictsSlide = false;
+
     public function mount(): void
     {
         Gate::authorize('create', Event::class);
@@ -109,21 +117,90 @@ class Occasional extends Component
         $this->draftValidated = false;
     }
 
-    public function validateDraft(): void
+    public function validateDraft(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
     {
         Gate::authorize('create', Event::class);
         $this->draftValidated = false;
+        $this->conflictsSlide = false;
+        $this->placeConflicts = [];
 
         $validated = $this->validate($this->rules(), $this->messages());
         $group     = Group::query()->find($validated['group_id']);
 
-        Gate::authorize('selectGroup', $group);
+        Gate::authorize('selectGroup', [Event::class, $group]);
 
         if ($validated['confirm_immediately']) {
             Gate::authorize('confirmImmediately', Event::class);
         }
 
+        $selectedPlaces = Place::query()->whereKey($validated['place_ids'])->get();
+        $placeHours     = $selectedPlaces->mapWithKeys(function (Place $place) use ($validated): array {
+            $hours = $validated['place_hours'][$place->id] ?? ['before' => 0, 'after' => 0];
+
+            return [$place->id => [
+                'before_hours' => $hours['before'],
+                'after_hours'  => $hours['after'],
+            ]];
+        })->all();
+
+        $this->placeConflicts = $checkPlaceAvailability->handle(
+            $validated['starts_at'],
+            $validated['ends_at'],
+            $selectedPlaces,
+            $placeHours,
+        );
+
+        if ($this->placeConflicts !== []) {
+            $this->conflictsSlide = true;
+
+            return;
+        }
+
         $this->draftValidated = true;
+    }
+
+    public function adjustConflicts(): void
+    {
+        $this->conflictsSlide = false;
+        $this->placeConflicts = [];
+        $this->draftValidated = false;
+        $this->resetErrorBag('place_ids');
+    }
+
+    public function continueWithoutConflictingPlaces(): void
+    {
+        Gate::authorize('create', Event::class);
+
+        if ($this->placeConflicts === []) {
+            $this->draftValidated = false;
+            $this->addError('place_ids', 'Valide novamente os ambientes e horários antes de continuar.');
+
+            return;
+        }
+
+        $conflictingPlaceIds = collect($this->placeConflicts)
+            ->pluck('requested_place.id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+        $remainingPlaceIds = collect($this->place_ids)
+            ->reject(fn (int $id): bool => in_array($id, $conflictingPlaceIds, true))
+            ->values()
+            ->all();
+
+        if ($remainingPlaceIds === []) {
+            $this->addError('place_ids', 'Todos os ambientes selecionados possuem conflito. Volte e ajuste os ambientes ou horários.');
+
+            return;
+        }
+
+        $this->place_ids   = $remainingPlaceIds;
+        $this->place_hours = collect($remainingPlaceIds)->mapWithKeys(fn (int $id): array => [
+            $id => $this->place_hours[$id] ?? ['before' => 0, 'after' => 0],
+        ])->all();
+        $this->placeConflicts = [];
+        $this->conflictsSlide = false;
+        $this->draftValidated = true;
+        $this->resetErrorBag('place_ids');
     }
 
     public function render(): View
@@ -172,8 +249,8 @@ class Occasional extends Component
             'place_ids'                  => ['array'],
             'place_ids.*'                => ['integer', Rule::exists('places', 'id')->where('community_id', $this->community_id)],
             'place_hours'                => ['array'],
-            'place_hours.*.before'       => ['required', 'numeric', 'min:0'],
-            'place_hours.*.after'        => ['required', 'numeric', 'min:0'],
+            'place_hours.*.before'       => ['required', 'numeric', 'min:0', 'multiple_of:0.25'],
+            'place_hours.*.after'        => ['required', 'numeric', 'min:0', 'multiple_of:0.25'],
         ];
     }
 

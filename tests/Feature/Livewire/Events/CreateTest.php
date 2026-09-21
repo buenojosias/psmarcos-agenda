@@ -78,6 +78,7 @@ it('allows a member exclusive user to select only their groups', function () {
     Livewire::actingAs($user)->test(Occasional::class)
         ->set(occasionalEventData($allowed))
         ->call('validateDraft')
+        ->assertOk()
         ->assertHasNoErrors();
 });
 
@@ -114,18 +115,21 @@ it('allows a user with another role to select any group', function () {
     $component
         ->set(occasionalEventData($group))
         ->call('validateDraft')
+        ->assertOk()
         ->assertHasNoErrors();
 });
 
-it('does not expose immediate confirmation to unauthorized users and protects it in the backend', function () {
+it('does not expose immediate confirmation and discards it for unauthorized users', function () {
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
     $group = Group::factory()->create();
 
     Livewire::actingAs($user)->test(Occasional::class)
         ->assertDontSee('Confirmar imediatamente')
         ->set([...occasionalEventData($group), 'confirm_immediately' => true])
+        ->assertSet('confirm_immediately', false)
         ->call('validateDraft')
-        ->assertForbidden();
+        ->assertOk()
+        ->assertHasNoErrors();
 });
 
 it('shows optional details for advertisable events without requiring a description or persisting it', function () {

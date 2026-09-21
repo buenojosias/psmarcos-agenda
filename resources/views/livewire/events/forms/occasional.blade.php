@@ -79,4 +79,48 @@
     <div class="flex justify-end">
         <x-button submit text="Validar dados" loading="validateDraft" />
     </div>
+
+    <x-slide title="Conflitos de ambientes" size="lg" wire="conflictsSlide" persistent>
+        <div class="space-y-5">
+            <p class="text-sm text-gray-600 dark:text-dark-300">
+                Os ambientes abaixo já possuem reserva no período solicitado. Nenhuma informação do evento ou da missa reservada é exibida.
+            </p>
+
+            @error('place_ids')
+                <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300" role="alert">{{ $message }}</p>
+            @enderror
+
+            @foreach ($placeConflicts as $requestedConflict)
+                <section wire:key="place-conflict-{{ $requestedConflict['requested_place']['id'] }}" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ $requestedConflict['requested_place']['name'] }}</h3>
+                        <p class="text-sm text-gray-500 dark:text-dark-300">
+                            Solicitado de {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_from'])->format('d/m/Y H:i') }}
+                            a {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_to'])->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        @foreach ($requestedConflict['conflicts'] as $conflict)
+                            <div wire:key="reservation-conflict-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
+                                <p class="font-medium text-gray-800 dark:text-dark-100">Ambiente reservado: {{ $conflict['reserved_place']['name'] }}</p>
+                                <p class="text-gray-500 dark:text-dark-300">
+                                    De {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
+                                    a {{ \Carbon\CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i') }}
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endforeach
+        </div>
+
+        <x-slot:footer>
+            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <x-button text="Voltar e ajustar" color="gray" outline wire:click="adjustConflicts" />
+                <x-button text="Continuar sem os espaços conflitantes" wire:click="continueWithoutConflictingPlaces"
+                          loading="continueWithoutConflictingPlaces" />
+            </div>
+        </x-slot:footer>
+    </x-slide>
 </form>
