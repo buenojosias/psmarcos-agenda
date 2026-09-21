@@ -29,6 +29,7 @@ class Event extends Model
         'is_external',
         'is_public',
         'advertisable',
+        'reservation_hold_until',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Event extends Model
         'is_public'    => 'boolean',
         'status'       => EventStatusEnum::class,
         'advertisable' => 'boolean',
+        'reservation_hold_until' => 'datetime',
     ];
 
     public function group(): BelongsTo

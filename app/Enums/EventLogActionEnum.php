@@ -20,7 +20,7 @@ enum EventLogActionEnum: string
             self::UPDATED => 'Evento atualizado',
             self::SUBMITTED => 'Enviado para aprovação',
             self::APPROVED => 'Evento aprovado',
-            self::REJECTED => 'Evento rejeitado',
+            self::REJECTED => 'Evento recusado',
             self::CANCELED => 'Evento cancelado',
             self::RESCHEDULED => 'Evento alterado e enviado para nova aprovação',
             self::RESTORED => 'Evento restaurado',

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('is_external')->default(false); // O evento não acontecerá nas dependências da igreja, mas deve ser registrado assim mesmo (neste caso, nã haverá relacionamento com places)
             $table->boolean('is_public')->default(true); // Se o evento pode aparecer publicamente no calendário e no site
             $table->boolean('advertisable')->default(false); // Se deseja que o evento seja anunciado nos avisos e nas redes sociais pela Pascom (apenas para eventos não regulares)
+            $table->datetime('reservation_hold_until')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

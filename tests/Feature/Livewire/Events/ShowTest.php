@@ -10,6 +10,7 @@ use App\Models\Community;
 use App\Livewire\Events\Show;
 use App\Enums\EventStatusEnum;
 use App\Enums\EventLogActionEnum;
+use App\Livewire\Events\ReviewActions;
 
 it('requires authentication', function () {
     $this->get(route('events.show', Event::factory()->create()))->assertRedirect(route('login'));
@@ -58,6 +59,52 @@ it('shows review buttons to reviewers for pending and rescheduled events', funct
     Livewire::actingAs(User::factory()->create(['roles' => [$role]]))->test(Show::class, ['event' => $event])
         ->assertSee('Aprovar')->assertSee('Recusar')->assertDontSee('Editar')->assertDontSee('Remarcar');
 })->with(['cpp', 'priest', 'admin'])->with([EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED]);
+
+it('requires a reason before rejecting an event', function () {
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    $user  = User::factory()->create(['roles' => ['admin']]);
+
+    Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
+        ->call('openRejectModal')
+        ->call('reject')
+        ->assertHasErrors(['rejectionReason' => ['required']]);
+});
+
+it('associates the rejection confirmation button with its form', function () {
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    $user  = User::factory()->create(['roles' => ['admin']]);
+
+    Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
+        ->assertSee('id="reject-event-form"', false)
+        ->assertSee('form="reject-event-form"', false);
+});
+
+it('approves a reviewable event', function () {
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    $user  = User::factory()->create(['roles' => ['admin']]);
+
+    Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
+        ->call('approve')
+        ->assertDontSee('Aprovar')
+        ->assertDontSee('Recusar');
+
+    expect($event->refresh()->status)->toBe(EventStatusEnum::CONFIRMED);
+});
+
+it('rejects a reviewable event and closes the modal', function () {
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    $user  = User::factory()->create(['roles' => ['admin']]);
+
+    Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
+        ->call('openRejectModal')
+        ->set('rejectionReason', 'O horário conflita com outro evento.')
+        ->call('reject')
+        ->assertSet('showRejectModal', false)
+        ->assertSet('rejectionReason', '');
+
+    expect($event->refresh()->status)->toBe(EventStatusEnum::REJECTED)
+        ->and($event->notes()->sole()->content)->toBe('O horário conflita com outro evento.');
+});
 
 it('hides review buttons for other statuses', function (EventStatusEnum $status) {
     $group = Group::factory()->create();

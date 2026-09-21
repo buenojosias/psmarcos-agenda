@@ -12,10 +12,7 @@
                 <x-button text="Remarcar" color="yellow" disabled />
                 <x-button text="Cancelar" color="red" disabled />
             @endif
-            @if ($canReview)
-                <x-button text="Aprovar" color="green" disabled />
-                <x-button text="Recusar" color="red" disabled />
-            @endif
+            <livewire:events.review-actions :event="$event" @event-reviewed="$refresh" />
         </div>
     </div>
 

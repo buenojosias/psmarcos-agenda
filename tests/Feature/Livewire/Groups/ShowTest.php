@@ -55,7 +55,7 @@ it('counts each requested event status and includes canceled events in the total
 
     $component = Livewire::actingAs(User::factory()->create())->test(Show::class, ['group' => $group]);
 
-    $component->assertSee(['Status dos eventos', 'Aprovados', 'Rejeitados', 'Pendentes', 'Remarcados', 'Total']);
+    $component->assertSee(['Status dos eventos', 'Aprovados', 'Recusados', 'Pendentes', 'Remarcados', 'Total']);
     expect($component->get('group')->confirmed_events_count)->toBe(1)
         ->and($component->get('group')->rejected_events_count)->toBe(1)
         ->and($component->get('group')->pending_events_count)->toBe(1)
