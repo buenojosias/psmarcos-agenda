@@ -13,6 +13,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MassFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Mass $mass): void {
+            foreach (['Nave', 'Sacristia', 'Estacionamento'] as $name) {
+                $mass->community->places()->firstOrCreate(['name' => $name]);
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *

@@ -51,13 +51,14 @@ it('shows visible scheduled masses with a motivation search input', function () 
 it('shows only motivation start time and the primary reservation community without lazy loading', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $mass = Mass::factory()->create(['motivation' => 'Missa Dominical']);
+    $mass->reservations()->delete();
 
     foreach ([['Matriz', true], ['Capela secundária', false]] as [$name, $primary]) {
         $community = Community::create(['name' => $name, 'alias' => $primary ? 'matriz' : 'capela', 'abbreviation' => $primary ? 'MT' : 'CP']);
         $place     = $community->places()->create(['name' => 'Espaço reservado']);
         $mass->reservations()->create(['place_id' => $place->id, 'is_primary' => $primary, 'reserved_from' => $mass->starts_at, 'reserved_to' => $mass->ends_at]);
     }
-    Mass::factory()->create();
+    Mass::factory()->create()->reservations()->delete();
     Model::preventLazyLoading();
 
     try {
@@ -132,7 +133,11 @@ it('filters through the primary reservation community while preserving visibilit
     $confirmed      = Mass::factory()->create();
     $canceled       = Mass::factory()->create(['canceled_at' => now()]);
     $elsewhere      = Mass::factory()->create();
-    Mass::factory()->create();
+    Mass::factory()->create()->reservations()->delete();
+
+    foreach ([$confirmed, $canceled, $elsewhere] as $mass) {
+        $mass->reservations()->delete();
+    }
 
     foreach ([$confirmed, $canceled] as $mass) {
         $mass->reservations()->create(['place_id' => $place->id, 'is_primary' => true, 'reserved_from' => $mass->starts_at, 'reserved_to' => $mass->ends_at]);

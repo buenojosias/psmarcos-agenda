@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Actions\ResolveMassPlacesAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -72,8 +73,32 @@ class Mass extends Model
         return $query->where('ends_at', '>', now());
     }
 
+    /**
+     * @param  Builder<Mass>  $query
+     * @return Builder<Mass>
+     */
+    public function scopeWithReservationConflict(Builder $query): Builder
+    {
+        return $query->withExists(['reservations as has_reservation_conflict' => function (Builder $reservations): void {
+            $reservations->whereHas('place', fn (Builder $places): Builder => $places
+                ->whereIn('name', ResolveMassPlacesAction::NAMES)
+                ->whereColumn('places.community_id', 'masses.community_id'))
+                ->whereExists(function (\Illuminate\Database\Query\Builder $overlap): void {
+                    $overlap->selectRaw('1')->from('place_reservations as conflicting')
+                        ->whereColumn('conflicting.place_id', 'place_reservations.place_id')
+                        ->whereColumn('conflicting.id', '!=', 'place_reservations.id')
+                        ->whereColumn('conflicting.reserved_from', '<', 'place_reservations.reserved_to')
+                        ->whereColumn('conflicting.reserved_to', '>', 'place_reservations.reserved_from');
+                });
+        }]);
+    }
+
     protected static function booted(): void
     {
+        static::creating(function (Mass $mass): void {
+            $mass->setRelation('reservationPlaces', app(ResolveMassPlacesAction::class)->handle((int) $mass->community_id));
+        });
+
         static::created(function (Mass $mass): void {
             $mass->createDefaultReservations();
         });
@@ -81,16 +106,15 @@ class Mass extends Model
 
     private function createDefaultReservations(): void
     {
-        $this->community->massPlaces()
-            ->select('places.id')
-            ->get()
+        $this->getRelation('reservationPlaces')
             ->each(function (Place $place): void {
                 $this->reservations()->create([
                     'place_id'      => $place->id,
                     'reserved_from' => $this->starts_at->copy()->subMinutes(30),
                     'reserved_to'   => $this->ends_at->copy()->addMinutes(30),
-                    'is_primary'    => (bool) $place->pivot->is_primary,
+                    'is_primary'    => $place->name === 'Nave',
                 ]);
             });
+        $this->unsetRelation('reservationPlaces');
     }
 }

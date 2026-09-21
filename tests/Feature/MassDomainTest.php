@@ -9,8 +9,10 @@ use App\Models\MassSchedule;
 use App\Models\PlaceReservation;
 
 it('generates a concrete mass from a valid regular schedule', function () {
+    $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
-    $schedule  = MassSchedule::factory()->create([
+    $community->places()->createMany(array_map(fn (string $name): array => ['name' => $name], ['Nave', 'Sacristia', 'Estacionamento']));
+    $schedule = MassSchedule::factory()->create([
         'community_id'     => $community->id,
         'weekday'          => 0,
         'starts_at'        => '08:30:00',
@@ -45,7 +47,7 @@ it('creates default place reservations when a mass is created', function () {
         'ends_at'      => '2026-09-20 09:00:00',
     ]);
 
-    expect($mass->reservations()->count())->toBe(2)
+    expect($mass->reservations()->count())->toBe(3)
         ->and($mass->primaryReservation()->value('place_id'))->toBe($primary->id);
 
     $mass->reservations()->each(function (PlaceReservation $reservation): void {
@@ -59,6 +61,7 @@ it('requires a place reservation to belong to exactly one event or mass', functi
     $place     = $community->places()->create(['name' => 'Nave']);
     $event     = Event::factory()->create();
     $mass      = Mass::factory()->create(['community_id' => $community->id]);
+    $mass->reservations()->delete();
 
     PlaceReservation::create([
         'event_id'      => $event->id,

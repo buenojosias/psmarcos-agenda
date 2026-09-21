@@ -1,6 +1,13 @@
 <div class="space-y-6">
     <div class="header"><h1>Missas</h1></div>
 
+    @can('create', \App\Models\Mass::class)
+        <div class="flex flex-wrap gap-3">
+            <livewire:masses.create-schedule @created="$refresh" />
+            <livewire:masses.create-extraordinary @created="$refresh" />
+        </div>
+    @endcan
+
     <x-tab selected="scheduled">
         <x-tab.items tab="scheduled" title="Missas programadas">
             <div class="space-y-6">
@@ -39,7 +46,12 @@
                     @endinteract
 
                     @interact('column_starts_at', $row)
-                        {{ $row->starts_at->format('H:i') }}
+                        <div class="flex items-center gap-2">
+                            {{ $row->starts_at->format('H:i') }}
+                            @if ($row->has_reservation_conflict)
+                                <x-tooltip icon="exclamation-triangle" color="amber" text="Existe conflito de reserva de espaço neste horário." />
+                            @endif
+                        </div>
                     @endinteract
 
                     @interact('column_community', $row)
@@ -58,7 +70,7 @@
                                 <ul class="space-y-3">
                                     @foreach ($schedules as $schedule)
                                         <li wire:key="day-schedule-{{ $schedule->id }}">
-                                            <p class="font-medium">{{ substr($schedule->starts_at, 0, 5) }} — {{ $schedule->community->name }}</p>
+                                            <p class="font-medium">{{ substr($schedule->starts_at, 0, 5) }} - {{ $schedule->community->name }}</p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->motivation ?? 'Missa' }}</p>
                                         </li>
                                     @endforeach

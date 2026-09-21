@@ -66,6 +66,7 @@ class Index extends Component
         $this->community_id = $communityId === false ? 0 : $communityId;
 
         $query = Mass::query()
+            ->withReservationConflict()
             ->visibleTo(auth()->user());
 
         if (! $this->showPast) {
@@ -81,7 +82,7 @@ class Index extends Component
         $communities = Community::query()->select('id', 'name')->orderBy('name')->get();
 
         if ($this->weekday !== '') {
-            $weekdayExpression = $query->getConnection()->getDriverName() === 'sqlite'
+            $weekdayExpression = $query->getModel()->getConnection()->getDriverName() === 'sqlite'
                 ? "CAST(strftime('%w', starts_at) AS INTEGER)"
                 : '(DAYOFWEEK(starts_at) - 1)';
 
