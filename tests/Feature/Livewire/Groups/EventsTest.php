@@ -60,7 +60,7 @@ it('shows status to privileged roles and members of the organizing group', funct
         ->assertSee('Evento confirmed')
         ->assertSee('Evento canceled')
         ->assertSee('Evento rescheduled')
-        ->assertSee('Evento rejected');
+        ->assertSee('Evento refused');
 })->with([
     'CPP'                        => [['cpp'], false],
     'Admin'                      => [['admin'], false],
@@ -77,7 +77,7 @@ it('lists only confirmed events without status for users without permission', fu
     $membershipGroup->users()->attach($user, ['is_coordinator' => true]);
     Event::factory()->for($group)->create(['name' => 'Evento visível', 'status' => EventStatusEnum::CONFIRMED]);
 
-    foreach ([EventStatusEnum::PENDING, EventStatusEnum::CANCELED, EventStatusEnum::RESCHEDULED, EventStatusEnum::REJECTED] as $status) {
+    foreach ([EventStatusEnum::PENDING, EventStatusEnum::CANCELED, EventStatusEnum::RESCHEDULED, EventStatusEnum::REFUSED] as $status) {
         Event::factory()->for($group)->create(['name' => 'Evento '.$status->value, 'status' => $status]);
     }
 
@@ -88,7 +88,7 @@ it('lists only confirmed events without status for users without permission', fu
         ->assertDontSee('Evento pending')
         ->assertDontSee('Evento canceled')
         ->assertDontSee('Evento rescheduled')
-        ->assertDontSee('Evento rejected');
+        ->assertDontSee('Evento refused');
 })->with([
     'Member of another group'    => [['member'], false],
     'Pascom of organizing group' => [['pascom'], true],

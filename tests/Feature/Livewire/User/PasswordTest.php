@@ -28,7 +28,7 @@ it('requires the current password', function () {
         ->assertHasErrors(['current_password' => 'required']);
 });
 
-it('rejects an invalid current password', function () {
+it('refuses an invalid current password', function () {
     Livewire::test(Password::class)
         ->set('current_password', 'wrong-password')
         ->set('password', 'new-password')

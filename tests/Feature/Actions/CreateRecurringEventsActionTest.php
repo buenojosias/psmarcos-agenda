@@ -190,7 +190,7 @@ it('does not persist any occurrence when the final availability check finds a co
     $this->assertDatabaseCount('event_logs', 0);
 });
 
-it('rejects environments from another community', function () {
+it('refuses environments from another community', function () {
     $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group     = Group::factory()->create();
     $community = Community::create([

@@ -140,7 +140,7 @@ it('creates an extraordinary mass without a schedule and with padded reservation
     $this->assertDatabaseHas('place_reservations', ['mass_id' => $mass->id, 'reserved_from' => '2026-09-22 18:30:00', 'reserved_to' => '2026-09-22 20:30:00', 'is_primary' => true]);
 });
 
-it('rejects retroactive dates and invalid intervals', function (string $component, string $field, mixed $value) {
+it('refuses retroactive dates and invalid intervals', function (string $component, string $field, mixed $value) {
     $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
     $community = massCreationCommunity();
     $data      = $component === CreateSchedule::class ? recurringMassData($community) : extraordinaryMassData($community);
@@ -258,7 +258,7 @@ it('treats touching reservation boundaries as non conflicting', function (string
     expect(Mass::query()->withReservationConflict()->sole()->has_reservation_conflict)->toBeFalse();
 })->with([['2026-09-22 17:00', '2026-09-22 18:30'], ['2026-09-22 20:30', '2026-09-22 21:30']]);
 
-it('rejects retroactive direct generation and skips past dates when planning a range', function () {
+it('refuses retroactive direct generation and skips past dates when planning a range', function () {
     $this->travelTo(now()->setDate(2026, 9, 23)->startOfDay());
     $schedule = MassSchedule::factory()->create([...recurringMassData(massCreationCommunity()), 'valid_from' => '2026-09-01']);
 

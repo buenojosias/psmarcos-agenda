@@ -37,7 +37,7 @@ it('forbids opening and saving for unauthorized users', function (string $action
     $this->assertDatabaseCount('places', 0);
 })->with(['open', 'save']);
 
-it('rejects parents from another community', function () {
+it('refuses parents from another community', function () {
     $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $other     = Community::create(['name' => 'Capela', 'alias' => 'Capela', 'abbreviation' => 'CP']);

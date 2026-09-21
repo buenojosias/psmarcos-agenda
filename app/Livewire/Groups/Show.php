@@ -28,7 +28,7 @@ class Show extends Component
         $this->group->loadCount([
             'events',
             'events as confirmed_events_count'   => fn ($query) => $query->where('status', EventStatusEnum::CONFIRMED->value),
-            'events as rejected_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::REJECTED->value),
+            'events as refused_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::REFUSED->value),
             'events as pending_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::PENDING->value),
             'events as rescheduled_events_count' => fn ($query) => $query->where('status', EventStatusEnum::RESCHEDULED->value),
             'events as canceled_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::CANCELED->value),

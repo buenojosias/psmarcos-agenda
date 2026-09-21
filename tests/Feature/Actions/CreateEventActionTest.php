@@ -158,7 +158,7 @@ it('creates a confirmed event and approval log for an authorized user', function
         ->and($logs[0]->operation_code)->toBe($logs[1]->operation_code);
 });
 
-it('rejects immediate confirmation from an unauthorized user without persistence', function () {
+it('refuses immediate confirmation from an unauthorized user without persistence', function () {
     ['data' => $data] = eventCreationData(confirmImmediately: true);
     $user             = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
 
@@ -184,7 +184,7 @@ it('rechecks group authorization before persisting', function () {
     $this->assertDatabaseCount('event_logs', 0);
 });
 
-it('rejects places from a different community without persistence', function () {
+it('refuses places from a different community without persistence', function () {
     ['data' => $data] = eventCreationData();
     $user             = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $otherCommunity   = Community::create([

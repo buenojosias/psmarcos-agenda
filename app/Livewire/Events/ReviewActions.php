@@ -6,7 +6,7 @@ namespace App\Livewire\Events;
 
 use App\Models\Event;
 use Livewire\Component;
-use App\Actions\RejectEventAction;
+use App\Actions\RefuseEventAction;
 use App\Actions\ApproveEventAction;
 use Illuminate\Contracts\View\View;
 use TallStackUi\Traits\Interactions;
@@ -17,9 +17,9 @@ class ReviewActions extends Component
 
     public Event $event;
 
-    public bool $showRejectModal = false;
+    public bool $showRefuseModal = false;
 
-    public string $rejectionReason = '';
+    public string $refusalReason = '';
 
     public function mount(Event $event): void
     {
@@ -40,24 +40,24 @@ class ReviewActions extends Component
         $this->dispatch('event-reviewed');
     }
 
-    public function openRejectModal(): void
+    public function openRefuseModal(): void
     {
         $this->resetValidation();
-        $this->showRejectModal = true;
+        $this->showRefuseModal = true;
     }
 
-    public function reject(RejectEventAction $rejectEvent): void
+    public function refuse(RefuseEventAction $refuseEvent): void
     {
         $validated = $this->validate([
-            'rejectionReason' => ['required', 'string', 'max:2000'],
+            'refusalReason' => ['required', 'string', 'max:2000'],
         ]);
 
         $user = user();
         abort_if($user === null, 401);
 
-        $this->event           = $rejectEvent->handle($this->event, $user, $validated['rejectionReason']);
-        $this->showRejectModal = false;
-        $this->reset('rejectionReason');
+        $this->event           = $refuseEvent->handle($this->event, $user, $validated['refusalReason']);
+        $this->showRefuseModal = false;
+        $this->reset('refusalReason');
 
         $this->toast()
             ->success('Evento recusado', 'O evento foi recusado com sucesso.')

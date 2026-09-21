@@ -88,7 +88,7 @@ it('creates a confirmed external event and approval log for an authorized user',
         ->and($logs[0]->operation_code)->toBe($logs[1]->operation_code);
 });
 
-it('rejects immediate confirmation from an unauthorized user without persistence', function () {
+it('refuses immediate confirmation from an unauthorized user without persistence', function () {
     $group = Group::factory()->create();
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
 

@@ -60,7 +60,7 @@ it('confirms two factor authentication', function () {
     expect($this->user->refresh()->two_factor_confirmed_at)->not->toBeNull();
 });
 
-it('rejects an invalid confirmation code', function () {
+it('refuses an invalid confirmation code', function () {
     Livewire::test(TwoFactorAuthentication::class)
         ->set('current_password', 'Test123!')
         ->call('enable');

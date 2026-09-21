@@ -60,23 +60,23 @@ it('shows review buttons to reviewers for pending and rescheduled events', funct
         ->assertSee('Aprovar')->assertSee('Recusar')->assertDontSee('Editar')->assertDontSee('Remarcar');
 })->with(['cpp', 'priest', 'admin'])->with([EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED]);
 
-it('requires a reason before rejecting an event', function () {
+it('requires a reason before refuseing an event', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
     $user  = User::factory()->create(['roles' => ['admin']]);
 
     Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
-        ->call('openRejectModal')
-        ->call('reject')
-        ->assertHasErrors(['rejectionReason' => ['required']]);
+        ->call('openRefuseModal')
+        ->call('refuse')
+        ->assertHasErrors(['refusalReason' => ['required']]);
 });
 
-it('associates the rejection confirmation button with its form', function () {
+it('associates the refusal confirmation button with its form', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
     $user  = User::factory()->create(['roles' => ['admin']]);
 
     Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
-        ->assertSee('id="reject-event-form"', false)
-        ->assertSee('form="reject-event-form"', false);
+        ->assertSee('id="refuse-event-form"', false)
+        ->assertSee('form="refuse-event-form"', false);
 });
 
 it('approves a reviewable event', function () {
@@ -91,18 +91,18 @@ it('approves a reviewable event', function () {
     expect($event->refresh()->status)->toBe(EventStatusEnum::CONFIRMED);
 });
 
-it('rejects a reviewable event and closes the modal', function () {
+it('refuses a reviewable event and closes the modal', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
     $user  = User::factory()->create(['roles' => ['admin']]);
 
     Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
-        ->call('openRejectModal')
-        ->set('rejectionReason', 'O horário conflita com outro evento.')
-        ->call('reject')
-        ->assertSet('showRejectModal', false)
-        ->assertSet('rejectionReason', '');
+        ->call('openRefuseModal')
+        ->set('refusalReason', 'O horário conflita com outro evento.')
+        ->call('refuse')
+        ->assertSet('showRefuseModal', false)
+        ->assertSet('refusalReason', '');
 
-    expect($event->refresh()->status)->toBe(EventStatusEnum::REJECTED)
+    expect($event->refresh()->status)->toBe(EventStatusEnum::REFUSED)
         ->and($event->notes()->sole()->content)->toBe('O horário conflita com outro evento.');
 });
 
@@ -114,7 +114,7 @@ it('hides review buttons for other statuses', function (EventStatusEnum $status)
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
         ->assertDontSee('Aprovar')->assertDontSee('Recusar');
-})->with([EventStatusEnum::CONFIRMED, EventStatusEnum::CANCELED, EventStatusEnum::REJECTED]);
+})->with([EventStatusEnum::CONFIRMED, EventStatusEnum::CANCELED, EventStatusEnum::REFUSED]);
 
 it('allows pascom without action buttons even when also creator and admin', function () {
     $user  = User::factory()->create(['roles' => ['pascom', 'admin']]);

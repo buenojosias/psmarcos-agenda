@@ -25,7 +25,7 @@ it('requires the current password', function () {
         ->assertHasErrors(['password' => 'required']);
 });
 
-it('rejects an invalid password', function () {
+it('refuses an invalid password', function () {
     Livewire::test(Delete::class)
         ->set('password', 'wrong-password')
         ->call('delete')

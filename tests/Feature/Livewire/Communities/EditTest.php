@@ -39,7 +39,7 @@ it('forbids opening and saving edits for other roles even when linked to the com
     [UserRoleEnum::ADMIN, false], [UserRoleEnum::CPP, false],
 ]);
 
-it('rejects invalid edits and values owned by another community', function (string $field, string $value, string $rule) {
+it('refuses invalid edits and values owned by another community', function (string $field, string $value, string $rule) {
     $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     Community::create(['name' => 'Outra', 'alias' => 'Capela', 'abbreviation' => 'CP']);

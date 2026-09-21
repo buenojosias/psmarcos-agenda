@@ -49,7 +49,7 @@ it('requires name alias and abbreviation', function () {
     $this->assertDatabaseCount('communities', 0);
 });
 
-it('rejects duplicate and oversized fields', function (string $field, string $value, string $rule) {
+it('refuses duplicate and oversized fields', function (string $field, string $value, string $rule) {
     $user = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     Community::create(['name' => 'Existente', 'alias' => 'Existente', 'abbreviation' => 'EX']);
 

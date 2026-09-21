@@ -92,7 +92,7 @@ it('validates edited details without changing the group', function (string $fiel
     'missing community' => ['communityId', 999999, 'exists'],
 ]);
 
-it('rejects duplicate slugs including deleted groups and invalid names', function (string $name, bool $deleted) {
+it('refuses duplicate slugs including deleted groups and invalid names', function (string $name, bool $deleted) {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::create(['name' => 'Grupo Original', 'slug' => 'grupo-original', 'type' => GroupTypeEnum::GROUP]);
     $other = Group::create(['name' => 'São José', 'slug' => 'sao-jose', 'type' => GroupTypeEnum::GROUP]);

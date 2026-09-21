@@ -28,7 +28,7 @@ class Reservations extends Component
                     $query
                         ->whereHas('event', fn ($query) => $query->whereNotIn('status', [
                             EventStatusEnum::CANCELED->value,
-                            EventStatusEnum::REJECTED->value,
+                            EventStatusEnum::REFUSED->value,
                         ]))
                         ->orWhereHas('mass', fn ($query) => $query->whereNull('canceled_at'));
                 })

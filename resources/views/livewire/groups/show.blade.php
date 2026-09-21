@@ -42,7 +42,7 @@
                 </x-list.items>
                 <x-list.items name="Não aprovados">
                     <x-slot:action>
-                        <x-badge :text="(string) $group->rejected_events_count" color="red" light />
+                        <x-badge :text="(string) $group->refused_events_count" color="red" light />
                     </x-slot:action>
                 </x-list.items>
                 <x-list.items name="Remarcados">

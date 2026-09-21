@@ -50,7 +50,7 @@ it('rechecks permissions when saving', function () {
     $this->assertDatabaseHas('places', ['id' => $place->id, 'name' => 'Original']);
 });
 
-it('rejects a space belonging to another community', function () {
+it('refuses a space belonging to another community', function () {
     $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $other     = Community::create(['name' => 'Capela', 'alias' => 'Capela', 'abbreviation' => 'CP']);
@@ -62,7 +62,7 @@ it('rejects a space belonging to another community', function () {
     $this->assertDatabaseHas('places', ['id' => $place->id, 'name' => 'Original']);
 });
 
-it('rejects saving a space that was deleted after opening', function () {
+it('refuses saving a space that was deleted after opening', function () {
     $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $place     = $community->places()->create(['name' => 'Original']);

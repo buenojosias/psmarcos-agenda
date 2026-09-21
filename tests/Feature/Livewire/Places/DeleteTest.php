@@ -95,7 +95,7 @@ it('rechecks permission before deletion', function () {
     $this->assertModelExists($place);
 });
 
-it('rejects spaces from another community', function () {
+it('refuses spaces from another community', function () {
     $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $other     = Community::create(['name' => 'Capela', 'alias' => 'Capela', 'abbreviation' => 'CP']);

@@ -29,7 +29,7 @@ it('counts each requested event status and includes canceled events in the total
 
     foreach ([
         EventStatusEnum::CONFIRMED,
-        EventStatusEnum::REJECTED,
+        EventStatusEnum::REFUSED,
         EventStatusEnum::PENDING,
         EventStatusEnum::RESCHEDULED,
         EventStatusEnum::CANCELED,
@@ -57,7 +57,7 @@ it('counts each requested event status and includes canceled events in the total
 
     $component->assertSee(['Status dos eventos', 'Aprovados', 'Recusados', 'Pendentes', 'Remarcados', 'Total']);
     expect($component->get('group')->confirmed_events_count)->toBe(1)
-        ->and($component->get('group')->rejected_events_count)->toBe(1)
+        ->and($component->get('group')->refused_events_count)->toBe(1)
         ->and($component->get('group')->pending_events_count)->toBe(1)
         ->and($component->get('group')->rescheduled_events_count)->toBe(1)
         ->and($component->get('group')->events_count)->toBe(5);
@@ -106,7 +106,7 @@ it('forbids unauthorized link changes even through crafted Livewire actions', fu
     expect($group->users()->count())->toBe(1);
 });
 
-it('rejects duplicate and nonexistent users', function () {
+it('refuses duplicate and nonexistent users', function () {
     $actor    = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group    = Group::create(['name' => 'Grupo Esperança', 'slug' => 'grupo-esperanca', 'type' => GroupTypeEnum::GROUP]);
     $selected = User::factory()->create();

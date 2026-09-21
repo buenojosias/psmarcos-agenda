@@ -71,7 +71,7 @@ it('prevents members from assigning another user through a crafted Livewire requ
     expect(Group::where('slug', 'grupo-invasor')->exists())->toBeFalse();
 });
 
-it('rejects a missing group name and type', function () {
+it('refuses a missing group name and type', function () {
     $manager = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Livewire::actingAs($manager)->test(Create::class)
@@ -81,7 +81,7 @@ it('rejects a missing group name and type', function () {
     expect(Group::count())->toBe(0);
 });
 
-it('rejects a nonexistent selected user', function () {
+it('refuses a nonexistent selected user', function () {
     $manager = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Livewire::actingAs($manager)->test(Create::class)
@@ -94,7 +94,7 @@ it('rejects a nonexistent selected user', function () {
     expect(Group::count())->toBe(0);
 });
 
-it('rejects a group name that would duplicate an existing slug', function () {
+it('refuses a group name that would duplicate an existing slug', function () {
     $manager = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     Group::create(['name' => 'Grupo São José', 'slug' => 'grupo-sao-jose', 'type' => GroupTypeEnum::GROUP]);
 

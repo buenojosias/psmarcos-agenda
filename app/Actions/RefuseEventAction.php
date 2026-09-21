@@ -11,7 +11,7 @@ use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
-class RejectEventAction
+class RefuseEventAction
 {
     public function __construct(private EventLogAction $eventLog) {}
 
@@ -28,16 +28,16 @@ class RejectEventAction
                 'content' => $reason,
             ]);
             $event->update([
-                'status'                 => EventStatusEnum::REJECTED,
+                'status'                 => EventStatusEnum::REFUSED,
                 'reservation_hold_until' => now()->addDays(7),
             ]);
 
             $this->eventLog->handle(
                 $event,
-                EventLogActionEnum::REJECTED,
+                EventLogActionEnum::REFUSED,
                 $user,
                 fromStatus: $fromStatus,
-                toStatus: EventStatusEnum::REJECTED,
+                toStatus: EventStatusEnum::REFUSED,
             );
 
             return $event;
