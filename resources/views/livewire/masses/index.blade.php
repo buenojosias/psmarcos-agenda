@@ -77,7 +77,7 @@
                                 </ul>
                             </x-accordion.items>
                         @empty
-                            <p>Nenhum horário fixo vigente.</p>
+                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
                         @endforelse
                     </x-accordion>
                 </section>
@@ -96,7 +96,7 @@
                                 </ul>
                             </x-accordion.items>
                         @empty
-                            <p>Nenhum horário fixo vigente.</p>
+                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
                         @endforelse
                     </x-accordion>
                 </section>
