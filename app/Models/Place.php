@@ -17,11 +17,13 @@ class Place extends Model
         'name',
     ];
 
+    /** @return BelongsTo<Community, $this> */
     public function community(): BelongsTo
     {
         return $this->belongsTo(Community::class);
     }
 
+    /** @return BelongsTo<Place, $this> */
     public function main(): BelongsTo
     {
         return $this->belongsTo(self::class, 'main_place_id');

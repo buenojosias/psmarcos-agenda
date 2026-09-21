@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Event;
+use App\Models\Group;
 use App\Enums\UserRoleEnum;
 use App\Enums\EventStatusEnum;
 use App\Enums\EventLogActionEnum;
@@ -13,6 +14,27 @@ use Illuminate\Auth\Access\Response;
 
 class EventPolicy
 {
+    public function create(User $user): bool
+    {
+        return $user->is_active === true;
+    }
+
+    public function selectGroup(User $user, Group $group): bool
+    {
+        return $this->create($user)
+            && (! $user->isMemberOnly() || $user->groups()->whereKey($group->id)->exists());
+    }
+
+    public function confirmImmediately(User $user): bool
+    {
+        return $this->create($user)
+            && $user->hasAnyRole([
+                UserRoleEnum::CPP->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::ADMIN->value,
+            ]);
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->is_active === true;
