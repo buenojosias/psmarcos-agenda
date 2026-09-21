@@ -130,6 +130,7 @@ it('generates sorted unique future occurrences without persistence', function ()
             ],
         ])
         ->assertSet('conflictsSlide', false)
+        ->assertSet('draftValidated', true)
         ->assertDispatched('ts-ui:dialog');
 
     $this->assertDatabaseCount('events', 0);
@@ -226,8 +227,80 @@ it('groups conflicts by date and removes conflicting places only from their occu
         ->and($occurrences['2026-10-24']['status'])->toBe('available')
         ->and($occurrences['2026-10-24']['remaining_place_ids'])->toBe([$nave->id, $hall->id]);
 
+    $component
+        ->assertSet('conflictsSlide', false)
+        ->assertSet('draftValidated', true)
+        ->assertDispatched('ts-ui:dialog');
+
     $this->assertDatabaseCount('events', 2);
     $this->assertDatabaseCount('place_reservations', 3);
+});
+
+it('persists the validated recurring series and redirects to the event list', function () {
+    $this->travelTo('2026-09-21 10:00:00');
+
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = recurringEventData($group);
+
+    $component = Livewire::actingAs($user)->test(Recurring::class)
+        ->set($data)
+        ->call('validateDraft')
+        ->assertSet('draftValidated', true)
+        ->assertDispatched('ts-ui:dialog');
+
+    $component->call('save');
+
+    $events = Event::query()->orderBy('starts_at')->get();
+
+    $component->assertRedirect(route('events.index'));
+    expect($events)->toHaveCount(2)
+        ->and($events->pluck('recurrence_code')->unique()->values())->toHaveCount(1)
+        ->and($events->every(fn (Event $event): bool => ! $event->is_external && ! $event->advertisable))->toBeTrue()
+        ->and(session('ts-ui:toast'))->toMatchArray([
+            'type'        => 'success',
+            'title'       => 'Eventos cadastrados',
+            'description' => 'As 2 ocorrências foram cadastradas com sucesso.',
+        ]);
+    $this->assertDatabaseCount('place_reservations', 2);
+    $this->assertDatabaseCount('event_logs', 2);
+});
+
+it('reopens recurring conflicts without partial persistence when availability changes before saving', function () {
+    $this->travelTo('2026-09-21 10:00:00');
+
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = recurringEventData($group);
+
+    $component = Livewire::actingAs($user)->test(Recurring::class)
+        ->set($data)
+        ->call('validateDraft')
+        ->assertSet('draftValidated', true);
+
+    $existingEvent = Event::factory()->create([
+        'starts_at' => $data['dates'][0].' 09:30:00',
+        'ends_at'   => $data['dates'][0].' 10:30:00',
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $existingEvent->id,
+        'place_id'      => $data['place_ids'][0],
+        'reserved_from' => $data['dates'][0].' 09:30:00',
+        'reserved_to'   => $data['dates'][0].' 10:30:00',
+        'is_primary'    => true,
+    ]);
+
+    $component->call('save')
+        ->assertSet('draftValidated', false)
+        ->assertSet('conflictsSlide', true);
+
+    $occurrences = $component->get('occurrences');
+
+    expect($occurrences[$data['dates'][0]]['status'])->toBe('conflict')
+        ->and($occurrences[$data['dates'][1]]['status'])->toBe('available');
+    $this->assertDatabaseCount('events', 1);
+    $this->assertDatabaseCount('place_reservations', 1);
+    $this->assertDatabaseCount('event_logs', 0);
 });
 
 it('forbids inactive users from accessing or creating events', function () {

@@ -17,6 +17,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use App\Actions\CreateRecurringEventsAction;
 use Illuminate\Database\Eloquent\Collection;
 use App\Actions\CheckPlaceAvailabilityAction;
 use Illuminate\Support\Collection as SupportCollection;
@@ -83,6 +84,9 @@ class Recurring extends Component
     #[Locked]
     public array $occurrences = [];
 
+    #[Locked]
+    public bool $draftValidated = false;
+
     public bool $conflictsSlide = false;
 
     public function mount(): void
@@ -94,6 +98,13 @@ class Recurring extends Component
     {
         $this->place_ids   = [];
         $this->place_hours = [];
+    }
+
+    public function updated(string $property): void
+    {
+        if ($property !== 'conflictsSlide') {
+            $this->draftValidated = false;
+        }
     }
 
     public function updatedConfirmImmediately(bool $value): void
@@ -134,6 +145,7 @@ class Recurring extends Component
             ->all();
         $this->occurrences    = [];
         $this->conflictsSlide = false;
+        $this->draftValidated = false;
 
         $validated = $this->validate($this->rules(), $this->messages());
         $group     = Group::query()->find($validated['group_id']);
@@ -175,9 +187,7 @@ class Recurring extends Component
             return;
         }
 
-        $this->dialog()
-            ->success('Datas disponíveis', 'Todas as datas selecionadas estão disponíveis.')
-            ->send();
+        $this->showConfirmationDialog();
     }
 
     public function removeConflictingPlaces(string $date): void
@@ -199,6 +209,55 @@ class Recurring extends Component
 
         $this->occurrences[$date]['remaining_place_ids'] = $remainingPlaceIds;
         $this->occurrences[$date]['status']              = $remainingPlaceIds === [] ? 'unavailable' : 'available';
+
+        if (! collect($this->occurrences)->contains('status', 'conflict') && $this->validOccurrences() !== []) {
+            $this->conflictsSlide = false;
+            $this->showConfirmationDialog();
+        }
+    }
+
+    public function save(CreateRecurringEventsAction $createRecurringEvents): void
+    {
+        if (! $this->draftValidated) {
+            return;
+        }
+
+        $user = user();
+        abort_if($user === null, 401);
+
+        $validated = $this->validate($this->rules(), $this->messages());
+        $result    = $createRecurringEvents->handle($validated, $this->occurrences, $user);
+
+        if (! $result['created']) {
+            foreach ($this->occurrences as $date => $occurrence) {
+                if ($occurrence['status'] === 'unavailable') {
+                    continue;
+                }
+
+                $conflicts = $result['conflicts'][$date] ?? [];
+
+                $this->occurrences[$date]['conflicts'] = $conflicts;
+                $this->occurrences[$date]['status']    = $conflicts === [] ? 'available' : 'conflict';
+            }
+
+            $this->draftValidated = false;
+            $this->conflictsSlide = true;
+
+            return;
+        }
+
+        $createdCount = count($result['events']);
+
+        $this->reset();
+
+        $this->toast()
+            ->success('Eventos cadastrados', $createdCount === 1
+                ? 'O evento recorrente foi cadastrado com sucesso.'
+                : "As {$createdCount} ocorrências foram cadastradas com sucesso.")
+            ->flash()
+            ->send();
+
+        $this->redirectRoute('events.index');
     }
 
     public function render(): View
@@ -259,6 +318,30 @@ class Recurring extends Component
             'dates.*.after_or_equal' => 'As datas devem ser hoje ou futuras.',
             'ends_time.after'        => 'O término deve ser posterior ao início.',
         ];
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private function validOccurrences(): array
+    {
+        return collect($this->occurrences)
+            ->filter(fn (array $occurrence): bool => $occurrence['status'] === 'available'
+                && $occurrence['remaining_place_ids'] !== [])
+            ->all();
+    }
+
+    private function showConfirmationDialog(): void
+    {
+        $count       = count($this->validOccurrences());
+        $description = $count === 1
+            ? '1 ocorrência será criada.'
+            : "{$count} ocorrências serão criadas.";
+
+        $this->draftValidated = true;
+        $this->dialog()
+            ->success('Confirmar cadastro', $description)
+            ->confirm('Salvar eventos', 'save')
+            ->cancel('Alterar informações')
+            ->send();
     }
 
     /** @return SupportCollection<int, array{label: string, value: int}> */
