@@ -73,7 +73,7 @@
     </x-card>
 
     <div class="flex justify-end">
-        <x-button submit text="Salvar" loading="validateDraft" />
+        <x-button submit text="Validar" loading="validateDraft" />
     </div>
 
     <x-slide title="Conflitos de ambientes" size="lg" wire="conflictsSlide" persistent>

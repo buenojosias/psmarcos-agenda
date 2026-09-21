@@ -9,9 +9,11 @@ use Livewire\Livewire;
 use App\Models\Community;
 use App\Enums\EventTypeEnum;
 use App\Enums\EventStatusEnum;
+use App\Livewire\Events\Create;
 use App\Models\PlaceReservation;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
+use App\Livewire\Events\Forms\Recurring;
 use App\Livewire\Events\Forms\Occasional;
 
 function occasionalEventData(Group $group): array
@@ -27,6 +29,28 @@ function occasionalEventData(Group $group): array
         'ends_at'             => '2026-10-10T11:00',
         'is_public'           => true,
         'advertisable'        => false,
+        'confirm_immediately' => false,
+        'community_id'        => $community->id,
+        'place_ids'           => [$place->id],
+        'place_hours'         => [
+            $place->id => ['before' => 0, 'after' => 0],
+        ],
+    ];
+}
+
+function recurringEventData(Group $group): array
+{
+    $community = eventCommunity();
+    $place     = $community->places()->create(['name' => fake()->unique()->word()]);
+
+    return [
+        'group_id'            => $group->id,
+        'name'                => 'Encontro de formação',
+        'type'                => EventTypeEnum::COURSE->value,
+        'dates'               => [today()->addDay()->toDateString(), today()->addDays(8)->toDateString()],
+        'starts_time'         => '09:00',
+        'ends_time'           => '11:00',
+        'is_public'           => true,
         'confirm_immediately' => false,
         'community_id'        => $community->id,
         'place_ids'           => [$place->id],
@@ -52,6 +76,158 @@ it('renders the internal occasional event form at the create route', function ()
         ->assertSee('Cadastrar evento')
         ->assertSee('Dados do evento')
         ->assertSee('Ambientes');
+});
+
+it('switches between occasional, recurring, and external event registrations', function () {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Create::class)
+        ->assertSet('registration_type', 'occasional')
+        ->assertSee('Evento recorrente')
+        ->assertSee('Mesmo evento realizado em várias datas.')
+        ->set('registration_type', 'recurring')
+        ->assertSet('registration_type', 'recurring')
+        ->set('registration_type', 'external')
+        ->assertSet('registration_type', 'external')
+        ->assertSee('Em breve');
+});
+
+it('generates sorted unique future occurrences without persistence', function () {
+    $this->travelTo('2026-09-21 10:00:00');
+
+    $user    = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group   = Group::factory()->create();
+    $data    = recurringEventData($group);
+    $placeId = $data['place_ids'][0];
+
+    $component = Livewire::actingAs($user)->test(Recurring::class)
+        ->set([...$data, 'dates' => ['2026-09-20', '2026-09-25']])
+        ->call('validateDraft')
+        ->assertHasErrors(['dates.0'])
+        ->assertSet('occurrences', []);
+
+    $component
+        ->set([...$data, 'dates' => ['2026-10-03', '2026-09-25', '2026-10-03']])
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('dates', ['2026-09-25', '2026-10-03'])
+        ->assertSet('occurrences', [
+            '2026-09-25' => [
+                'date'                => '2026-09-25',
+                'starts_at'           => '2026-09-25 09:00:00',
+                'ends_at'             => '2026-09-25 11:00:00',
+                'remaining_place_ids' => [$placeId],
+                'status'              => 'available',
+                'conflicts'           => [],
+            ],
+            '2026-10-03' => [
+                'date'                => '2026-10-03',
+                'starts_at'           => '2026-10-03 09:00:00',
+                'ends_at'             => '2026-10-03 11:00:00',
+                'remaining_place_ids' => [$placeId],
+                'status'              => 'available',
+                'conflicts'           => [],
+            ],
+        ])
+        ->assertSet('conflictsSlide', false)
+        ->assertDispatched('ts-ui:dialog');
+
+    $this->assertDatabaseCount('events', 0);
+    $this->assertDatabaseCount('place_reservations', 0);
+});
+
+it('groups conflicts by date and removes conflicting places only from their occurrence', function () {
+    $this->travelTo('2026-09-21 10:00:00');
+
+    $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group     = Group::factory()->create();
+    $data      = recurringEventData($group);
+    $community = Community::query()->findOrFail($data['community_id']);
+    $nave      = $community->places()->findOrFail($data['place_ids'][0]);
+    $hall      = $community->places()->create(['name' => 'Salão']);
+    $event     = Event::factory()->create([
+        'name'      => 'Evento reservado confidencial',
+        'starts_at' => '2026-10-10 09:30:00',
+        'ends_at'   => '2026-10-10 10:30:00',
+    ]);
+    $otherEvent = Event::factory()->create([
+        'name'      => 'Outra reserva confidencial',
+        'starts_at' => '2026-10-17 09:30:00',
+        'ends_at'   => '2026-10-17 10:30:00',
+    ]);
+
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $nave->id,
+        'reserved_from' => '2026-10-10 09:30:00',
+        'reserved_to'   => '2026-10-10 10:30:00',
+        'is_primary'    => true,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $otherEvent->id,
+        'place_id'      => $nave->id,
+        'reserved_from' => '2026-10-17 09:30:00',
+        'reserved_to'   => '2026-10-17 10:30:00',
+        'is_primary'    => true,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $otherEvent->id,
+        'place_id'      => $hall->id,
+        'reserved_from' => '2026-10-17 09:30:00',
+        'reserved_to'   => '2026-10-17 10:30:00',
+        'is_primary'    => false,
+    ]);
+
+    $component = Livewire::actingAs($user)->test(Recurring::class)
+        ->set([
+            ...$data,
+            'dates'       => ['2026-10-24', '2026-10-17', '2026-10-10'],
+            'place_ids'   => [$nave->id, $hall->id],
+            'place_hours' => [
+                $nave->id => ['before' => 0.5, 'after' => 0.25],
+                $hall->id => ['before' => 0, 'after' => 0],
+            ],
+        ])
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('conflictsSlide', true)
+        ->assertSee('10/10/2026')
+        ->assertSee('17/10/2026')
+        ->assertSee('24/10/2026')
+        ->assertSee('Ambiente solicitado: '.$nave->name)
+        ->assertSee('Intervalo solicitado:')
+        ->assertSee('10/10/2026 08:30')
+        ->assertSee('10/10/2026 11:15')
+        ->assertSee('Ambiente reservado: '.$nave->name)
+        ->assertSee('Reserva existente:')
+        ->assertSee('10/10/2026 09:30')
+        ->assertSee('10/10/2026 10:30')
+        ->assertDontSee('Evento reservado confidencial');
+
+    $occurrences = $component->get('occurrences');
+
+    expect(array_keys($occurrences))->toBe(['2026-10-10', '2026-10-17', '2026-10-24'])
+        ->and($occurrences['2026-10-10']['status'])->toBe('conflict')
+        ->and($occurrences['2026-10-10']['conflicts'])->toHaveCount(1)
+        ->and($occurrences['2026-10-17']['status'])->toBe('conflict')
+        ->and($occurrences['2026-10-17']['conflicts'])->toHaveCount(2)
+        ->and($occurrences['2026-10-24']['status'])->toBe('available')
+        ->and($occurrences['2026-10-24']['conflicts'])->toBe([]);
+
+    $component->call('removeConflictingPlaces', '2026-10-10');
+    $component->call('removeConflictingPlaces', '2026-10-17');
+
+    $occurrences = $component->get('occurrences');
+
+    expect($occurrences['2026-10-10']['status'])->toBe('available')
+        ->and($occurrences['2026-10-10']['remaining_place_ids'])->toBe([$hall->id])
+        ->and($occurrences['2026-10-17']['status'])->toBe('unavailable')
+        ->and($occurrences['2026-10-17']['remaining_place_ids'])->toBe([])
+        ->and($occurrences['2026-10-24']['status'])->toBe('available')
+        ->and($occurrences['2026-10-24']['remaining_place_ids'])->toBe([$nave->id, $hall->id]);
+
+    $this->assertDatabaseCount('events', 2);
+    $this->assertDatabaseCount('place_reservations', 3);
 });
 
 it('forbids inactive users from accessing or creating events', function () {

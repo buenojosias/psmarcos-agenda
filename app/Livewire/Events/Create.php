@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class Create extends Component
 {
+    public string $registration_type = 'occasional';
+
     public function mount(): void
     {
         Gate::authorize('create', Event::class);
