@@ -24,14 +24,18 @@ class Show extends Component
         Gate::authorize('view', $this->event);
         $this->event->load(['group', 'detail']);
 
-        return view('livewire.events.show', [
-            'canManage'    => Gate::allows('manage', $this->event),
-            'canReview'    => Gate::allows('review', $this->event),
-            'reservations' => $this->event->reservations()->with('place.community')
+        $reservations = $this->event->is_external
+            ? null
+            : $this->event->reservations()->with('place.community')
                 ->orderByDesc('is_primary')->orderBy('reserved_from')->orderBy('id')->get()
                 ->each(function (PlaceReservation $reservation): void {
                     $reservation->setAttribute('highlight', $reservation->is_primary ? 'primary' : null);
-                }),
+                });
+
+        return view('livewire.events.show', [
+            'canManage'    => Gate::allows('manage', $this->event),
+            'canReview'    => Gate::allows('review', $this->event),
+            'reservations' => $reservations,
         ]);
     }
 }

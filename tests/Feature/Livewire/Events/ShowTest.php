@@ -30,6 +30,16 @@ it('displays event details and the reservation period', function () {
         ->assertSee('<script>alert(1)</script>')->assertDontSee('<script>alert(1)</script>', false);
 });
 
+it('hides space reservations for external events', function () {
+    $event     = Event::factory()->create(['is_external' => true, 'status' => EventStatusEnum::CONFIRMED]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $place     = $community->places()->create(['name' => 'Salão principal']);
+    $event->reservations()->create(['place_id' => $place->id, 'reserved_from' => '2026-10-02 09:00', 'reserved_to' => '2026-10-02 13:00']);
+
+    $this->actingAs(User::factory()->create())->get(route('events.show', $event))
+        ->assertOk()->assertDontSee('Reservas de espaços')->assertDontSee('Salão principal');
+});
+
 it('shows management buttons only to the creator', function () {
     $creator = User::factory()->create(['roles' => ['member']]);
     $group   = Group::factory()->create();

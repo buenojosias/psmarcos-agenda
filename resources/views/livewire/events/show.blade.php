@@ -73,22 +73,24 @@
         </x-card>
     @endif
 
-    <x-card header="Reservas de espaços" shadowless bordered>
-        <x-table :headers="[
-            ['index' => 'place', 'label' => 'Espaço', 'sortable' => false],
-            ['index' => 'reserved_from', 'label' => 'Início da reserva', 'sortable' => false],
-            ['index' => 'reserved_to', 'label' => 'Fim da reserva', 'sortable' => false],
-        ]" :rows="$reservations" highlight empty="Nenhuma reserva de espaço para este evento.">
-            @interact('column_place', $row)
-                <p class="font-medium">{{ $row->place?->name ?? 'Espaço não informado' }}</p>
-                <small class="block text-gray-500 dark:text-dark-400">{{ $row->place?->community?->name }}</small>
-            @endinteract
-            @interact('column_reserved_from', $row)
-                {{ $row->reserved_from->format('d/m/Y H:i') }}
-            @endinteract
-            @interact('column_reserved_to', $row)
-                {{ $row->reserved_to->format('d/m/Y H:i') }}
-            @endinteract
-        </x-table>
-    </x-card>
+    @if (! $event->is_external)
+        <x-card header="Reservas de espaços" shadowless bordered>
+            <x-table :headers="[
+                ['index' => 'place', 'label' => 'Espaço', 'sortable' => false],
+                ['index' => 'reserved_from', 'label' => 'Início da reserva', 'sortable' => false],
+                ['index' => 'reserved_to', 'label' => 'Fim da reserva', 'sortable' => false],
+            ]" :rows="$reservations" highlight empty="Nenhuma reserva de espaço para este evento.">
+                @interact('column_place', $row)
+                    <p class="font-medium">{{ $row->place?->name ?? 'Espaço não informado' }}</p>
+                    <small class="block text-gray-500 dark:text-dark-400">{{ $row->place?->community?->name }}</small>
+                @endinteract
+                @interact('column_reserved_from', $row)
+                    {{ $row->reserved_from->format('d/m/Y H:i') }}
+                @endinteract
+                @interact('column_reserved_to', $row)
+                    {{ $row->reserved_to->format('d/m/Y H:i') }}
+                @endinteract
+            </x-table>
+        </x-card>
+    @endif
 </div>
