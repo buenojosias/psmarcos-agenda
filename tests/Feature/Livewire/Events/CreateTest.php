@@ -13,6 +13,7 @@ use App\Livewire\Events\Create;
 use App\Models\PlaceReservation;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
+use App\Livewire\Events\Forms\External;
 use App\Livewire\Events\Forms\Recurring;
 use App\Livewire\Events\Forms\Occasional;
 
@@ -60,6 +61,33 @@ function recurringEventData(Group $group): array
     ];
 }
 
+function externalEventData(Group $group): array
+{
+    return [
+        'group_id'                   => $group->id,
+        'name'                       => 'Encontro de formação',
+        'type'                       => EventTypeEnum::COURSE->value,
+        'starts_at'                  => '2026-10-10T09:00',
+        'ends_at'                    => '2026-10-10T11:00',
+        'is_public'                  => true,
+        'advertisable'               => false,
+        'confirm_immediately'        => false,
+        'external_location_name'     => 'Praça central',
+        'external_location_address'  => 'Rua das Flores, 100',
+        'external_location_url'      => '',
+        'subtitle'                   => '',
+        'description'                => '',
+        'target_audience'            => '',
+        'participation_instructions' => '',
+        'registration_required'      => false,
+        'registration_url'           => '',
+        'registration_deadline'      => '',
+        'participation_cost'         => '',
+        'contact_name'               => '',
+        'contact_phone'              => '',
+    ];
+}
+
 function eventCommunity(): Community
 {
     return Community::create([
@@ -89,7 +117,55 @@ it('switches between occasional, recurring, and external event registrations', f
         ->assertSet('registration_type', 'recurring')
         ->set('registration_type', 'external')
         ->assertSet('registration_type', 'external')
-        ->assertSee('Em breve');
+        ->assertSee('Local externo');
+});
+
+it('validates the required external location and shows optional advertising details', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    Livewire::actingAs($user)->test(External::class)
+        ->assertSee('Local externo')
+        ->assertDontSee('Ambientes')
+        ->assertDontSee('Detalhes do evento')
+        ->set('advertisable', true)
+        ->assertSee('Detalhes do evento')
+        ->set([
+            ...externalEventData($group),
+            'external_location_name'    => '',
+            'external_location_address' => '',
+            'ends_at'                   => '2026-10-10T09:00',
+        ])
+        ->call('validateDraft')
+        ->assertHasErrors(['external_location_name', 'external_location_address', 'ends_at'])
+        ->assertSet('draftValidated', false);
+
+    $this->assertDatabaseCount('events', 0);
+    $this->assertDatabaseCount('event_details', 0);
+    $this->assertDatabaseCount('place_reservations', 0);
+});
+
+it('persists a validated external event and redirects to its page', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    $component = Livewire::actingAs($user)->test(External::class)
+        ->set(externalEventData($group))
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('draftValidated', true)
+        ->assertDispatched('ts-ui:dialog');
+
+    $component->call('save');
+
+    $event = Event::query()->sole();
+
+    $component->assertRedirect(route('events.show', $event));
+    expect($event->is_external)->toBeTrue()
+        ->and($event->detail->external_location_name)->toBe('Praça central')
+        ->and($event->detail->external_location_address)->toBe('Rua das Flores, 100')
+        ->and($event->reservations)->toHaveCount(0)
+        ->and($event->logs->sole()->action)->toBe(EventLogActionEnum::CREATED);
 });
 
 it('generates sorted unique future occurrences without persistence', function () {

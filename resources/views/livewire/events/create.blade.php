@@ -14,6 +14,6 @@
     @elseif ($registration_type === 'recurring')
         <livewire:events.forms.recurring wire:key="event-registration-recurring" />
     @else
-        <p>Em breve</p>
+        <livewire:events.forms.external wire:key="event-registration-external" />
     @endif
 </div>
