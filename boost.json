@@ -1,7 +1,8 @@
 {
     "agents": [
         "codex",
-        "copilot"
+        "copilot",
+        "antigravity"
     ],
     "cloud": false,
     "guidelines": true,
