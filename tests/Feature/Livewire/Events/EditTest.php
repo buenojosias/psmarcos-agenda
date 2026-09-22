@@ -15,6 +15,7 @@ use App\Models\PlaceReservation;
 use Illuminate\Support\Facades\Gate;
 use App\Livewire\Events\Edit\Details;
 use App\Livewire\Events\Edit\General;
+use App\Livewire\Events\Edit\Reschedule;
 use App\Livewire\Events\Edit\Reservations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -60,7 +61,7 @@ it('persists the selected tab in the query string', function () {
         ->withQueryParams(['tab' => 'reschedule'])
         ->test(Edit::class, ['event' => $event])
         ->assertSet('tab', 'reschedule')
-        ->assertSee('Seção de remarcação do evento.')
+        ->assertSee('Nova data e horário')
         ->assertDontSee('Seção de informações do evento.');
 });
 
@@ -323,4 +324,218 @@ it('shows a friendly availability error without persisting the reservation', fun
         ->assertSee('2026-10-10 10:30:00');
 
     expect($event->reservations()->count())->toBe(1);
+});
+
+it('proposes a new date preserving reservation offsets including a previous day', function () {
+    Gate::before(static fn (): bool => true);
+    $user      = User::factory()->create();
+    $community = Community::create([
+        'name'         => 'Comunidade dos offsets',
+        'alias'        => 'offsets-date',
+        'abbreviation' => 'OFD',
+    ]);
+    $primary = $community->places()->create(['name' => 'Igreja']);
+    $support = $community->places()->create(['name' => 'Sala de apoio']);
+    $event   = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $primary->id,
+        'reserved_from' => '2026-10-10 17:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $support->id,
+        'reserved_from' => '2026-10-09 18:00:00',
+        'reserved_to'   => '2026-10-10 18:30:00',
+        'is_primary'    => false,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->assertSet('reservations.0.reserved_from', '2026-10-17T17:00')
+        ->assertSet('reservations.0.reserved_to', '2026-10-17T22:00')
+        ->assertSet('reservations.1.reserved_from', '2026-10-16T18:00')
+        ->assertSet('reservations.1.reserved_to', '2026-10-17T18:30');
+
+    expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
+        ->and($event->reservations()->count())->toBe(2);
+});
+
+it('proposes new reservation intervals preserving start and end offsets', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $place = editReservationPlace('Salão de horários');
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-10 17:30:00',
+        'reserved_to'   => '2026-10-10 22:15:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('starts_at', '20:00')
+        ->set('ends_at', '23:00')
+        ->assertSet('reservations.0.reserved_from', '2026-10-10T18:30')
+        ->assertSet('reservations.0.reserved_to', '2026-10-11T00:15');
+});
+
+it('requires a manual proposal after changing community and keeps old reservations untouched', function () {
+    Gate::before(static fn (): bool => true);
+    $user     = User::factory()->create();
+    $oldPlace = editReservationPlace('Salão atual');
+    $event    = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    $oldReservation = PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $oldPlace->id,
+        'reserved_from' => '2026-10-10 18:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+    $newCommunity = Community::create([
+        'name'         => 'Nova comunidade',
+        'alias'        => 'new-community-reschedule',
+        'abbreviation' => 'NCR',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('community_id', $newCommunity->id)
+        ->assertSet('reservations', [])
+        ->assertSee('Selecione manualmente as novas reservas')
+        ->call('preview')
+        ->assertHasErrors('reservations');
+
+    $this->assertModelExists($oldReservation);
+    expect($event->reservations()->count())->toBe(1);
+});
+
+it('renders a preview without persisting the proposed changes', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $place = editReservationPlace('Salão de preview');
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    $reservation = PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-10 18:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->call('preview')
+        ->assertHasNoErrors()
+        ->assertSet('previewReady', true)
+        ->assertSet('canConfirm', true)
+        ->assertSee('Preview da remarcação')
+        ->assertSee('17/10/2026 18:00');
+
+    expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
+        ->and($reservation->refresh()->reserved_from->format('Y-m-d H:i:s'))->toBe('2026-10-10 18:00:00');
+});
+
+it('does not confirm when a new conflict appears after the preview', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $place = editReservationPlace('Salão disputado');
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'status'      => EventStatusEnum::CONFIRMED,
+        'is_external' => false,
+    ]);
+    $oldReservation = PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-10 18:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+    $component = Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->call('preview')
+        ->assertSet('canConfirm', true);
+    $otherEvent = Event::factory()->create();
+    PlaceReservation::create([
+        'event_id'      => $otherEvent->id,
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-17 18:30:00',
+        'reserved_to'   => '2026-10-17 20:30:00',
+        'is_primary'    => true,
+    ]);
+
+    $component
+        ->call('confirm')
+        ->assertHasErrors('reservations')
+        ->assertSet('canConfirm', false)
+        ->assertSee('Com conflito');
+
+    expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
+        ->and($event->status)->toBe(EventStatusEnum::CONFIRMED);
+    $this->assertModelExists($oldReservation);
+});
+
+it('updates an external event through the reschedule component without reservations', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-20')
+        ->set('starts_at', '20:00')
+        ->set('ends_at', '22:00')
+        ->set('external_location_name', 'Centro cultural')
+        ->set('external_location_address', 'Rua Nova, 200')
+        ->set('external_location_url', 'https://example.com/local')
+        ->call('preview')
+        ->assertHasNoErrors()
+        ->call('confirm')
+        ->assertHasNoErrors();
+
+    $detail = $event->refresh()->detail()->firstOrFail();
+
+    expect($event->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-20 20:00:00')
+        ->and($event->reservations()->exists())->toBeFalse()
+        ->and($detail->external_location_name)->toBe('Centro cultural')
+        ->and($detail->external_location_address)->toBe('Rua Nova, 200');
+});
+
+it('forbids an unauthorized user from opening the reschedule component', function () {
+    Gate::before(static fn (): bool => false);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->assertForbidden();
 });
