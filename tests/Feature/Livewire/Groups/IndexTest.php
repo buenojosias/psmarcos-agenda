@@ -62,6 +62,23 @@ it('filters groups by community', function () {
     expect($component->get('rows')->pluck('id')->all())->toBe([$matching->id]);
 });
 
+it('filters groups without a community and restores all groups', function () {
+    $community  = Community::create(['name' => 'São José', 'abbreviation' => 'SJ', 'alias' => 'sao-jose']);
+    $unassigned = Group::create(['name' => 'Grupo de Jovens', 'slug' => 'jovens', 'type' => GroupTypeEnum::GROUP]);
+    Group::create(['name' => 'Grupo de Liturgia', 'slug' => 'liturgia', 'type' => GroupTypeEnum::GROUP, 'community_id' => $community->id]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test(Index::class)
+        ->assertSee('Sem comunidade')
+        ->set('community', 'none');
+
+    expect($component->get('rows')->pluck('id')->all())->toBe([$unassigned->id]);
+
+    $component->set('community', '');
+
+    expect($component->get('rows')->total())->toBe(2);
+});
+
 it('shows only groups joined by the user when requested', function () {
     $user   = User::factory()->create();
     $joined = Group::create(['name' => 'Grupo de Jovens', 'slug' => 'jovens', 'type' => GroupTypeEnum::GROUP]);

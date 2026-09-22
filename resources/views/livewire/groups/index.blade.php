@@ -28,6 +28,7 @@
             @foreach ($communities as $community)
                 <option wire:key="community-{{ $community->id }}" value="{{ $community->id }}">{{ $community->name }}</option>
             @endforeach
+            <option value="none">Sem comunidade</option>
         </x-select.native>
 
         <div class="flex items-end md:pb-2">

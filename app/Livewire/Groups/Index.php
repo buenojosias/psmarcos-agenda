@@ -61,6 +61,7 @@ class Index extends Component
         return Group::query()
             ->with('community:id,name')
             ->when(filled($this->search), fn (Builder $query) => $query->where('name', 'like', '%'.mb_trim($this->search).'%'))
+            ->when($this->community === 'none', fn (Builder $query) => $query->whereNull('community_id'))
             ->when($communityId !== false, fn (Builder $query) => $query->where('community_id', $communityId))
             ->when($this->myGroups, fn (Builder $query) => $query->whereHas('users', fn (Builder $users) => $users->whereKey(auth()->id())))
             ->orderBy($sortColumn, $sortDirection)

@@ -27,8 +27,6 @@
         </div>
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-1 gap-8 sm:gap-6 lg:gap-8">
-            <livewire:groups.users :group="$group" />
-
             <x-list label="Status dos eventos">
                 <x-list.items name="Aprovados">
                     <x-slot:action>
@@ -64,6 +62,8 @@
                     <x-link text="Ver eventos" :href="route('groups.events.index', $group)" />    
                 </div>
             </x-list>
+
+            <livewire:groups.users :group="$group" />
         </div>
     </div>
 </div>
