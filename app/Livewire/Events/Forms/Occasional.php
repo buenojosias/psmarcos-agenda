@@ -41,7 +41,7 @@ class Occasional extends Component
 
     public bool $confirm_immediately = false;
 
-    public string $subtitle = '';
+    public string $complement = '';
 
     public string $description = '';
 
@@ -274,7 +274,7 @@ class Occasional extends Component
             'is_public'                  => ['boolean'],
             'advertisable'               => ['boolean'],
             'confirm_immediately'        => ['boolean'],
-            'subtitle'                   => ['nullable', 'string', 'max:255'],
+            'complement'                 => ['nullable', 'string', 'max:255'],
             'description'                => ['nullable', 'string'],
             'target_audience'            => ['nullable', 'string', 'max:255'],
             'participation_instructions' => ['nullable', 'string'],

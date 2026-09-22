@@ -42,7 +42,7 @@ class External extends Component
 
     public string $external_location_url = '';
 
-    public string $subtitle = '';
+    public string $complement = '';
 
     public string $description = '';
 
@@ -158,7 +158,7 @@ class External extends Component
             'external_location_name'     => ['required', 'string', 'max:255'],
             'external_location_address'  => ['required', 'string', 'max:255'],
             'external_location_url'      => ['nullable', 'url', 'max:255'],
-            'subtitle'                   => ['nullable', 'string', 'max:255'],
+            'complement'                 => ['nullable', 'string', 'max:255'],
             'description'                => ['nullable', 'string'],
             'target_audience'            => ['nullable', 'string', 'max:255'],
             'participation_instructions' => ['nullable', 'string'],

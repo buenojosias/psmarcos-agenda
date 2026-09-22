@@ -39,6 +39,7 @@ class CreateExternalEventAction
                 'created_by_user_id' => $user->id,
                 'group_id'           => $data['group_id'],
                 'name'               => $data['name'],
+                'complement'         => filled($data['complement']) ? $data['complement'] : null,
                 'type'               => $data['type'],
                 'recurrence_code'    => null,
                 'starts_at'          => $data['starts_at'],
@@ -50,7 +51,6 @@ class CreateExternalEventAction
             ]);
 
             $event->detail()->create([
-                'subtitle'                   => filled($data['subtitle']) ? $data['subtitle'] : null,
                 'description'                => filled($data['description']) ? $data['description'] : null,
                 'target_audience'            => filled($data['target_audience']) ? $data['target_audience'] : null,
                 'participation_instructions' => filled($data['participation_instructions']) ? $data['participation_instructions'] : null,

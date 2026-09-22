@@ -43,7 +43,7 @@ class Recurring extends Component
 
     public bool $confirm_immediately = false;
 
-    public string $subtitle = '';
+    public string $complement = '';
 
     public string $description = '';
 
@@ -291,7 +291,7 @@ class Recurring extends Component
             'ends_time'                  => ['required', 'date_format:H:i', 'after:starts_time'],
             'is_public'                  => ['boolean'],
             'confirm_immediately'        => ['boolean'],
-            'subtitle'                   => ['nullable', 'string', 'max:255'],
+            'complement'                 => ['nullable', 'string', 'max:255'],
             'description'                => ['nullable', 'string'],
             'target_audience'            => ['nullable', 'string', 'max:255'],
             'participation_instructions' => ['nullable', 'string'],

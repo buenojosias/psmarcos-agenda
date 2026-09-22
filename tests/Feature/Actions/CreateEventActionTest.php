@@ -40,7 +40,7 @@ function eventCreationData(bool $confirmImmediately = false): array
             'is_public'                  => true,
             'advertisable'               => true,
             'confirm_immediately'        => $confirmImmediately,
-            'subtitle'                   => 'Formação paroquial',
+            'complement'                 => 'Formação paroquial',
             'description'                => '<p>Descrição do encontro.</p>',
             'target_audience'            => 'Coordenadores',
             'participation_instructions' => 'Chegar com antecedência.',
@@ -71,10 +71,11 @@ it('creates a pending internal occasional event with details reservations and lo
     expect($result['created'])->toBeTrue()
         ->and($result['conflicts'])->toBe([])
         ->and($event)->toBeInstanceOf(Event::class)
+        ->and($event->community_id)->toBe($data['community_id'])
         ->and($event->status)->toBe(EventStatusEnum::PENDING)
-        ->and($event->is_external)->toBeFalse();
+        ->and($event->is_external)->toBeFalse()
+        ->and($event->complement)->toBe('Formação paroquial');
     expect($event->detail->only([
-        'subtitle',
         'description',
         'target_audience',
         'participation_instructions',
@@ -84,7 +85,6 @@ it('creates a pending internal occasional event with details reservations and lo
         'contact_name',
         'contact_phone',
     ]))->toBe([
-        'subtitle'                   => 'Formação paroquial',
         'description'                => '<p>Descrição do encontro.</p>',
         'target_audience'            => 'Coordenadores',
         'participation_instructions' => 'Chegar com antecedência.',
@@ -119,7 +119,7 @@ it('does not create event details when every detail field is effectively empty',
     $user             = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $data             = [
         ...$data,
-        'subtitle'                   => '',
+        'complement'                 => '',
         'description'                => '<p><br></p><p>&nbsp;</p>',
         'target_audience'            => '',
         'participation_instructions' => '',
@@ -135,6 +135,7 @@ it('does not create event details when every detail field is effectively empty',
 
     expect($result['created'])->toBeTrue()
         ->and($result['event'])->toBeInstanceOf(Event::class)
+        ->and($result['event']->complement)->toBeNull()
         ->and($result['event']->detail()->exists())->toBeFalse();
     $this->assertDatabaseCount('events', 1);
     $this->assertDatabaseCount('event_details', 0);

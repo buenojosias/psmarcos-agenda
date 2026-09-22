@@ -144,8 +144,10 @@ class CreateRecurringEventsAction
             foreach ($validOccurrences as $occurrence) {
                 $event = Event::create([
                     'created_by_user_id' => $user->id,
+                    'community_id'       => $data['community_id'],
                     'group_id'           => $data['group_id'],
                     'name'               => $data['name'],
+                    'complement'         => filled($data['complement']) ? $data['complement'] : null,
                     'type'               => $data['type'],
                     'recurrence_code'    => $recurrenceCode,
                     'starts_at'          => $occurrence['starts_at'],
@@ -207,7 +209,6 @@ class CreateRecurringEventsAction
     private function detailData(array $data): array
     {
         return [
-            'subtitle'                   => filled($data['subtitle']) ? $data['subtitle'] : null,
             'description'                => filled($data['description']) ? $data['description'] : null,
             'target_audience'            => filled($data['target_audience']) ? $data['target_audience'] : null,
             'participation_instructions' => filled($data['participation_instructions']) ? $data['participation_instructions'] : null,

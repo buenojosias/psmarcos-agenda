@@ -75,7 +75,7 @@ function externalEventData(Group $group): array
         'external_location_name'     => 'Praça central',
         'external_location_address'  => 'Rua das Flores, 100',
         'external_location_url'      => '',
-        'subtitle'                   => '',
+        'complement'                 => '',
         'description'                => '',
         'target_audience'            => '',
         'participation_instructions' => '',
@@ -150,7 +150,7 @@ it('persists a validated external event and redirects to its page', function () 
     $group = Group::factory()->create();
 
     $component = Livewire::actingAs($user)->test(External::class)
-        ->set(externalEventData($group))
+        ->set([...externalEventData($group), 'complement' => 'Encontro na praça'])
         ->call('validateDraft')
         ->assertHasNoErrors()
         ->assertSet('draftValidated', true)
@@ -162,6 +162,7 @@ it('persists a validated external event and redirects to its page', function () 
 
     $component->assertRedirect(route('events.show', $event));
     expect($event->is_external)->toBeTrue()
+        ->and($event->complement)->toBe('Encontro na praça')
         ->and($event->detail->external_location_name)->toBe('Praça central')
         ->and($event->detail->external_location_address)->toBe('Rua das Flores, 100')
         ->and($event->reservations)->toHaveCount(0)
@@ -317,7 +318,7 @@ it('persists the validated recurring series and redirects to the event list', fu
 
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = recurringEventData($group);
+    $data  = [...recurringEventData($group), 'complement' => 'Formação paroquial'];
 
     $component = Livewire::actingAs($user)->test(Recurring::class)
         ->set($data)
@@ -331,6 +332,8 @@ it('persists the validated recurring series and redirects to the event list', fu
 
     $component->assertRedirect(route('events.index'));
     expect($events)->toHaveCount(2)
+        ->and($events->pluck('community_id')->all())->toBe([$data['community_id'], $data['community_id']])
+        ->and($events->pluck('complement')->all())->toBe(['Formação paroquial', 'Formação paroquial'])
         ->and($events->pluck('recurrence_code')->unique()->values())->toHaveCount(1)
         ->and($events->every(fn (Event $event): bool => ! $event->is_external && ! $event->advertisable))->toBeTrue()
         ->and(session('ts-ui:toast'))->toMatchArray([
@@ -614,9 +617,10 @@ it('requires a community before validating availability', function () {
 it('persists a validated occasional event and redirects to its page', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
+    $data  = occasionalEventData($group);
 
     $component = Livewire::actingAs($user)->test(Occasional::class)
-        ->set(occasionalEventData($group))
+        ->set([...$data, 'complement' => 'Formação paroquial'])
         ->call('validateDraft')
         ->assertHasNoErrors()
         ->assertSet('draftValidated', true)
@@ -636,6 +640,7 @@ it('persists a validated occasional event and redirects to its page', function (
         'description' => 'O evento foi cadastrado com sucesso.',
     ])->and($component->get('group_id'))->toBe('')
         ->and($component->get('name'))->toBe('')
+        ->and($component->get('complement'))->toBe('')
         ->and($component->get('type'))->toBe('')
         ->and($component->get('starts_at'))->toBe('')
         ->and($component->get('ends_at'))->toBe('')
@@ -644,6 +649,8 @@ it('persists a validated occasional event and redirects to its page', function (
         ->and($component->get('place_hours'))->toBe([])
         ->and($component->get('draftValidated'))->toBeFalse()
         ->and($event->status)->toBe(EventStatusEnum::PENDING)
+        ->and($event->community_id)->toBe($data['community_id'])
+        ->and($event->complement)->toBe('Formação paroquial')
         ->and($event->detail)->toBeNull()
         ->and($event->reservations)->toHaveCount(1)
         ->and($event->reservations->sole()->is_primary)->toBeTrue()

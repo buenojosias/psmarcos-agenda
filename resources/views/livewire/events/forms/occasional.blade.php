@@ -3,7 +3,7 @@
         <div class="grid gap-4 md:grid-cols-2">
             <x-input wire:model="name" label="Nome do evento *" maxlength="255" required class="md:col-span-2" />
 
-            <x-input wire:model="subtitle" label="Complemento" maxlength="255" class="md:col-span-2" />
+            <x-input wire:model="complement" label="Complemento" maxlength="255" class="md:col-span-2" />
 
             <x-select.native wire:model="type" label="Tipo *" required>
                 <option value="">Selecione</option>

@@ -26,7 +26,7 @@ function externalEventCreationData(Group $group, bool $confirmImmediately = fals
         'external_location_name'     => 'Centro de convenções',
         'external_location_address'  => 'Rua das Flores, 100',
         'external_location_url'      => 'https://example.com/local',
-        'subtitle'                   => 'Formação paroquial',
+        'complement'                 => 'Formação paroquial',
         'description'                => '<p>Descrição do encontro.</p>',
         'target_audience'            => 'Coordenadores',
         'participation_instructions' => 'Chegar com antecedência.',
@@ -48,6 +48,7 @@ it('creates a pending external event with its location details and log', functio
     expect($event)->toBeInstanceOf(Event::class)
         ->and($event->status)->toBe(EventStatusEnum::PENDING)
         ->and($event->is_external)->toBeTrue()
+        ->and($event->complement)->toBe('Formação paroquial')
         ->and($event->advertisable)->toBeTrue()
         ->and($event->reservations()->exists())->toBeFalse()
         ->and($event->detail->only([

@@ -82,8 +82,10 @@ class CreateEventAction
             $status = $confirmImmediately ? EventStatusEnum::CONFIRMED : EventStatusEnum::PENDING;
             $event  = Event::create([
                 'created_by_user_id' => $user->id,
+                'community_id'       => $data['community_id'],
                 'group_id'           => $data['group_id'],
                 'name'               => $data['name'],
+                'complement'         => filled($data['complement']) ? $data['complement'] : null,
                 'type'               => $data['type'],
                 'recurrence_code'    => null,
                 'starts_at'          => $data['starts_at'],
@@ -95,7 +97,6 @@ class CreateEventAction
             ]);
 
             $detailData = [
-                'subtitle'                   => filled($data['subtitle']) ? $data['subtitle'] : null,
                 'description'                => filled($data['description']) ? $data['description'] : null,
                 'target_audience'            => filled($data['target_audience']) ? $data['target_audience'] : null,
                 'participation_instructions' => filled($data['participation_instructions']) ? $data['participation_instructions'] : null,

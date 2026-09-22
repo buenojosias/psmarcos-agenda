@@ -26,7 +26,7 @@ function recurringActionData(Group $group, Community $community, array $placeHou
         'ends_time'                  => '11:00',
         'is_public'                  => true,
         'confirm_immediately'        => $confirmImmediately,
-        'subtitle'                   => '',
+        'complement'                 => '',
         'description'                => '',
         'target_audience'            => '',
         'participation_instructions' => '',
@@ -56,8 +56,8 @@ it('creates the complete pending series with details reservations and shared cod
         $nave->id => ['before' => 0.5, 'after' => 0.25],
         $hall->id => ['before' => 0, 'after' => 1],
     ]);
-    $data['subtitle'] = 'Formação paroquial';
-    $occurrences      = [
+    $data['complement'] = 'Formação paroquial';
+    $occurrences        = [
         '2026-10-10' => [
             'date'                => '2026-10-10',
             'starts_at'           => '2026-10-10 09:00:00',
@@ -84,11 +84,13 @@ it('creates the complete pending series with details reservations and shared cod
         ->and($result['events'])->toHaveCount(2)
         ->and($result['conflicts'])->toBe([])
         ->and($events)->toHaveCount(2)
+        ->and($events->pluck('community_id')->all())->toBe([$community->id, $community->id])
         ->and($events->pluck('recurrence_code')->unique()->values())->toHaveCount(1)
         ->and($events->first()->recurrence_code)->not->toBeNull()
         ->and($events->pluck('status')->all())->toBe([EventStatusEnum::PENDING, EventStatusEnum::PENDING])
         ->and($events->every(fn (Event $event): bool => ! $event->is_external && ! $event->advertisable))->toBeTrue()
-        ->and($events->every(fn (Event $event): bool => $event->detail?->subtitle === 'Formação paroquial'))->toBeTrue()
+        ->and($events->every(fn (Event $event): bool => $event->complement === 'Formação paroquial'))->toBeTrue()
+        ->and($events->every(fn (Event $event): bool => $event->detail === null))->toBeTrue()
         ->and($events->first()->reservations)->toHaveCount(2)
         ->and($events->last()->reservations)->toHaveCount(1)
         ->and($events->every(fn (Event $event): bool => $event->reservations->where('is_primary', true)->count() === 1))->toBeTrue()
@@ -129,6 +131,7 @@ it('confirms every occurrence and records approved logs with one operation code'
     $event = Event::query()->with(['detail', 'logs'])->sole();
 
     expect($event->status)->toBe(EventStatusEnum::CONFIRMED)
+        ->and($event->complement)->toBeNull()
         ->and($event->detail)->toBeNull()
         ->and($event->logs->pluck('action')->all())->toBe([
             EventLogActionEnum::CREATED,
