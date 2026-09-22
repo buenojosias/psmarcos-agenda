@@ -17,18 +17,37 @@ it('requires authentication', function () {
 });
 
 it('displays event details and the reservation period', function () {
-    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED, 'starts_at' => '2026-10-02 10:00', 'ends_at' => '2026-10-02 12:00']);
-    $event->detail()->create(['description' => '<script>alert(1)</script>', 'contact_name' => 'Maria', 'registration_required' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
-    $place     = $community->places()->create(['name' => 'Salão principal']);
+    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED, 'starts_at' => '2026-10-02 10:00', 'ends_at' => '2026-10-02 12:00']);
+    $event->detail()->create(['description' => '<script>alert(1)</script>', 'contact_name' => 'Maria', 'registration_required' => true]);
+    $place = $community->places()->create(['name' => 'Salão principal']);
     $event->reservations()->create(['place_id' => $place->id, 'reserved_from' => '2026-10-02 09:00', 'reserved_to' => '2026-10-02 13:00']);
 
     $this->actingAs(User::factory()->create())->get(route('events.show', $event))
         ->assertOk()->assertSee($event->name)->assertSee('Maria')
         ->assertSee('Salão principal')->assertSee('Matriz')
         ->assertSee('02/10/2026 09:00')->assertSee('02/10/2026 13:00')
-        ->assertSee('02/10/2026 10:00')->assertSee('02/10/2026 12:00')
+        ->assertSee('02/10/2026 - 10:00')->assertSee('02/10/2026 - 12:00')
         ->assertSee('<script>alert(1)</script>')->assertDontSee('<script>alert(1)</script>', false);
+});
+
+it('shows the event community only in its information card, not in the reservations list', function () {
+    $community      = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $placeCommunity = Community::create(['name' => 'Outra comunidade', 'alias' => 'outra', 'abbreviation' => 'OT']);
+    $event          = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED]);
+    $place          = $placeCommunity->places()->create(['name' => 'Salão principal']);
+    $event->reservations()->create([
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-02 09:00',
+        'reserved_to'   => '2026-10-02 13:00',
+        'is_primary'    => true,
+    ]);
+
+    $this->actingAs(User::factory()->create())->get(route('events.show', $event))
+        ->assertOk()
+        ->assertSee('Matriz')
+        ->assertSee('Salão principal')
+        ->assertDontSee('Outra comunidade');
 });
 
 it('hides space reservations for external events', function () {
@@ -185,5 +204,5 @@ it('lists the primary space first even when other reservations start earlier', f
     }
 
     Livewire::actingAs(User::factory()->create())->test(Show::class, ['event' => $event])
-        ->assertSeeInOrder(['Auditório', 'Espaço principal', 'Cozinha', 'Sala de apoio']);
+        ->assertSeeInOrder(['Auditório', 'Cozinha', 'Sala de apoio']);
 });

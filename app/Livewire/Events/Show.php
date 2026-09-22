@@ -26,7 +26,7 @@ class Show extends Component
 
         $reservations = $this->event->is_external
             ? null
-            : $this->event->reservations()->with('place.community')
+            : $this->event->reservations()->with('place')
                 ->orderByDesc('is_primary')->orderBy('reserved_from')->orderBy('id')->get()
                 ->each(function (PlaceReservation $reservation): void {
                     $reservation->setAttribute('highlight', $reservation->is_primary ? 'primary' : null);

@@ -92,7 +92,6 @@
             ]" :rows="$reservations" highlight empty="Nenhuma reserva de espaço para este evento.">
                 @interact('column_place', $row)
                     <p class="font-medium">{{ $row->place?->name ?? 'Espaço não informado' }}</p>
-                    <small class="block text-gray-500 dark:text-dark-400">{{ $row->place?->community?->name }}</small>
                 @endinteract
                 @interact('column_reserved_from', $row)
                     {{ $row->reserved_from->format('d/m/Y H:i') }}
