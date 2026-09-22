@@ -1,9 +1,9 @@
 <x-table :headers="[
     ['index' => 'name', 'label' => 'Evento', 'sortable' => false],
+    ['index' => 'location', 'label' => 'Local', 'sortable' => false],
     ['index' => 'group', 'label' => 'Grupo organizador', 'sortable' => false],
     ['index' => 'starts_at', 'label' => 'Início', 'sortable' => false],
     ['index' => 'ends_at', 'label' => 'Término', 'sortable' => false],
-    ['index' => 'location', 'label' => 'Local principal', 'sortable' => false],
     ['index' => 'status', 'label' => 'Status', 'sortable' => false],
 ]" :rows="$events" paginate loading empty="Nenhum evento encontrado.">
     @interact('column_name', $row)
@@ -16,15 +16,18 @@
     @endinteract
 
     @interact('column_starts_at', $row)
-        {{ $row->starts_at->format('d/m/Y H:i') }}
+        {{ $row->starts_at->format('d/m/Y - H:i') }}
     @endinteract
 
     @interact('column_ends_at', $row)
-        {{ $row->ends_at->format('d/m/Y H:i') }}
+        {{ $row->ends_at->format('d/m/Y - H:i') }}
     @endinteract
 
     @interact('column_location', $row)
-        {{ $row->primaryReservation?->place?->name ?? 'Local não informado' }}
+        @if ($row->community?->name)
+            <div>{{ $row->community?->name }}</div>
+        @endif
+        <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->primaryReservation?->place?->name ?? 'Local não informado' }}</div>
     @endinteract
 
     @interact('column_status', $row, $memberOnly, $userGroupIds)

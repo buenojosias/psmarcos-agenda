@@ -28,7 +28,7 @@ abstract class Listing extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'status', 'period', 'type', 'scope', 'group'], true)) {
+        if (in_array($property, ['search', 'status', 'period', 'type', 'scope', 'group', 'community', 'externalOnly'], true)) {
             $this->resetPage();
         }
     }
@@ -44,7 +44,7 @@ abstract class Listing extends Component
 
         return Event::query()
             ->visibleTo(auth()->user())
-            ->with(['group:id,name', 'primaryReservation:id,event_id,place_id', 'primaryReservation.place:id,name'])
+            ->with(['group:id,name', 'community:id,name', 'primaryReservation:id,event_id,place_id', 'primaryReservation.place:id,name'])
             ->when($this->search !== '', fn (Builder $query): Builder => $query->where('name', 'like', '%'.$this->search.'%'))
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
             ->when($this->period === 'upcoming', fn (Builder $query): Builder => $query->upcoming())

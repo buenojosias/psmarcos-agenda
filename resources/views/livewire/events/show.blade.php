@@ -18,7 +18,11 @@
         </div>
     </div>
 
-    <x-card header="Informações do evento" shadowless bordered>
+    <x-card shadowless bordered>
+        <x-slot:header>
+            <div class="text-md font-medium">Informaçãoes do evento</div>
+            <x-badge :text="$event->status->label()" :color="$event->status->color()" light />
+        </x-slot:header>
         <dl class="grid gap-4 sm:grid-cols-2">
             <x-detail label="Tipo" :value="$event->type->label()" />
             <x-detail label="Grupo organizador" :value="$event->group?->name ?? 'Paróquia'" />
@@ -26,9 +30,6 @@
             <x-detail label="Término" :value="$event->ends_at->format('d/m/Y H:i')" />
             <x-detail label="Evento público" :value="$event->is_public ? 'Sim' : 'Não'" />
             <x-detail label="Divulgação solicitada" :value="$event->advertisable ? 'Sim' : 'Não'" />
-            <x-detail label="Status">
-                <x-badge :text="$event->status->label()" :color="$event->status->color()" light />
-            </x-detail>
             @if ($event->is_external)
                 <x-detail label="Local externo" :value="$event->detail?->external_location_name ?? 'Não informado'" />
                 @if ($event->detail?->external_location_address)

@@ -42,6 +42,18 @@
                 <option wire:key="group-{{ $eventGroup->id }}" value="{{ $eventGroup->id }}">{{ $eventGroup->name }}</option>
             @endforeach
         </x-select.native>
+
+        <x-select.native wire:model.live="community" label="Comunidade/local">
+            <option value="">Todas as comunidades</option>
+            @foreach ($communities as $eventCommunity)
+                <option wire:key="community-{{ $eventCommunity->id }}" value="{{ $eventCommunity->id }}">{{ $eventCommunity->name }}</option>
+            @endforeach
+            <option value="none">Sem comunidade</option>
+        </x-select.native>
+
+        <div class="flex items-end md:pb-2">
+            <x-toggle wire:model.live="externalOnly" label="Apenas eventos externos" />
+        </div>
     </x-card>
 
     @include('livewire.events.listing')

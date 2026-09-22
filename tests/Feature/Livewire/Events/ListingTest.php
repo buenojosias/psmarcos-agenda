@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\Group;
 use Livewire\Livewire;
+use App\Models\Community;
 use App\Enums\EventTypeEnum;
 use App\Enums\EventStatusEnum;
 use App\Livewire\Events\Index;
@@ -103,10 +104,44 @@ it('uses the end time for periods and orders each period correctly', function ()
 
 it('normalizes invalid URL filters including arrays', function (mixed $invalid) {
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
-        ->withQueryParams(array_fill_keys(['status', 'type', 'period', 'scope', 'group'], $invalid))
+        ->withQueryParams(array_fill_keys(['status', 'type', 'period', 'scope', 'group', 'community'], $invalid))
         ->test(Index::class)->assertSet('status', '')->assertSet('type', '')->assertSet('period', 'upcoming')
-        ->assertSet('scope', 'all')->assertSet('group', '');
+        ->assertSet('scope', 'all')->assertSet('group', '')->assertSet('community', '');
 })->with(['invalid', [['nested' => 'invalid']]]);
+
+it('filters events by their community including events without one', function () {
+    $community      = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $otherCommunity = Community::create(['name' => 'Capela', 'alias' => 'capela', 'abbreviation' => 'CP']);
+    $matching       = Event::factory()->create(['community_id' => $community->id]);
+    Event::factory()->create(['community_id' => $otherCommunity->id]);
+    $withoutCommunity = Event::factory()->create(['is_external' => true]);
+
+    $component = Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
+        ->test(Index::class)
+        ->assertSee('Comunidade/local')
+        ->assertSee('Sem comunidade')
+        ->call('setPage', 2)
+        ->set('community', (string) $community->id)
+        ->assertSet('paginators.page', 1)
+        ->assertViewHas('events', fn ($rows): bool => $rows->modelKeys() === [$matching->id])
+        ->set('community', 'none')
+        ->assertViewHas('events', fn ($rows): bool => $rows->modelKeys() === [$withoutCommunity->id])
+        ->set('community', '')
+        ->assertViewHas('events', fn ($rows): bool => $rows->total() === 3);
+});
+
+it('shows only external events when toggled and resets pagination', function () {
+    Event::factory()->count(11)->create();
+    $external = Event::factory()->create(['is_external' => true]);
+    $user     = User::factory()->create(['is_active' => true, 'roles' => ['admin']]);
+
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertSee('Apenas eventos externos')
+        ->call('setPage', 2)
+        ->set('externalOnly', true)
+        ->assertSet('paginators.page', 1)
+        ->assertViewHas('events', fn ($rows): bool => $rows->modelKeys() === [$external->id]);
+});
 
 it('filters by name type and group and normalizes invalid type on the general list', function () {
     $group = Group::factory()->create();
@@ -131,22 +166,33 @@ it('paginates and resets the page when a filter changes', function () {
         ->set('status', 'confirmed')->assertSet('paginators.page', 1);
 });
 
-it('renders escaped names and the primary reservation without lazy loading', function () {
+it('renders escaped names and the main place with its event community in the second column', function () {
     $group     = Group::factory()->create(['name' => 'Pastoral organizadora']);
-    $event     = Event::factory()->for($group)->create(['name' => '<script>alert(1)</script>']);
-    $community = App\Models\Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $event     = Event::factory()->for($group)->create(['name' => '<script>alert(1)</script>', 'community_id' => $community->id]);
     $place     = $community->places()->create(['name' => 'Salão principal']);
     $event->reservations()->create([
         'place_id'      => $place->id, 'is_primary' => true,
         'reserved_from' => $event->starts_at, 'reserved_to' => $event->ends_at,
     ]);
-    Event::factory()->for($group)->create();
+    Event::factory()->for($group)->create([
+        'community_id' => $community->id,
+        'starts_at'    => $event->starts_at->copy()->addDay(),
+        'ends_at'      => $event->ends_at->copy()->addDay(),
+    ]);
     Illuminate\Database\Eloquent\Model::preventLazyLoading();
 
     try {
-        Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))->test(Index::class)
-            ->assertSee('Salão principal')->assertSee('Pastoral organizadora')
-            ->assertSee($event->name)->assertDontSee($event->name, false);
+        $html = Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))->test(Index::class)
+            ->assertSee('Salão principal')->assertSee('Matriz')->assertSee('Pastoral organizadora')
+            ->assertSee($event->name)->assertDontSee($event->name, false)->html();
+
+        $document = new DOMDocument;
+        @$document->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+        $table = new DOMXPath($document);
+        expect(mb_trim($table->evaluate('string(//thead/tr/th[2])')))->toBe('Local');
+        expect($table->evaluate('string(//tbody/tr[1]/td[2])'))->toContain('Salão principal')->toContain('Matriz');
+        expect($table->evaluate('string(//tbody/tr[2]/td[2])'))->toContain('Local não informado')->toContain('Matriz');
     } finally {
         Illuminate\Database\Eloquent\Model::preventLazyLoading(false);
     }
