@@ -52,6 +52,72 @@ it('forbids editing a canceled event even when the user is authorized', function
         ->assertForbidden();
 });
 
+it('shows the latest refusal reason and reservation hold while editing a refused event', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'status'                 => EventStatusEnum::REFUSED,
+        'reservation_hold_until' => '2026-10-15 23:59:00',
+    ]);
+    $event->notes()->create([
+        'user_id' => $user->id,
+        'content' => 'Motivo anterior.',
+    ]);
+    $event->notes()->create([
+        'user_id' => $user->id,
+        'content' => 'Ajuste a reserva principal.',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Edit::class, ['event' => $event])
+        ->assertSee('Status: Recusado')
+        ->assertSee('Ajuste a reserva principal.')
+        ->assertDontSee('Motivo anterior.')
+        ->assertSee('15/10/2026 23:59')
+        ->assertSee('O evento permanece recusado enquanto você realiza os ajustes.')
+        ->assertSee('Enviar novamente para aprovação');
+});
+
+it('does not show the resubmit action for an event that is not refused', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+
+    Livewire::actingAs($user)
+        ->test(Edit::class, ['event' => $event])
+        ->assertDontSee('Enviar novamente para aprovação');
+});
+
+it('resubmits a refused event after confirmation and stays on the edit page', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'status'                 => EventStatusEnum::REFUSED,
+        'is_external'            => true,
+        'reservation_hold_until' => '2026-10-15 23:59:00',
+    ]);
+    $event->detail()->create([
+        'external_location_name'    => 'Auditório externo',
+        'external_location_address' => 'Rua Central, 100',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Edit::class, ['event' => $event])
+        ->assertSet('resubmitConfirmation', false)
+        ->call('openResubmitConfirmation')
+        ->assertSet('resubmitConfirmation', true)
+        ->assertSee('As informações e reservas serão validadas novamente.')
+        ->call('resubmit')
+        ->assertHasNoErrors()
+        ->assertSet('resubmitConfirmation', false)
+        ->assertSet('event.status', EventStatusEnum::PENDING)
+        ->assertDontSee('Enviar novamente para aprovação')
+        ->assertNoRedirect();
+
+    expect($event->refresh()->status)->toBe(EventStatusEnum::PENDING)
+        ->and($event->reservation_hold_until)->toBeNull();
+});
+
 it('persists the selected tab in the query string', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
@@ -127,6 +193,24 @@ it('allows an authorized user to edit general information', function () {
         ->assertHasNoErrors();
 
     expect($event->refresh()->name)->toBe('Nome atualizado');
+});
+
+it('keeps a refused event refused after editing general information', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'name'   => 'Nome recusado',
+        'status' => EventStatusEnum::REFUSED,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(General::class, ['event' => $event])
+        ->set('name', 'Nome recusado atualizado')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($event->refresh()->name)->toBe('Nome recusado atualizado')
+        ->and($event->status)->toBe(EventStatusEnum::REFUSED);
 });
 
 it('loads the current event details', function () {
