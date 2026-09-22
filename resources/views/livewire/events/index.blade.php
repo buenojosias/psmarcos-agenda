@@ -11,7 +11,7 @@
                   x-bind:aria-expanded="filtersOpen" aria-controls="event-filters" />
     </div>
 
-    <x-card id="event-filters" bordered class="grid gap-4 md:grid! md:grid-cols-3"
+    <x-card id="event-filters" bordered shadowless class="grid gap-4 md:grid! md:grid-cols-3"
          x-cloak x-show="filtersOpen"
          x-transition:enter="transition duration-300 ease-out motion-reduce:transition-none"
          x-transition:enter-start="opacity-0 -translate-y-2"
@@ -23,7 +23,7 @@
 
         <x-select.native wire:model.live="scope" label="Exibir">
             <option value="all">Todos os eventos</option>
-            <option value="mine">Meus grupos</option>
+            <option value="mine">De meus grupos</option>
             @if (! $memberOnly)
                 <option value="review">Aguardando análise</option>
             @endif
