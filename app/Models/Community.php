@@ -44,6 +44,11 @@ class Community extends Model
         return $this->hasMany(Group::class);
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);

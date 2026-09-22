@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('community_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name'); // Nome de identificação do evento

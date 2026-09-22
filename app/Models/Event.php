@@ -19,6 +19,7 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'community_id',
         'group_id',
         'created_by_user_id',
         'name',
@@ -43,6 +44,11 @@ class Event extends Model
         'advertisable'           => 'boolean',
         'reservation_hold_until' => 'datetime',
     ];
+
+    public function community(): BelongsTo
+    {
+        return $this->belongsTo(Community::class);
+    }
 
     public function group(): BelongsTo
     {
