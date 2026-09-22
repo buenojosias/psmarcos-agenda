@@ -1,6 +1,9 @@
 <div class="space-y-6">
     <div class="header">
-        <h1>Editar evento</h1>
+        <div>
+            <h1>Editar evento</h1>
+            <a href="{{ route('events.show', $event) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar ao evento</a>
+        </div>
     </div>
 
     <x-tab wire:model.live="tab">
