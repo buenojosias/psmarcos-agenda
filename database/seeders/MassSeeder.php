@@ -17,12 +17,12 @@ class MassSeeder extends Seeder
     public function run(): void
     {
         $communities = Community::query()
-            ->whereIn('abbreviation', ['msm', 'nsm'])
+            ->whereIn('abbreviation', ['MSM', 'NSM'])
             ->get()
             ->keyBy('abbreviation');
 
-        $matriz       = $communities->get('msm');
-        $misericordia = $communities->get('nsm');
+        $matriz       = $communities->get('MSM');
+        $misericordia = $communities->get('NSM');
 
         if (! $matriz || ! $misericordia) {
             throw new RuntimeException(

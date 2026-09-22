@@ -14,7 +14,6 @@ class EventDetail extends Model
 
     protected $fillable = [
         'event_id',
-        'subtitle',
         'description',
         'target_audience',
         'participation_instructions',

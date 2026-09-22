@@ -13,7 +13,6 @@ return new class extends Migration
             $table->foreignId('event_id')->unique()->constrained()->cascadeOnDelete();
 
             // Apresentação pública
-            $table->string('subtitle')->nullable(); // ex: "Uma noite especial de música e confraternização"
             $table->text('description')->nullable();
 
             // Informações para participação

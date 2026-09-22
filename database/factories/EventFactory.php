@@ -29,8 +29,9 @@ class EventFactory extends Factory
                     'abbreviation' => fake()->unique()->lexify('???'),
                     'alias'        => fake()->unique()->slug(2),
                 ])->id),
-            'name' => ucfirst(fake()->words(3, true)),
-            'type' => fake()->randomElement([
+            'name'       => ucfirst(fake()->words(3, true)),
+            'complement' => fake()->optional(0.6)->sentence(6),
+            'type'       => fake()->randomElement([
                 EventTypeEnum::MEETING,
                 EventTypeEnum::REHEARSAL,
                 EventTypeEnum::PARTY,

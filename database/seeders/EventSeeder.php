@@ -55,6 +55,7 @@ class EventSeeder extends Seeder
                     'name'               => $series === 1
                         ? 'Encontro mensal - '.$group->name
                         : 'Reunião mensal - '.$group->name,
+                    'complement'      => $series === 1 ? 'Convivência e formação' : 'Planejamento pastoral',
                     'type'            => EventTypeEnum::MEETING,
                     'recurrence_code' => $recurrenceCode,
                     'starts_at'       => $startsAt,
@@ -108,6 +109,7 @@ class EventSeeder extends Seeder
                 'group_id'           => $groups->random()->id,
                 'created_by_user_id' => $users->random()->id,
                 'name'               => $name,
+                'complement'         => fake()->sentence(6),
                 'type'               => $uniqueTypes[$index],
                 'recurrence_code'    => null,
                 'starts_at'          => $startsAt,

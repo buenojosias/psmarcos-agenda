@@ -23,6 +23,7 @@ class Event extends Model
         'group_id',
         'created_by_user_id',
         'name',
+        'complement',
         'type',
         'recurrence_code',
         'starts_at',

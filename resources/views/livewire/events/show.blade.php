@@ -31,8 +31,10 @@
                 @if ($event->is_external)
                     {{ $event->detail?->external_location_name ?? 'Não informado' }}
                 @else
-                    {{ $primaryReservation?->place?->name ?? 'Não informado' }}
-                    <span class="block text-sm text-gray-500 dark:text-dark-400">{{ $event->community?->name ?? 'Sem comunidade' }}</span>
+                    @if ($event->community)
+                        {{ $event->community?->name ?? 'Sem comunidade' }}
+                    @endif
+                    <span class="block text-sm text-gray-500 dark:text-dark-400">{{ $primaryReservation?->place?->name ?? 'Não informado' }}</span>
                 @endif
             </x-detail>
             <x-detail label="Grupo organizador" :value="$event->group?->name ?? 'Não informado'" />

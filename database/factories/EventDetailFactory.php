@@ -19,7 +19,6 @@ class EventDetailFactory extends Factory
 
         return [
             'event_id'                   => Event::factory(),
-            'subtitle'                   => fake()->optional(0.6)->sentence(6),
             'description'                => fake()->optional(0.8)->paragraph(),
             'target_audience'            => fake()->optional(0.6)->randomElement(['Famílias', 'Jovens', 'Toda a comunidade', 'Coordenadores de pastorais']),
             'participation_instructions' => fake()->optional(0.5)->randomElement(['Chegar 15 minutos antes.', 'Trazer um prato para partilhar.', 'Levar caderno e caneta.']),
