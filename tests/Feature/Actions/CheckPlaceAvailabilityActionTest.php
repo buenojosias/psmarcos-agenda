@@ -110,3 +110,29 @@ it('applies different before and after hour buffers in fifteen minute increments
         ->and($conflicts[0]['requested_reserved_to'])->toBe('2026-10-10 11:45:00')
         ->and($conflicts[0]['conflicts'])->toHaveCount(2);
 });
+
+it('ignores only the informed reservation ids', function () {
+    $place   = availabilityCommunity()->places()->create(['name' => 'Salão']);
+    $ignored = reservePlace($place, '2026-10-10 10:15:00', '2026-10-10 10:30:00');
+    $visible = reservePlace($place, '2026-10-10 10:45:00', '2026-10-10 11:30:00');
+    $action  = app(CheckPlaceAvailabilityAction::class);
+
+    $conflicts = $action->handle(
+        '2026-10-10 10:00:00',
+        '2026-10-10 11:00:00',
+        new Collection([$place]),
+        [$place->id => ['before_hours' => 0, 'after_hours' => 0]],
+        [$ignored->id],
+    );
+    $withoutConflicts = $action->handle(
+        '2026-10-10 10:00:00',
+        '2026-10-10 11:00:00',
+        new Collection([$place]),
+        [$place->id => ['before_hours' => 0, 'after_hours' => 0]],
+        [$ignored->id, $visible->id],
+    );
+
+    expect($conflicts[0]['conflicts'])->toHaveCount(1)
+        ->and($conflicts[0]['conflicts'][0]['reserved_from'])->toBe('2026-10-10 10:45:00')
+        ->and($withoutConflicts)->toBe([]);
+});

@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Models\Event;
+use App\Models\Place;
 use Livewire\Livewire;
+use App\Models\Community;
 use App\Enums\EventTypeEnum;
 use App\Livewire\Events\Edit;
 use App\Livewire\Events\Show;
 use App\Enums\EventStatusEnum;
+use App\Models\PlaceReservation;
 use Illuminate\Support\Facades\Gate;
 use App\Livewire\Events\Edit\Details;
 use App\Livewire\Events\Edit\General;
+use App\Livewire\Events\Edit\Reservations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -173,7 +177,7 @@ it('starts with an empty details form when the event has no details', function (
 it('allows an authorized user to save event details', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
 
     Livewire::actingAs($user)
         ->test(Details::class, ['event' => $event])
@@ -211,4 +215,112 @@ it('does not save invalid event details', function () {
 
     expect($event->detail()->exists())->toBeFalse()
         ->and($event->logs()->exists())->toBeFalse();
+});
+
+function editReservationPlace(string $name = 'Salão'): Place
+{
+    $community = Community::create([
+        'name'         => 'Comunidade São José',
+        'alias'        => fake()->unique()->slug(),
+        'abbreviation' => fake()->unique()->lexify('???'),
+    ]);
+
+    return $community->places()->create(['name' => $name]);
+}
+
+it('lists event reservations with their individual actions', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 10:00:00',
+        'ends_at'     => '2026-10-10 11:00:00',
+        'status'      => EventStatusEnum::CONFIRMED,
+        'is_external' => false,
+    ]);
+    $place = editReservationPlace('Salão paroquial');
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $place->id,
+        'reserved_from' => '2026-10-10 09:00:00',
+        'reserved_to'   => '2026-10-10 12:00:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->assertSee('Salão paroquial')
+        ->assertSee('Comunidade São José')
+        ->assertSee('10/10/2026 09:00')
+        ->assertSee('Principal')
+        ->assertSee('Editar')
+        ->assertSee('Excluir')
+        ->assertSee('Adicionar reserva');
+});
+
+it('creates an event reservation immediately from the modal form', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 10:00:00',
+        'ends_at'     => '2026-10-10 11:00:00',
+        'status'      => EventStatusEnum::CONFIRMED,
+        'is_external' => false,
+    ]);
+    $place = editReservationPlace();
+
+    Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->call('openCreate')
+        ->set('place_id', $place->id)
+        ->set('reserved_from', '2026-10-09T18:00')
+        ->set('reserved_to', '2026-10-10T12:00')
+        ->call('saveReservation')
+        ->assertHasNoErrors()
+        ->assertSet('reservationModal', false)
+        ->assertSee('Principal');
+
+    $reservation = $event->reservations()->sole();
+
+    expect($reservation->place_id)->toBe($place->id)
+        ->and($reservation->is_primary)->toBeTrue();
+});
+
+it('shows a friendly availability error without persisting the reservation', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 10:00:00',
+        'ends_at'     => '2026-10-10 11:00:00',
+        'status'      => EventStatusEnum::CONFIRMED,
+        'is_external' => false,
+    ]);
+    $otherEvent = Event::factory()->create();
+    $primary    = editReservationPlace('Igreja');
+    $conflicted = editReservationPlace('Auditório');
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $primary->id,
+        'reserved_from' => '2026-10-10 09:00:00',
+        'reserved_to'   => '2026-10-10 12:00:00',
+        'is_primary'    => true,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $otherEvent->id,
+        'place_id'      => $conflicted->id,
+        'reserved_from' => '2026-10-10 10:30:00',
+        'reserved_to'   => '2026-10-10 11:30:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->set('place_id', $conflicted->id)
+        ->set('reserved_from', '2026-10-10T10:00')
+        ->set('reserved_to', '2026-10-10T12:00')
+        ->call('saveReservation')
+        ->assertHasErrors('place_id')
+        ->assertSee('Auditório')
+        ->assertSee('2026-10-10 10:30:00');
+
+    expect($event->reservations()->count())->toBe(1);
 });

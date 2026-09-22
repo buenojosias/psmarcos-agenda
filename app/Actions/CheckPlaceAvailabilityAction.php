@@ -15,6 +15,7 @@ class CheckPlaceAvailabilityAction
     /**
      * @param  Collection<int, Place>  $places
      * @param  array<int, array{before_hours: float|int|string, after_hours: float|int|string}>  $placeHours
+     * @param  list<int>  $ignoredReservationIds
      * @return list<array{
      *     requested_place: array{id: int, name: string},
      *     requested_reserved_from: string,
@@ -31,6 +32,7 @@ class CheckPlaceAvailabilityAction
         CarbonInterface|string $endsAt,
         Collection $places,
         array $placeHours,
+        array $ignoredReservationIds = [],
     ): array {
         if ($places->isEmpty()) {
             return [];
@@ -61,6 +63,10 @@ class CheckPlaceAvailabilityAction
             ->all();
         $reservations = PlaceReservation::query()
             ->whereIn('place_id', $checkedPlaces->keys())
+            ->when(
+                $ignoredReservationIds !== [],
+                fn ($query) => $query->whereNotIn('id', $ignoredReservationIds),
+            )
             ->where('reserved_from', '<', $requests->max('reserved_to'))
             ->where('reserved_to', '>', $requests->min('reserved_from'))
             ->orderBy('reserved_from')
