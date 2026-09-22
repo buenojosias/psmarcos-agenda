@@ -37,8 +37,16 @@ class Reschedule extends Component
     /** @var list<array{place_id: int|string|null, reserved_from: string, reserved_to: string, is_primary: bool}> */
     public array $reservations = [];
 
+    /** @var list<int|string> */
+    public array $selected_place_ids = [];
+
+    public ?int $primary_place_id = null;
+
     /** @var list<array<string, mixed>> */
     public array $conflicts = [];
+
+    /** @var array<int, bool> */
+    public array $adjusting_reservations = [];
 
     public string $external_location_name = '';
 
@@ -56,6 +64,8 @@ class Reschedule extends Component
 
     public string $previewFingerprint = '';
 
+    public bool $proposalGenerated = false;
+
     public function mount(Event $event): void
     {
         Gate::authorize('update', $event);
@@ -68,25 +78,36 @@ class Reschedule extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['date', 'starts_at', 'ends_at', 'community_id'], true)
-            || str_starts_with($property, 'reservations.')
-            || str_starts_with($property, 'external_location_')) {
+        if (str_starts_with($property, 'reservations.')) {
+            if ($this->community_id !== $this->original_community_id) {
+                $this->syncSelectedPlacesFromReservations();
+            }
+
+            $this->invalidatePreview(clearConflicts: false);
+
+            return;
+        }
+
+        if (str_starts_with($property, 'external_location_')) {
             $this->invalidatePreview();
         }
     }
 
     public function updatedDate(): void
     {
+        $this->resetGeneratedProposal();
         $this->refreshAutomaticProposal();
     }
 
     public function updatedStartsAt(): void
     {
+        $this->resetGeneratedProposal();
         $this->refreshAutomaticProposal();
     }
 
     public function updatedEndsAt(): void
     {
+        $this->resetGeneratedProposal();
         $this->refreshAutomaticProposal();
     }
 
@@ -96,57 +117,72 @@ class Reschedule extends Component
             return;
         }
 
+        $this->selected_place_ids     = [];
+        $this->primary_place_id       = null;
+        $this->reservations           = [];
+        $this->adjusting_reservations = [];
+        $this->proposalGenerated      = false;
+        $this->invalidatePreview();
+
         if ($this->community_id === $this->originalCommunityId()) {
             $this->proposeCurrentReservations();
+        }
+    }
 
+    public function updatedSelectedPlaceIds(): void
+    {
+        $this->selected_place_ids = collect($this->selected_place_ids)
+            ->map(fn (int|string $placeId): int => (int) $placeId)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($this->primary_place_id !== null
+            && ! in_array($this->primary_place_id, $this->selected_place_ids, true)) {
+            $this->primary_place_id = null;
+        }
+
+        $this->resetGeneratedProposal(clearReservations: true);
+    }
+
+    public function updatedPrimaryPlaceId(): void
+    {
+        $this->resetGeneratedProposal(clearReservations: true);
+    }
+
+    public function adjustReservation(int $index): void
+    {
+        if (! $this->hasConflictForReservation($index)) {
             return;
         }
 
-        $this->reservations = [];
+        $this->adjusting_reservations[$index] = true;
     }
 
-    public function addReservation(): void
-    {
-        if (! $this->hasValidDateTimeFields()) {
-            $this->addError('date', 'Informe uma data e horários válidos antes de adicionar a reserva.');
+    public function removeReservationFromProposal(
+        int $index,
+        CheckPlaceAvailabilityAction $checkPlaceAvailability,
+    ): void {
+        Gate::authorize('update', $this->event);
 
+        if (! $this->hasConflictForReservation($index)
+            || ! array_key_exists($index, $this->reservations)) {
             return;
         }
 
-        [$startsAt, $endsAt] = $this->newEventInterval();
+        if ($this->reservations[$index]['is_primary']) {
+            $this->addError('reservations', 'A reserva principal não pode ser removida da remarcação.');
 
-        $this->reservations[] = [
-            'place_id'      => null,
-            'reserved_from' => $startsAt->format('Y-m-d\TH:i'),
-            'reserved_to'   => $endsAt->format('Y-m-d\TH:i'),
-            'is_primary'    => collect($this->reservations)->doesntContain('is_primary', true),
-        ];
-
-        $this->invalidatePreview();
-    }
-
-    public function removeReservation(int $index): void
-    {
-        if (! array_key_exists($index, $this->reservations)) {
             return;
         }
 
         unset($this->reservations[$index]);
-        $this->reservations = array_values($this->reservations);
-        $this->invalidatePreview();
-    }
+        $this->reservations           = array_values($this->reservations);
+        $this->adjusting_reservations = [];
+        $this->proposalGenerated      = true;
+        $this->syncSelectedPlacesFromReservations();
 
-    public function makePrimary(int $index): void
-    {
-        if (! array_key_exists($index, $this->reservations)) {
-            return;
-        }
-
-        foreach ($this->reservations as $reservationIndex => $reservation) {
-            $this->reservations[$reservationIndex]['is_primary'] = $reservationIndex === $index;
-        }
-
-        $this->invalidatePreview();
+        $this->preview($checkPlaceAvailability);
     }
 
     public function preview(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
@@ -158,15 +194,18 @@ class Reschedule extends Component
         $this->validateForm();
 
         [$startsAt, $endsAt] = $this->newEventInterval();
-        $this->conflicts     = [];
 
         if (! $this->event->is_external) {
+            $this->prepareReservationProposal($startsAt, $endsAt);
+            $this->validateReservationProposal();
             $this->validatePrimaryReservation($startsAt, $endsAt);
             $this->conflicts = $this->findConflicts($checkPlaceAvailability, $startsAt, $endsAt);
 
             if ($this->conflicts !== []) {
-                $this->addError('reservations', 'Existem conflitos de ambiente na proposta. Ajuste ou remova as reservas conflitantes.');
+                $this->addError('reservations', 'Existem conflitos de ambiente na proposta. Resolva os itens abaixo e verifique novamente.');
             }
+        } else {
+            $this->conflicts = [];
         }
 
         $this->previewReady       = true;
@@ -234,11 +273,24 @@ class Reschedule extends Component
 
     public function render(): View
     {
+        $places = $this->community_id === null
+            ? collect()
+            : Place::query()->where('community_id', $this->community_id)->orderBy('name')->get(['id', 'name']);
+
         return view('livewire.events.edit.reschedule', [
-            'communities' => Community::query()->orderBy('name')->get(['id', 'name']),
-            'places'      => $this->community_id === null
-                ? collect()
-                : Place::query()->where('community_id', $this->community_id)->orderBy('name')->get(['id', 'name']),
+            'communities'  => Community::query()->orderBy('name')->get(['id', 'name']),
+            'places'       => $places,
+            'placeOptions' => $places->map(fn (Place $place): array => [
+                'label' => $place->name,
+                'value' => $place->id,
+            ]),
+            'primaryPlaceOptions' => $places
+                ->whereIn('id', collect($this->selected_place_ids)->map(fn (int|string $id): int => (int) $id))
+                ->map(fn (Place $place): array => [
+                    'label' => $place->name,
+                    'value' => $place->id,
+                ])
+                ->values(),
         ]);
     }
 
@@ -281,10 +333,14 @@ class Reschedule extends Component
             ])
             ->values()
             ->all();
-        $this->conflicts          = [];
-        $this->previewReady       = false;
-        $this->canConfirm         = false;
-        $this->previewFingerprint = '';
+        $this->conflicts              = [];
+        $this->selected_place_ids     = [];
+        $this->primary_place_id       = null;
+        $this->adjusting_reservations = [];
+        $this->previewReady           = false;
+        $this->canConfirm             = false;
+        $this->previewFingerprint     = '';
+        $this->proposalGenerated      = false;
     }
 
     private function refreshAutomaticProposal(): void
@@ -363,21 +419,35 @@ class Reschedule extends Component
             ];
         } else {
             $rules += [
-                'community_id'                 => ['required', 'integer', Rule::exists('communities', 'id')],
-                'reservations'                 => ['required', 'array', 'min:1'],
-                'reservations.*.place_id'      => ['required', 'integer', 'distinct', Rule::exists('places', 'id')],
-                'reservations.*.reserved_from' => ['required', 'date_format:Y-m-d\TH:i'],
-                'reservations.*.reserved_to'   => ['required', 'date_format:Y-m-d\TH:i'],
-                'reservations.*.is_primary'    => ['required', 'boolean'],
+                'community_id' => ['required', 'integer', Rule::exists('communities', 'id')],
             ];
+
+            if ($this->community_id !== $this->original_community_id) {
+                $rules += [
+                    'selected_place_ids'   => ['bail', 'required', 'array', 'min:1'],
+                    'selected_place_ids.*' => [
+                        'integer',
+                        'distinct',
+                        Rule::exists('places', 'id')->where('community_id', $this->community_id),
+                    ],
+                    'primary_place_id' => [
+                        'bail',
+                        'required',
+                        'integer',
+                        Rule::in(collect($this->selected_place_ids)->map(fn (int|string $id): int => (int) $id)->all()),
+                    ],
+                ];
+            }
         }
 
         $this->validate($rules, [
             'ends_at.date_format'                => 'Informe um horário final válido.',
             'community_id.required'              => 'Selecione a comunidade.',
-            'reservations.required'              => 'Configure ao menos uma reserva para o evento.',
-            'reservations.min'                   => 'Configure ao menos uma reserva para o evento.',
-            'reservations.*.place_id.distinct'   => 'Cada ambiente pode aparecer somente uma vez na proposta.',
+            'selected_place_ids.required'        => 'Selecione ao menos um ambiente para a nova comunidade.',
+            'selected_place_ids.min'             => 'Selecione ao menos um ambiente para a nova comunidade.',
+            'selected_place_ids.*.distinct'      => 'Cada ambiente pode ser selecionado somente uma vez.',
+            'primary_place_id.required'          => 'Selecione o ambiente principal.',
+            'primary_place_id.in'                => 'O ambiente principal deve estar entre os ambientes selecionados.',
             'external_location_name.required'    => 'Informe o nome do local externo.',
             'external_location_address.required' => 'Informe o endereço do local externo.',
         ]);
@@ -389,20 +459,67 @@ class Reschedule extends Component
                 'ends_at' => 'O horário final deve ser posterior ao horário inicial.',
             ]);
         }
+    }
 
-        if (! $this->event->is_external) {
-            $invalidPlace = collect($this->reservations)->contains(function (array $reservation): bool {
-                return ! Place::query()
-                    ->whereKey((int) $reservation['place_id'])
-                    ->where('community_id', $this->community_id)
-                    ->exists();
-            });
+    private function prepareReservationProposal(CarbonImmutable $startsAt, CarbonImmutable $endsAt): void
+    {
+        if ($this->proposalGenerated) {
+            return;
+        }
 
-            if ($invalidPlace) {
+        if ($this->community_id === $this->original_community_id) {
+            $this->proposeCurrentReservations();
+        } else {
+            $this->reservations = collect($this->selected_place_ids)
+                ->map(fn (int|string $placeId): array => [
+                    'place_id'      => (int) $placeId,
+                    'reserved_from' => $startsAt->format('Y-m-d\TH:i'),
+                    'reserved_to'   => $endsAt->format('Y-m-d\TH:i'),
+                    'is_primary'    => (int) $placeId === $this->primary_place_id,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $this->proposalGenerated = true;
+    }
+
+    private function validateReservationProposal(): void
+    {
+        Validator::make([
+            'reservations' => $this->reservations,
+        ], [
+            'reservations'                 => ['required', 'array', 'min:1'],
+            'reservations.*.place_id'      => ['required', 'integer', 'distinct', Rule::exists('places', 'id')],
+            'reservations.*.reserved_from' => ['required', 'date_format:Y-m-d\TH:i'],
+            'reservations.*.reserved_to'   => ['required', 'date_format:Y-m-d\TH:i'],
+            'reservations.*.is_primary'    => ['required', 'boolean'],
+        ], [
+            'reservations.required'            => 'Configure ao menos uma reserva para o evento.',
+            'reservations.min'                 => 'Configure ao menos uma reserva para o evento.',
+            'reservations.*.place_id.distinct' => 'Cada ambiente pode aparecer somente uma vez na proposta.',
+        ])->validate();
+
+        foreach ($this->reservations as $index => $reservation) {
+            if (CarbonImmutable::parse($reservation['reserved_to'])
+                ->lessThanOrEqualTo(CarbonImmutable::parse($reservation['reserved_from']))) {
                 throw ValidationException::withMessages([
-                    'reservations' => 'Todas as reservas devem pertencer à comunidade selecionada.',
+                    "reservations.{$index}.reserved_to" => 'O fim da reserva deve ser posterior ao início.',
                 ]);
             }
+        }
+
+        $invalidPlace = collect($this->reservations)->contains(function (array $reservation): bool {
+            return ! Place::query()
+                ->whereKey((int) $reservation['place_id'])
+                ->where('community_id', $this->community_id)
+                ->exists();
+        });
+
+        if ($invalidPlace) {
+            throw ValidationException::withMessages([
+                'reservations' => 'Todas as reservas devem pertencer à comunidade selecionada.',
+            ]);
         }
     }
 
@@ -442,13 +559,28 @@ class Reschedule extends Component
             ]];
         })->all();
 
-        return $checkPlaceAvailability->handle(
+        $conflicts = $checkPlaceAvailability->handle(
             $startsAt,
             $endsAt,
             $places,
             $placeHours,
             PlaceReservation::query()->where('event_id', $this->event->id)->pluck('id')->all(),
         );
+
+        return collect($conflicts)
+            ->map(function (array $conflict) use ($reservations): array {
+                $reservationIndex = $reservations->search(
+                    fn (array $reservation): bool => $reservation['place_id'] === $conflict['requested_place']['id'],
+                );
+
+                $conflict['reservation_index'] = $reservationIndex;
+                $conflict['is_primary']        = $reservationIndex !== false
+                    && (bool) $reservations->get($reservationIndex)['is_primary'];
+
+                return $conflict;
+            })
+            ->values()
+            ->all();
     }
 
     /** @return list<array{place_id: int, reserved_from: string, reserved_to: string, is_primary: bool}> */
@@ -495,19 +627,57 @@ class Reschedule extends Component
             $this->ends_at,
             $this->community_id,
             $this->reservations,
+            $this->selected_place_ids,
+            $this->primary_place_id,
             $this->external_location_name,
             $this->external_location_address,
             $this->external_location_url,
         ], JSON_THROW_ON_ERROR));
     }
 
-    private function invalidatePreview(): void
+    private function resetGeneratedProposal(bool $clearReservations = false): void
+    {
+        $this->proposalGenerated      = false;
+        $this->adjusting_reservations = [];
+
+        if ($clearReservations) {
+            $this->reservations = [];
+        }
+
+        $this->invalidatePreview();
+    }
+
+    private function syncSelectedPlacesFromReservations(): void
+    {
+        $reservations = collect($this->reservations);
+
+        $this->selected_place_ids = $reservations
+            ->pluck('place_id')
+            ->filter()
+            ->map(fn (int|string $placeId): int => (int) $placeId)
+            ->values()
+            ->all();
+        $primary                = $reservations->firstWhere('is_primary', true);
+        $this->primary_place_id = $primary === null ? null : (int) $primary['place_id'];
+    }
+
+    private function hasConflictForReservation(int $index): bool
+    {
+        return collect($this->conflicts)->contains(
+            fn (array $conflict): bool => $conflict['reservation_index'] === $index,
+        );
+    }
+
+    private function invalidatePreview(bool $clearConflicts = true): void
     {
         $this->resetValidation();
         $this->previewReady       = false;
         $this->canConfirm         = false;
         $this->confirmationModal  = false;
         $this->previewFingerprint = '';
-        $this->conflicts          = [];
+
+        if ($clearConflicts) {
+            $this->conflicts = [];
+        }
     }
 }

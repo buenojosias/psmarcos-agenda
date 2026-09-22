@@ -11,14 +11,24 @@
 
     <x-card header="Nova data e horário">
         <div class="grid gap-4 md:grid-cols-3">
-            <x-input wire:model.live="date" type="date" label="Data" />
-            <x-input wire:model.live="starts_at" type="time" label="Horário inicial" />
-            <x-input wire:model.live="ends_at" type="time" label="Horário final" />
+            <x-date wire:model.live="date" label="Nova data" format="DD/MM/YYYY" />
+            <x-time wire:model.live="starts_at" label="Horário inicial" format="24" />
+            <x-time wire:model.live="ends_at" label="Horário final" format="24" />
+
+            @unless ($event->is_external)
+                <div class="md:col-span-3">
+                    <x-select.native wire:model.live="community_id" label="Comunidade">
+                        <option value="">Selecione uma comunidade</option>
+                        @foreach ($communities as $community)
+                            <option wire:key="reschedule-community-{{ $community->id }}" value="{{ $community->id }}">
+                                {{ $community->name }}
+                            </option>
+                        @endforeach
+                    </x-select.native>
+                </div>
+            @endunless
         </div>
 
-        @error('ends_at')
-            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-        @enderror
     </x-card>
 
     @if ($event->is_external)
@@ -36,109 +46,41 @@
                 </div>
             </div>
         </x-card>
-    @else
-        <x-card header="Reservas propostas">
-            <div class="space-y-5">
-                <x-select.native wire:model.live="community_id" label="Comunidade">
-                    <option value="">Selecione uma comunidade</option>
-                    @foreach ($communities as $community)
-                        <option wire:key="reschedule-community-{{ $community->id }}" value="{{ $community->id }}">
-                            {{ $community->name }}
-                        </option>
-                    @endforeach
-                </x-select.native>
-
-                @if ($community_id !== null && $community_id !== $original_community_id)
-                    <x-alert
-                        title="Nova comunidade"
-                        text="Selecione manualmente as novas reservas. As reservas atuais permanecerão intactas até a confirmação final."
-                        color="yellow"
-                        icon="exclamation-triangle"
-                        light
-                    />
-                @endif
-
-                <div class="space-y-4">
-                    @forelse ($reservations as $index => $reservation)
-                        <div
-                            wire:key="reschedule-reservation-{{ $index }}"
-                            class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
-                        >
-                            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
-                                <x-select.native
-                                    wire:model.live="reservations.{{ $index }}.place_id"
-                                    label="Ambiente"
-                                >
-                                    <option value="">Selecione um ambiente</option>
-                                    @foreach ($places as $place)
-                                        <option
-                                            wire:key="reschedule-place-{{ $index }}-{{ $place->id }}"
-                                            value="{{ $place->id }}"
-                                        >
-                                            {{ $place->name }}
-                                        </option>
-                                    @endforeach
-                                </x-select.native>
-
-                                <x-input
-                                    wire:model.live="reservations.{{ $index }}.reserved_from"
-                                    type="datetime-local"
-                                    label="Início da reserva"
-                                />
-
-                                <x-input
-                                    wire:model.live="reservations.{{ $index }}.reserved_to"
-                                    type="datetime-local"
-                                    label="Fim da reserva"
-                                />
-
-                                <div class="flex flex-wrap gap-2">
-                                    @if ($reservation['is_primary'])
-                                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
-                                            Principal
-                                        </span>
-                                    @else
-                                        <x-button
-                                            wire:click="makePrimary({{ $index }})"
-                                            text="Tornar principal"
-                                            color="blue"
-                                            outline
-                                            sm
-                                        />
-                                    @endif
-
-                                    <x-button
-                                        wire:click="removeReservation({{ $index }})"
-                                        text="Remover"
-                                        color="red"
-                                        outline
-                                        sm
-                                    />
-                                </div>
-                            </div>
-
-                            @error("reservations.{$index}.place_id")
-                                <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    @empty
-                        <p class="text-sm text-gray-600 dark:text-dark-300">
-                            Nenhuma reserva foi adicionada à proposta.
-                        </p>
-                    @endforelse
-                </div>
-
-                @error('reservations')
-                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                @enderror
-
-                <x-button
-                    wire:click="addReservation"
-                    text="Adicionar reserva"
-                    icon="plus"
-                    outline
-                    :disabled="$community_id === null"
+    @elseif ($community_id !== null && $community_id !== $original_community_id)
+        <x-card header="Ambientes da nova comunidade">
+            <div class="space-y-4">
+                <x-alert
+                    title="As reservas atuais não serão transferidas automaticamente"
+                    text="Escolha os ambientes da nova comunidade. As reservas atuais permanecerão intactas até a confirmação final."
+                    color="yellow"
+                    icon="exclamation-triangle"
+                    light
                 />
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <x-select.styled
+                        wire:model.live="selected_place_ids"
+                        label="Novos ambientes"
+                        placeholder="Selecione um ou mais ambientes"
+                        :options="$placeOptions"
+                        select="label:label|value:value"
+                        multiple
+                        searchable
+                    />
+
+                    <x-select.native
+                        wire:model.live="primary_place_id"
+                        label="Ambiente principal"
+                        :disabled="$primaryPlaceOptions->isEmpty()"
+                    >
+                        <option value="">Selecione um ambiente</option>
+                        @foreach ($primaryPlaceOptions as $placeOption)
+                            <option wire:key="reschedule-primary-place-{{ $placeOption['value'] }}" value="{{ $placeOption['value'] }}">
+                                {{ $placeOption['label'] }}
+                            </option>
+                        @endforeach
+                    </x-select.native>
+                </div>
             </div>
         </x-card>
     @endif
@@ -146,19 +88,18 @@
     <div class="flex flex-wrap justify-end gap-3">
         <x-button
             wire:click="preview"
-            text="Gerar preview"
-            icon="eye"
+            text="Verificar remarcação"
+            icon="magnifying-glass"
             loading="preview"
             outline
         />
 
-        @if ($previewReady)
+        @if ($previewReady && $canConfirm)
             <x-button
                 wire:click="openConfirmation"
                 text="Confirmar remarcação"
                 icon="check"
                 loading="openConfirmation"
-                :disabled="! $canConfirm"
             />
         @endif
     </div>
@@ -167,8 +108,136 @@
         <x-alert :text="$message" color="red" icon="exclamation-circle" light />
     @enderror
 
-    @if ($previewReady)
-        <x-card header="Preview da remarcação">
+    @if ($conflicts !== [])
+        <x-card header="Conflitos encontrados">
+            <div class="space-y-5">
+                <p class="text-sm text-gray-600 dark:text-dark-300">
+                    Resolva somente as reservas abaixo. As demais serão mantidas conforme a proposta recalculada.
+                </p>
+
+                @error('reservations')
+                    <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300" role="alert">
+                        {{ $message }}
+                    </p>
+                @enderror
+
+                @foreach ($conflicts as $requestedConflict)
+                    @php($reservationIndex = $requestedConflict['reservation_index'])
+
+                    <section
+                        wire:key="reschedule-conflict-{{ $requestedConflict['requested_place']['id'] }}"
+                        class="space-y-4 rounded-lg border border-red-200 p-4 dark:border-red-900/70"
+                    >
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white">
+                                    {{ $requestedConflict['requested_place']['name'] }}
+                                </h3>
+                                @if ($requestedConflict['is_primary'])
+                                    <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                                        Principal
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-dark-300">
+                                Novo intervalo proposto:
+                                {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_from'])->format('d/m/Y H:i') }}
+                                — {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_to'])->format('d/m/Y H:i') }}
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            @foreach ($requestedConflict['conflicts'] as $conflictIndex => $conflict)
+                                <div
+                                    wire:key="reschedule-occupied-{{ $requestedConflict['requested_place']['id'] }}-{{ $conflictIndex }}"
+                                    class="rounded-md bg-red-50 p-3 text-sm dark:bg-red-950/30"
+                                >
+                                    <p class="font-medium text-red-800 dark:text-red-200">
+                                        Ambiente em conflito: {{ $conflict['reserved_place']['name'] }}
+                                    </p>
+                                    <p class="text-red-700 dark:text-red-300">
+                                        Ocupado de {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
+                                        a {{ \Carbon\CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i') }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if ($requestedConflict['is_primary'])
+                            <x-select.native
+                                wire:model.live="reservations.{{ $reservationIndex }}.place_id"
+                                label="Selecionar outro ambiente da comunidade"
+                            >
+                                @foreach ($places as $place)
+                                    <option
+                                        wire:key="reschedule-primary-alternative-{{ $place->id }}"
+                                        value="{{ $place->id }}"
+                                    >
+                                        {{ $place->name }}
+                                    </option>
+                                @endforeach
+                            </x-select.native>
+                        @endif
+
+                        <div class="flex flex-wrap gap-2">
+                            @unless ($requestedConflict['is_primary'])
+                                <x-button
+                                    wire:click="removeReservationFromProposal({{ $reservationIndex }})"
+                                    text="Remover desta remarcação"
+                                    color="red"
+                                    outline
+                                    sm
+                                    loading="removeReservationFromProposal"
+                                />
+                            @endunless
+
+                            <x-button
+                                wire:click="adjustReservation({{ $reservationIndex }})"
+                                text="Ajustar intervalo"
+                                color="gray"
+                                outline
+                                sm
+                            />
+                        </div>
+
+                        @if ($adjusting_reservations[$reservationIndex] ?? false)
+                            <div class="grid gap-4 rounded-lg bg-gray-50 p-4 dark:bg-dark-700 md:grid-cols-2">
+                                <x-input
+                                    wire:model.live="reservations.{{ $reservationIndex }}.reserved_from"
+                                    type="datetime-local"
+                                    label="Novo início da reserva"
+                                />
+                                <x-input
+                                    wire:model.live="reservations.{{ $reservationIndex }}.reserved_to"
+                                    type="datetime-local"
+                                    label="Novo fim da reserva"
+                                />
+                            </div>
+                        @endif
+
+                        @error("reservations.{$reservationIndex}.place_id")
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+
+                        @error("reservations.{$reservationIndex}.reserved_to")
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+
+                        <div class="flex justify-end">
+                            <x-button
+                                wire:click="preview"
+                                text="Verificar novamente"
+                                icon="arrow-path"
+                                loading="preview"
+                                sm
+                            />
+                        </div>
+                    </section>
+                @endforeach
+            </div>
+        </x-card>
+    @elseif ($previewReady)
+        <x-card header="Resumo da remarcação">
             <div class="space-y-5">
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-dark-300">Nova data e horário</p>
@@ -189,45 +258,31 @@
                     </div>
                 @else
                     <div class="space-y-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-dark-300">Ambientes e intervalos</p>
+                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-dark-300">
+                            {{ $community_id === $original_community_id ? 'Ambientes que serão mantidos' : 'Novos ambientes' }}
+                        </p>
 
-                        @foreach ($reservations as $index => $reservation)
-                            @php($place = $places->firstWhere('id', (int) $reservation['place_id']))
-                            @php($reservationConflicts = collect($conflicts)->firstWhere('requested_place.id', (int) $reservation['place_id']))
+                        <div class="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-dark-600 dark:border-dark-600">
+                            @foreach ($reservations as $index => $reservation)
+                                @php($place = $places->firstWhere('id', (int) $reservation['place_id']))
 
-                            <div
-                                wire:key="reschedule-preview-{{ $index }}"
-                                class="rounded-lg border p-3 {{ $reservationConflicts ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20' : 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/20' }}"
-                            >
-                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div
+                                    wire:key="reschedule-summary-{{ $index }}"
+                                    class="flex flex-col gap-1 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                                >
                                     <p class="font-medium text-gray-900 dark:text-white">
-                                        {{ $place?->name ?? 'Ambiente não selecionado' }}
+                                        {{ $place?->name }}
                                         @if ($reservation['is_primary'])
                                             <span class="text-xs text-blue-700 dark:text-blue-300">(principal)</span>
                                         @endif
                                     </p>
-                                    <span class="text-xs font-medium {{ $reservationConflicts ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300' }}">
-                                        {{ $reservationConflicts ? 'Com conflito' : 'Disponível' }}
-                                    </span>
+                                    <p class="text-sm text-gray-600 dark:text-dark-300">
+                                        {{ \Carbon\CarbonImmutable::parse($reservation['reserved_from'])->format('d/m/Y H:i') }}
+                                        — {{ \Carbon\CarbonImmutable::parse($reservation['reserved_to'])->format('d/m/Y H:i') }}
+                                    </p>
                                 </div>
-                                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">
-                                    {{ \Carbon\CarbonImmutable::parse($reservation['reserved_from'])->format('d/m/Y H:i') }}
-                                    — {{ \Carbon\CarbonImmutable::parse($reservation['reserved_to'])->format('d/m/Y H:i') }}
-                                </p>
-
-                                @if ($reservationConflicts)
-                                    <ul class="mt-2 space-y-1 text-sm text-red-700 dark:text-red-300">
-                                        @foreach ($reservationConflicts['conflicts'] as $conflictIndex => $conflict)
-                                            <li wire:key="reschedule-conflict-{{ $index }}-{{ $conflictIndex }}">
-                                                {{ $conflict['reserved_place']['name'] }}:
-                                                {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
-                                                — {{ \Carbon\CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i') }}
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @endif
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>

@@ -358,6 +358,12 @@ it('proposes a new date preserving reservation offsets including a previous day'
 
     Livewire::actingAs($user)
         ->test(Reschedule::class, ['event' => $event])
+        ->assertSee('Verificar remarcação')
+        ->assertDontSee('Reservas propostas')
+        ->assertDontSee('Adicionar reserva')
+        ->assertDontSee('Tornar principal')
+        ->assertDontSee('Igreja')
+        ->assertDontSee('Sala de apoio')
         ->set('date', '2026-10-17')
         ->assertSet('reservations.0.reserved_from', '2026-10-17T17:00')
         ->assertSet('reservations.0.reserved_to', '2026-10-17T22:00')
@@ -393,7 +399,7 @@ it('proposes new reservation intervals preserving start and end offsets', functi
         ->assertSet('reservations.0.reserved_to', '2026-10-11T00:15');
 });
 
-it('requires a manual proposal after changing community and keeps old reservations untouched', function () {
+it('selects environments after changing community and keeps old reservations untouched', function () {
     Gate::before(static fn (): bool => true);
     $user     = User::factory()->create();
     $oldPlace = editReservationPlace('Salão atual');
@@ -414,14 +420,32 @@ it('requires a manual proposal after changing community and keeps old reservatio
         'alias'        => 'new-community-reschedule',
         'abbreviation' => 'NCR',
     ]);
+    $newPrimary = $newCommunity->places()->create(['name' => 'Nova igreja']);
+    $newSupport = $newCommunity->places()->create(['name' => 'Nova sala de apoio']);
 
-    Livewire::actingAs($user)
+    $component = Livewire::actingAs($user)
         ->test(Reschedule::class, ['event' => $event])
         ->set('community_id', $newCommunity->id)
         ->assertSet('reservations', [])
-        ->assertSee('Selecione manualmente as novas reservas')
+        ->assertSee('As reservas atuais não serão transferidas automaticamente')
+        ->assertSee('Novos ambientes')
+        ->assertSee('Selecione um ambiente')
         ->call('preview')
-        ->assertHasErrors('reservations');
+        ->assertHasErrors(['selected_place_ids', 'primary_place_id']);
+
+    expect($component->errors()->get('selected_place_ids'))->toHaveCount(1)
+        ->and($component->errors()->get('primary_place_id'))->toHaveCount(1);
+
+    $component
+        ->set('selected_place_ids', [$newPrimary->id, $newSupport->id])
+        ->set('primary_place_id', $newPrimary->id)
+        ->call('preview')
+        ->assertHasNoErrors()
+        ->assertSet('canConfirm', true)
+        ->assertSet('reservations.0.place_id', $newPrimary->id)
+        ->assertSet('reservations.0.is_primary', true)
+        ->assertSet('reservations.1.place_id', $newSupport->id)
+        ->assertSet('reservations.1.is_primary', false);
 
     $this->assertModelExists($oldReservation);
     expect($event->reservations()->count())->toBe(1);
@@ -451,7 +475,8 @@ it('renders a preview without persisting the proposed changes', function () {
         ->assertHasNoErrors()
         ->assertSet('previewReady', true)
         ->assertSet('canConfirm', true)
-        ->assertSee('Preview da remarcação')
+        ->assertSee('Resumo da remarcação')
+        ->assertSee('Ambientes que serão mantidos')
         ->assertSee('17/10/2026 18:00');
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
@@ -493,11 +518,122 @@ it('does not confirm when a new conflict appears after the preview', function ()
         ->call('confirm')
         ->assertHasErrors('reservations')
         ->assertSet('canConfirm', false)
-        ->assertSee('Com conflito');
+        ->assertSee('Conflitos encontrados')
+        ->assertSee('Ambiente em conflito: Salão disputado');
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
         ->and($event->status)->toBe(EventStatusEnum::CONFIRMED);
     $this->assertModelExists($oldReservation);
+});
+
+it('shows only a conflicting auxiliary reservation and rechecks after removing it', function () {
+    Gate::before(static fn (): bool => true);
+    $user      = User::factory()->create();
+    $community = Community::create([
+        'name'         => 'Comunidade dos conflitos auxiliares',
+        'alias'        => 'auxiliary-conflicts',
+        'abbreviation' => 'AUX',
+    ]);
+    $primary    = $community->places()->create(['name' => 'Igreja principal']);
+    $support    = $community->places()->create(['name' => 'Sala auxiliar']);
+    $otherEvent = Event::factory()->create();
+    $event      = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $primary->id,
+        'reserved_from' => '2026-10-10 18:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+    $oldSupportReservation = PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $support->id,
+        'reserved_from' => '2026-10-10 18:30:00',
+        'reserved_to'   => '2026-10-10 21:30:00',
+        'is_primary'    => false,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $otherEvent->id,
+        'place_id'      => $support->id,
+        'reserved_from' => '2026-10-17 19:00:00',
+        'reserved_to'   => '2026-10-17 20:00:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->call('preview')
+        ->assertSet('canConfirm', false)
+        ->assertSee('Sala auxiliar')
+        ->assertDontSee('Igreja principal')
+        ->assertSee('Remover desta remarcação')
+        ->assertSee('Ajustar intervalo')
+        ->assertDontSee('Novo início da reserva')
+        ->call('adjustReservation', 1)
+        ->assertSee('Novo início da reserva')
+        ->assertSee('Novo fim da reserva')
+        ->call('removeReservationFromProposal', 1)
+        ->assertHasNoErrors()
+        ->assertSet('conflicts', [])
+        ->assertSet('canConfirm', true)
+        ->assertCount('reservations', 1);
+
+    $this->assertModelExists($oldSupportReservation);
+    expect($event->reservations()->count())->toBe(2);
+});
+
+it('keeps a conflicting primary reservation and allows another environment', function () {
+    Gate::before(static fn (): bool => true);
+    $user      = User::factory()->create();
+    $community = Community::create([
+        'name'         => 'Comunidade do conflito principal',
+        'alias'        => 'primary-conflict',
+        'abbreviation' => 'PRI',
+    ]);
+    $primary     = $community->places()->create(['name' => 'Igreja ocupada']);
+    $alternative = $community->places()->create(['name' => 'Salão disponível']);
+    $event       = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => false,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => $event->id,
+        'place_id'      => $primary->id,
+        'reserved_from' => '2026-10-10 18:00:00',
+        'reserved_to'   => '2026-10-10 22:00:00',
+        'is_primary'    => true,
+    ]);
+    PlaceReservation::create([
+        'event_id'      => Event::factory()->create()->id,
+        'place_id'      => $primary->id,
+        'reserved_from' => '2026-10-17 18:30:00',
+        'reserved_to'   => '2026-10-17 21:30:00',
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->call('preview')
+        ->assertSet('canConfirm', false)
+        ->assertSee('Igreja ocupada')
+        ->assertSee('Selecionar outro ambiente da comunidade')
+        ->assertSee('Ajustar intervalo')
+        ->assertDontSee('Remover desta remarcação')
+        ->set('reservations.0.place_id', $alternative->id)
+        ->call('preview')
+        ->assertHasNoErrors()
+        ->assertSet('conflicts', [])
+        ->assertSet('canConfirm', true)
+        ->assertSee('Salão disponível');
+
+    expect($event->reservations()->sole()->place_id)->toBe($primary->id);
 });
 
 it('updates an external event through the reschedule component without reservations', function () {
