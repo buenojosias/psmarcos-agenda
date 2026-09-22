@@ -9,9 +9,9 @@
         <div class="flex flex-wrap gap-2">
             @if ($canUpdate)
                 <x-button text="Editar" :href="route('events.edit', $event)" />
+                <x-button text="Remarcar" color="yellow" :href="route('events.edit', ['event' => $event, 'tab' => 'reschedule'])" />
             @endif
             @if ($canManage)
-                <x-button text="Remarcar" color="yellow" disabled />
                 <x-button text="Cancelar" color="red" disabled />
             @endif
             <livewire:events.review-actions :event="$event" @event-reviewed="$refresh" />
