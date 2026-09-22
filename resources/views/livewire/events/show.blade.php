@@ -20,25 +20,26 @@
 
     <x-card shadowless bordered>
         <x-slot:header>
-            <div class="text-md font-medium">Informaçãoes do evento</div>
+            <div class="text-md font-medium">Informações do evento</div>
             <x-badge :text="$event->status->label()" :color="$event->status->color()" light />
         </x-slot:header>
         <dl class="grid gap-4 sm:grid-cols-2">
+            <x-detail label="Nome" :value="$event->name" />
+            <x-detail label="Complemento" :value="$event->detail?->subtitle ?? '—'" />
             <x-detail label="Tipo" :value="$event->type->label()" />
-            <x-detail label="Grupo organizador" :value="$event->group?->name ?? 'Paróquia'" />
-            <x-detail label="Início" :value="$event->starts_at->format('d/m/Y H:i')" />
-            <x-detail label="Término" :value="$event->ends_at->format('d/m/Y H:i')" />
+            <x-detail label="Local">
+                @if ($event->is_external)
+                    {{ $event->detail?->external_location_name ?? 'Não informado' }}
+                @else
+                    {{ $primaryReservation?->place?->name ?? 'Não informado' }}
+                    <span class="block text-sm text-gray-500 dark:text-dark-400">{{ $event->community?->name ?? 'Sem comunidade' }}</span>
+                @endif
+            </x-detail>
+            <x-detail label="Grupo organizador" :value="$event->group?->name ?? 'Não informado'" />
+            <x-detail label="Início" :value="$event->starts_at->format('d/m/Y - H:i')" />
+            <x-detail label="Encerramento" :value="$event->ends_at->format('d/m/Y - H:i')" />
             <x-detail label="Evento público" :value="$event->is_public ? 'Sim' : 'Não'" />
             <x-detail label="Divulgação solicitada" :value="$event->advertisable ? 'Sim' : 'Não'" />
-            @if ($event->is_external)
-                <x-detail label="Local externo" :value="$event->detail?->external_location_name ?? 'Não informado'" />
-                @if ($event->detail?->external_location_address)
-                    <x-detail label="Endereço" :value="$event->detail->external_location_address" />
-                @endif
-                @if ($event->detail?->external_location_url)
-                    <x-detail label="Referência do local" :value="$event->detail->external_location_url" />
-                @endif
-            @endif
         </dl>
     </x-card>
 
@@ -46,7 +47,6 @@
         <x-card header="Participação e detalhes" shadowless bordered>
             <dl class="grid gap-4 sm:grid-cols-2">
                 @foreach ([
-                    'subtitle' => 'Subtítulo',
                     'description' => 'Descrição',
                     'target_audience' => 'Público-alvo',
                     'participation_instructions' => 'Orientações para participação',
@@ -62,6 +62,14 @@
                         </div>
                     @endif
                 @endforeach
+                @if ($event->is_external)
+                    @if ($event->detail->external_location_address)
+                        <x-detail label="Endereço" :value="$event->detail->external_location_address" />
+                    @endif
+                    @if ($event->detail->external_location_url)
+                        <x-detail label="Referência do local" :value="$event->detail->external_location_url" />
+                    @endif
+                @endif
                 <x-detail label="Inscrição necessária" :value="$event->detail->registration_required ? 'Sim' : 'Não'" />
                 @if ($event->detail->registration_deadline)
                     <x-detail label="Prazo de inscrição" :value="$event->detail->registration_deadline->format('d/m/Y')" />

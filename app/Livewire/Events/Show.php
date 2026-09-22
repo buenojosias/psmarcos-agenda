@@ -22,7 +22,7 @@ class Show extends Component
     public function render(): View
     {
         Gate::authorize('view', $this->event);
-        $this->event->load(['group', 'detail']);
+        $this->event->load(['group', 'detail', 'community']);
 
         $reservations = $this->event->is_external
             ? null
@@ -33,10 +33,11 @@ class Show extends Component
                 });
 
         return view('livewire.events.show', [
-            'canManage'    => Gate::allows('manage', $this->event),
-            'canUpdate'    => Gate::allows('update', $this->event),
-            'canReview'    => Gate::allows('review', $this->event),
-            'reservations' => $reservations,
+            'canManage'          => Gate::allows('manage', $this->event),
+            'canUpdate'          => Gate::allows('update', $this->event),
+            'canReview'          => Gate::allows('review', $this->event),
+            'primaryReservation' => $reservations?->firstWhere('is_primary', true),
+            'reservations'       => $reservations,
         ]);
     }
 }
