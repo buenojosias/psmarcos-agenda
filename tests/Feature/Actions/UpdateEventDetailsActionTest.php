@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Models\Event;
 use App\Enums\EventStatusEnum;
+use App\Actions\EventLogAction;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
 use App\Actions\UpdateEventDetailsAction;
@@ -111,7 +112,7 @@ it('keeps the event status when details are updated', function (EventStatusEnum 
 it('logs only fields that effectively changed', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
     $event->detail()->create([
         'subtitle'    => 'Anterior',
         'description' => '<p>Sem alteração</p>',
@@ -137,7 +138,7 @@ it('logs only fields that effectively changed', function () {
 it('logs false when registration stops being required', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
     $event->detail()->create(['registration_required' => true]);
 
     app(UpdateEventDetailsAction::class)->handle($event, [
@@ -155,10 +156,47 @@ it('logs false when registration stops being required', function () {
         ]);
 });
 
-it('does not persist or log when nothing effectively changed', function () {
+it('updates pending details without logging them as updated', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
+    app(EventLogAction::class)->handle(
+        event: $event,
+        action: EventLogActionEnum::CREATED,
+        user: $user,
+        changes: [],
+    );
+
+    $changed = app(UpdateEventDetailsAction::class)->handle($event, [
+        'subtitle' => 'Novo complemento',
+    ], $user);
+
+    expect($changed)->toBeTrue()
+        ->and($event->detail()->firstOrFail()->subtitle)->toBe('Novo complemento')
+        ->and($event->logs()->where('action', EventLogActionEnum::CREATED)->count())->toBe(1)
+        ->and($event->logs()->where('action', EventLogActionEnum::UPDATED)->exists())->toBeFalse();
+});
+
+it('logs updated details for reviewed statuses', function (EventStatusEnum $status) {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['status' => $status]);
+
+    app(UpdateEventDetailsAction::class)->handle($event, [
+        'subtitle' => 'Novo complemento',
+    ], $user);
+
+    expect($event->logs()->where('action', EventLogActionEnum::UPDATED)->count())->toBe(1);
+})->with([
+    'confirmed'   => EventStatusEnum::CONFIRMED,
+    'rescheduled' => EventStatusEnum::RESCHEDULED,
+    'refused'     => EventStatusEnum::REFUSED,
+]);
+
+it('does not persist or log when nothing effectively changed', function (EventStatusEnum $status) {
     Gate::before(static fn (): bool => true);
     $user      = User::factory()->create();
-    $event     = Event::factory()->create();
+    $event     = Event::factory()->create(['status' => $status]);
     $detail    = $event->detail()->create(['subtitle' => 'Sem alteração']);
     $updatedAt = $detail->updated_at->toISOString();
 
@@ -169,7 +207,12 @@ it('does not persist or log when nothing effectively changed', function () {
     expect($changed)->toBeFalse()
         ->and($detail->refresh()->updated_at->toISOString())->toBe($updatedAt)
         ->and($event->logs()->exists())->toBeFalse();
-});
+})->with([
+    'pending'     => EventStatusEnum::PENDING,
+    'confirmed'   => EventStatusEnum::CONFIRMED,
+    'rescheduled' => EventStatusEnum::RESCHEDULED,
+    'refused'     => EventStatusEnum::REFUSED,
+]);
 
 it('does not persist changes from an unauthorized user', function () {
     Gate::before(static fn (): bool => false);

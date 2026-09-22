@@ -52,12 +52,14 @@ class UpdateEventGeneralAction
 
             $event->save();
 
-            $this->eventLogAction->handle(
-                event: $event,
-                action: EventLogActionEnum::UPDATED,
-                user: $user,
-                changes: $changes,
-            );
+            if ($event->status !== EventStatusEnum::PENDING) {
+                $this->eventLogAction->handle(
+                    event: $event,
+                    action: EventLogActionEnum::UPDATED,
+                    user: $user,
+                    changes: $changes,
+                );
+            }
 
             return true;
         });

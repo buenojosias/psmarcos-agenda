@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Enums\EventTypeEnum;
 use App\Enums\EventStatusEnum;
+use App\Actions\EventLogAction;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
 use App\Actions\UpdateEventGeneralAction;
@@ -114,6 +115,7 @@ it('logs only the changed fields as updated', function () {
     $event = Event::factory()->create([
         'name'         => 'Nome anterior',
         'type'         => EventTypeEnum::MEETING,
+        'status'       => EventStatusEnum::CONFIRMED,
         'is_public'    => false,
         'advertisable' => false,
     ]);
@@ -138,10 +140,51 @@ it('logs only the changed fields as updated', function () {
         ]);
 });
 
-it('does not log when no general information changed', function () {
+it('updates pending general information without logging it as updated', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create();
+    $event = Event::factory()->create([
+        'name'   => 'Nome anterior',
+        'status' => EventStatusEnum::PENDING,
+    ]);
+    app(EventLogAction::class)->handle(
+        event: $event,
+        action: EventLogActionEnum::CREATED,
+        user: $user,
+        changes: [],
+    );
+
+    actingAs($user);
+    $changed = app(UpdateEventGeneralAction::class)->handle($event, ['name' => 'Nome atualizado'], $user);
+
+    expect($changed)->toBeTrue()
+        ->and($event->refresh()->name)->toBe('Nome atualizado')
+        ->and($event->logs()->where('action', EventLogActionEnum::CREATED)->count())->toBe(1)
+        ->and($event->logs()->where('action', EventLogActionEnum::UPDATED)->exists())->toBeFalse();
+});
+
+it('logs updated general information for reviewed statuses', function (EventStatusEnum $status) {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'name'   => 'Nome anterior',
+        'status' => $status,
+    ]);
+
+    actingAs($user);
+    app(UpdateEventGeneralAction::class)->handle($event, ['name' => 'Nome atualizado'], $user);
+
+    expect($event->logs()->where('action', EventLogActionEnum::UPDATED)->count())->toBe(1);
+})->with([
+    'confirmed'   => EventStatusEnum::CONFIRMED,
+    'rescheduled' => EventStatusEnum::RESCHEDULED,
+    'refused'     => EventStatusEnum::REFUSED,
+]);
+
+it('does not log when no general information changed', function (EventStatusEnum $status) {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['status' => $status]);
 
     actingAs($user);
     $changed = app(UpdateEventGeneralAction::class)->handle($event, [
@@ -153,4 +196,9 @@ it('does not log when no general information changed', function () {
 
     expect($changed)->toBeFalse()
         ->and($event->logs()->count())->toBe(0);
-});
+})->with([
+    'pending'     => EventStatusEnum::PENDING,
+    'confirmed'   => EventStatusEnum::CONFIRMED,
+    'rescheduled' => EventStatusEnum::RESCHEDULED,
+    'refused'     => EventStatusEnum::REFUSED,
+]);

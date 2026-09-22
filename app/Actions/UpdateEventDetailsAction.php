@@ -84,12 +84,14 @@ class UpdateEventDetailsAction
                 $detail->update($persistenceValues);
             }
 
-            $this->eventLogAction->handle(
-                event: $event,
-                action: EventLogActionEnum::UPDATED,
-                user: $user,
-                changes: $changes,
-            );
+            if ($event->status !== EventStatusEnum::PENDING) {
+                $this->eventLogAction->handle(
+                    event: $event,
+                    action: EventLogActionEnum::UPDATED,
+                    user: $user,
+                    changes: $changes,
+                );
+            }
 
             return true;
         });
