@@ -9,7 +9,6 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Enums\UserRoleEnum;
 use App\Enums\EventStatusEnum;
-use App\Enums\EventLogActionEnum;
 use Illuminate\Auth\Access\Response;
 
 class EventPolicy
@@ -47,6 +46,27 @@ class EventPolicy
                 : Response::denyAsNotFound();
     }
 
+    public function update(User $user, Event $event): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasRole(UserRoleEnum::PASCOM->value)) {
+            return $this->belongsToEventGroup($user, $event);
+        }
+
+        if ($user->hasAnyRole([UserRoleEnum::ADMIN->value, UserRoleEnum::CPP->value])) {
+            return true;
+        }
+
+        if ($user->hasAnyRole([UserRoleEnum::SECRETARY->value, UserRoleEnum::PRIEST->value])) {
+            return $this->isCreator($user, $event) || $this->belongsToEventGroup($user, $event);
+        }
+
+        return $this->belongsToEventGroup($user, $event);
+    }
+
     public function manage(User $user, Event $event): bool
     {
         return ! $user->hasRole(UserRoleEnum::PASCOM->value) && $this->isCreator($user, $event);
@@ -61,7 +81,12 @@ class EventPolicy
 
     private function isCreator(User $user, Event $event): bool
     {
-        return $event->logs()->where('action', EventLogActionEnum::CREATED->value)
-            ->orderBy('created_at')->orderBy('id')->value('user_id') === $user->id;
+        return $event->created_by_user_id === $user->id;
+    }
+
+    private function belongsToEventGroup(User $user, Event $event): bool
+    {
+        return $event->group_id !== null
+            && $user->groups()->whereKey($event->group_id)->exists();
     }
 }

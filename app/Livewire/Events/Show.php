@@ -34,6 +34,7 @@ class Show extends Component
 
         return view('livewire.events.show', [
             'canManage'    => Gate::allows('manage', $this->event),
+            'canUpdate'    => Gate::allows('update', $this->event),
             'canReview'    => Gate::allows('review', $this->event),
             'reservations' => $reservations,
         ]);

@@ -7,8 +7,10 @@
             @endif
         </div>
         <div class="flex flex-wrap gap-2">
+            @if ($canUpdate)
+                <x-button text="Editar" :href="route('events.edit', $event)" />
+            @endif
             @if ($canManage)
-                <x-button text="Editar" disabled />
                 <x-button text="Remarcar" color="yellow" disabled />
                 <x-button text="Cancelar" color="red" disabled />
             @endif

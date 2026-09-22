@@ -143,16 +143,17 @@ class CreateRecurringEventsAction
 
             foreach ($validOccurrences as $occurrence) {
                 $event = Event::create([
-                    'group_id'        => $data['group_id'],
-                    'name'            => $data['name'],
-                    'type'            => $data['type'],
-                    'recurrence_code' => $recurrenceCode,
-                    'starts_at'       => $occurrence['starts_at'],
-                    'ends_at'         => $occurrence['ends_at'],
-                    'status'          => $status,
-                    'is_external'     => false,
-                    'is_public'       => $data['is_public'],
-                    'advertisable'    => false,
+                    'created_by_user_id' => $user->id,
+                    'group_id'           => $data['group_id'],
+                    'name'               => $data['name'],
+                    'type'               => $data['type'],
+                    'recurrence_code'    => $recurrenceCode,
+                    'starts_at'          => $occurrence['starts_at'],
+                    'ends_at'            => $occurrence['ends_at'],
+                    'status'             => $status,
+                    'is_external'        => false,
+                    'is_public'          => $data['is_public'],
+                    'advertisable'       => false,
                 ]);
 
                 if ($hasDetails) {

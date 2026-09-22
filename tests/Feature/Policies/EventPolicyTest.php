@@ -58,3 +58,36 @@ it('allows only active users to list events', function () {
     expect(Gate::forUser(User::factory()->make(['is_active' => true]))->allows('viewAny', Event::class))->toBeTrue();
     expect(Gate::forUser(User::factory()->make(['is_active' => false]))->allows('viewAny', Event::class))->toBeFalse();
 });
+
+it('authorizes event updates according to active roles, creation, and group membership', function (array $roles, bool $isActive, bool $belongsToGroup, bool $isCreator, bool $expected) {
+    $user  = User::factory()->create(['roles' => $roles, 'is_active' => $isActive]);
+    $group = Group::factory()->create();
+
+    if ($belongsToGroup) {
+        $group->users()->attach($user);
+    }
+
+    $event = Event::factory()->create([
+        'group_id'           => $group->id,
+        'created_by_user_id' => $isCreator ? $user->id : null,
+    ]);
+
+    expect(Gate::forUser($user)->allows('update', $event))->toBe($expected);
+})->with([
+    'active admin'               => [['admin'], true, false, false, true],
+    'active cpp'                 => [['cpp'], true, false, false, true],
+    'inactive admin'             => [['admin'], false, false, false, false],
+    'secretary creator'          => [['secretary'], true, false, true, true],
+    'secretary group member'     => [['secretary'], true, true, false, true],
+    'secretary unrelated'        => [['secretary'], true, false, false, false],
+    'priest creator'             => [['priest'], true, false, true, true],
+    'priest group member'        => [['priest'], true, true, false, true],
+    'priest unrelated'           => [['priest'], true, false, false, false],
+    'member group member'        => [['member'], true, true, false, true],
+    'member creator only'        => [['member'], true, false, true, false],
+    'pascom group member'        => [['pascom'], true, true, true, true],
+    'pascom unrelated'           => [['pascom'], true, false, true, false],
+    'priest and member in group' => [['priest', 'member'], true, true, false, true],
+    'pascom and member in group' => [['pascom', 'member'], true, true, false, true],
+    'pascom and admin unrelated' => [['pascom', 'admin'], true, false, false, false],
+]);

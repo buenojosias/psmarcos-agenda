@@ -41,15 +41,17 @@ it('hides space reservations for external events', function () {
         ->assertOk()->assertDontSee('Reservas de espaços')->assertDontSee('Salão principal');
 });
 
-it('shows management buttons only to the creator', function () {
-    $creator = User::factory()->create(['roles' => ['member']]);
+it('shows an edit link to a user who can update the event', function () {
+    $creator = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
     $group   = Group::factory()->create();
     $group->users()->attach($creator);
-    $event = Event::factory()->for($group)->create(['status' => EventStatusEnum::PENDING]);
-    $event->logs()->create(['user_id' => $creator->id, 'action' => EventLogActionEnum::CREATED]);
+    $event = Event::factory()->for($group)->create([
+        'status'             => EventStatusEnum::PENDING,
+        'created_by_user_id' => $creator->id,
+    ]);
 
     Livewire::actingAs($creator)->test(Show::class, ['event' => $event])
-        ->assertSee('Editar')->assertSee('Remarcar')->assertSee('Cancelar')
+        ->assertSee('Editar')->assertSee(route('events.edit', $event))
         ->assertDontSee('Aprovar')->assertDontSee('Recusar');
 });
 
@@ -126,14 +128,22 @@ it('allows pascom without action buttons even when also creator and admin', func
         ->assertDontSee('Cancelar')->assertDontSee('Aprovar')->assertDontSee('Recusar');
 });
 
-it('allows a linked user to view a nonconfirmed event without buttons', function () {
+it('shows an edit link to a linked member viewing a nonconfirmed event', function () {
     $group = Group::factory()->create();
-    $user  = User::factory()->create(['roles' => ['member']]);
+    $user  = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
     $group->users()->attach($user);
     $event = Event::factory()->for($group)->create(['status' => EventStatusEnum::PENDING]);
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
-        ->assertSee($event->name)->assertDontSee('Editar')->assertDontSee('Aprovar');
+        ->assertSee($event->name)->assertSee('Editar')->assertSee(route('events.edit', $event))->assertDontSee('Aprovar');
+});
+
+it('forbids direct access to the edit placeholder without update permission', function () {
+    $event = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED]);
+
+    $this->actingAs(User::factory()->create(['roles' => ['member']]))
+        ->get(route('events.edit', $event))
+        ->assertForbidden();
 });
 
 it('returns 404 for an unrelated user viewing a nonconfirmed event', function (string $role) {

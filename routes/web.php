@@ -28,6 +28,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/eventos', App\Livewire\Events\Index::class)->name('events.index');
     Route::get('/eventos/criar', App\Livewire\Events\Create::class)->can('create', Event::class)->name('events.create');
+    Route::get('/events/{event}/editar', App\Livewire\Events\Edit::class)->name('events.edit');
     Route::get('/missas', App\Livewire\Masses\Index::class)->name('masses.index');
 
     Route::get('/eventos/{event}', App\Livewire\Events\Show::class)->name('events.show');

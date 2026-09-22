@@ -36,16 +36,17 @@ class CreateExternalEventAction
 
             $status = $confirmImmediately ? EventStatusEnum::CONFIRMED : EventStatusEnum::PENDING;
             $event  = Event::create([
-                'group_id'        => $data['group_id'],
-                'name'            => $data['name'],
-                'type'            => $data['type'],
-                'recurrence_code' => null,
-                'starts_at'       => $data['starts_at'],
-                'ends_at'         => $data['ends_at'],
-                'status'          => $status,
-                'is_external'     => true,
-                'is_public'       => $data['is_public'],
-                'advertisable'    => $data['advertisable'],
+                'created_by_user_id' => $user->id,
+                'group_id'           => $data['group_id'],
+                'name'               => $data['name'],
+                'type'               => $data['type'],
+                'recurrence_code'    => null,
+                'starts_at'          => $data['starts_at'],
+                'ends_at'            => $data['ends_at'],
+                'status'             => $status,
+                'is_external'        => true,
+                'is_public'          => $data['is_public'],
+                'advertisable'       => $data['advertisable'],
             ]);
 
             $event->detail()->create([
