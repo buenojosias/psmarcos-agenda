@@ -48,23 +48,25 @@ it('shows visible scheduled masses with a motivation search input', function () 
         ->assertDontSee('Missa da Catequese')->assertDontSee('Missa antiga');
 });
 
-it('shows only motivation start time and the primary reservation community without lazy loading', function () {
-    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
-    $mass = Mass::factory()->create(['motivation' => 'Missa Dominical']);
+it('shows the mass community without depending on its primary reservation or lazy loading', function () {
+    $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $mass      = Mass::factory()->create(['community_id' => $community->id, 'motivation' => 'Missa Dominical']);
     $mass->reservations()->delete();
 
-    foreach ([['Matriz', true], ['Capela secundária', false]] as [$name, $primary]) {
-        $community = Community::create(['name' => $name, 'alias' => $primary ? 'matriz' : 'capela', 'abbreviation' => $primary ? 'MT' : 'CP']);
-        $place     = $community->places()->create(['name' => 'Espaço reservado']);
+    foreach ([['Capela vizinha', true], ['Capela secundária', false]] as [$name, $primary]) {
+        $placeCommunity = Community::create(['name' => $name, 'alias' => $primary ? 'capela-vizinha' : 'capela-secundaria', 'abbreviation' => $primary ? 'CV' : 'CS']);
+        $place          = $placeCommunity->places()->create(['name' => 'Espaço reservado']);
         $mass->reservations()->create(['place_id' => $place->id, 'is_primary' => $primary, 'reserved_from' => $mass->starts_at, 'reserved_to' => $mass->ends_at]);
     }
-    Mass::factory()->create()->reservations()->delete();
+    $withoutReservations = Mass::factory()->create(['community_id' => $community->id]);
+    $withoutReservations->reservations()->delete();
     Model::preventLazyLoading();
 
     try {
         $component = Livewire::actingAs($user)->test(Masses::class)
             ->assertSee('Missa Dominical')->assertSee($mass->starts_at->format('d/m/Y'))->assertSee($mass->starts_at->format('H:i'))
-            ->assertSee('Matriz')->assertSee('Comunidade não informada')
+            ->assertSee('Matriz')->assertDontSee('Comunidade não informada')
             ->assertDontSee('Espaço reservado')
             ->assertDontSee('Grupo organizador')->assertDontSee('Tipo')->assertDontSee('Status')
             ->assertDontSee('Pendente')->assertDontSee('Local principal')->assertDontSee('Término')
@@ -73,7 +75,7 @@ it('shows only motivation start time and the primary reservation community witho
         $document = new DOMDocument;
         @$document->loadHTML(mb_convert_encoding($component->html(), 'HTML-ENTITIES', 'UTF-8'));
         $tableText = (new DOMXPath($document))->evaluate('string(//tbody)');
-        expect($tableText)->toContain('Matriz')->not->toContain('Capela secundária');
+        expect($tableText)->toContain('Matriz')->not->toContain('Capela vizinha')->not->toContain('Capela secundária');
     } finally {
         Model::preventLazyLoading(false);
     }
@@ -124,16 +126,17 @@ it('paginates masses and resets the page for either filter', function (string $f
         ->set($filter, $value)->assertSet('paginators.page', 1);
 })->with([['weekday', '0'], ['motivation', 'Missa Dominical']]);
 
-it('filters through the primary reservation community while preserving visibility', function (array $roles, bool $canSeeCanceled) {
+it('filters through the mass community while preserving visibility', function (array $roles, bool $canSeeCanceled) {
     $user           = User::factory()->create(['roles' => $roles, 'is_active' => true]);
     $community      = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $otherCommunity = Community::create(['name' => 'Capela', 'alias' => 'capela', 'abbreviation' => 'CP']);
     $place          = $community->places()->create(['name' => 'Igreja matriz']);
     $otherPlace     = $otherCommunity->places()->create(['name' => 'Igreja da capela']);
-    $confirmed      = Mass::factory()->create();
-    $canceled       = Mass::factory()->create(['canceled_at' => now()]);
-    $elsewhere      = Mass::factory()->create();
-    Mass::factory()->create()->reservations()->delete();
+    $confirmed      = Mass::factory()->create(['community_id' => $community->id]);
+    $canceled       = Mass::factory()->create(['community_id' => $community->id, 'canceled_at' => now()]);
+    $elsewhere      = Mass::factory()->create(['community_id' => $otherCommunity->id]);
+    $unreserved     = Mass::factory()->create(['community_id' => $community->id]);
+    $unreserved->reservations()->delete();
 
     foreach ([$confirmed, $canceled, $elsewhere] as $mass) {
         $mass->reservations()->delete();
@@ -144,7 +147,7 @@ it('filters through the primary reservation community while preserving visibilit
     }
     $elsewhere->reservations()->create(['place_id' => $otherPlace->id, 'is_primary' => true, 'reserved_from' => $elsewhere->starts_at, 'reserved_to' => $elsewhere->ends_at]);
     $elsewhere->reservations()->create(['place_id' => $place->id, 'is_primary' => false, 'reserved_from' => $elsewhere->starts_at, 'reserved_to' => $elsewhere->ends_at]);
-    $expectedIds = $canSeeCanceled ? [$confirmed->id, $canceled->id] : [$confirmed->id];
+    $expectedIds = $canSeeCanceled ? [$confirmed->id, $canceled->id, $unreserved->id] : [$confirmed->id, $unreserved->id];
 
     Livewire::actingAs($user)->withQueryParams(['community_id' => (string) $community->id])->test(Masses::class)
         ->assertSet('community_id', $community->id)
@@ -195,7 +198,7 @@ it('ignores incomplete or malformed date ranges', function (mixed $range) {
         ->assertViewHas('masses', fn ($rows) => $rows->total() === 1);
 })->with([[['2026-09-20']], [['invalid', '2026-09-21']], [['2026-02-30', '2026-09-21']], [null]]);
 
-it('groups active current schedules by weekday and community in chronological order', function () {
+it('groups active nonexpired schedules by weekday and community in chronological order', function () {
     $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
     $user           = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $late           = MassSchedule::factory()->create(['weekday' => 0, 'starts_at' => '18:00:00', 'motivation' => 'Celebração vespertina']);
@@ -204,17 +207,18 @@ it('groups active current schedules by weekday and community in chronological or
     $monday         = MassSchedule::factory()->create(['community_id' => $otherCommunity->id, 'weekday' => 1, 'starts_at' => '07:00:00']);
     MassSchedule::factory()->create(['is_active' => false, 'motivation' => 'Horário inativo']);
     MassSchedule::factory()->create(['valid_until' => today()->subDay(), 'motivation' => 'Horário expirado']);
-    MassSchedule::factory()->create(['valid_from' => today()->addDay(), 'motivation' => 'Horário futuro']);
+    $futureCommunity = Community::create(['name' => 'Comunidade futura', 'alias' => 'comunidade-futura', 'abbreviation' => 'CF']);
+    $future          = MassSchedule::factory()->create(['community_id' => $futureCommunity->id, 'weekday' => 1, 'starts_at' => '09:00:00', 'valid_from' => today()->addDay(), 'motivation' => 'Horário futuro']);
 
     Livewire::actingAs($user)->test(Masses::class)
         ->assertSee('Missas programadas')->assertSee('Cronograma semanal')
         ->assertSee('Por dia da semana')->assertSee('Por comunidade')
         ->assertSee('Celebração vespertina')->assertSee('18:00')
-        ->assertDontSee('Horário inativo')->assertDontSee('Horário expirado')->assertDontSee('Horário futuro')
+        ->assertDontSee('Horário inativo')->assertDontSee('Horário expirado')->assertSee('Horário futuro')
         ->assertViewHas('schedulesByWeekday', fn ($groups) => $groups->keys()->all() === [0, 1]
             && $groups[0]->modelKeys() === [$early->id, $late->id]
-            && $groups[1]->modelKeys() === [$monday->id])
-        ->assertViewHas('schedulesByCommunity', fn ($groups) => $groups->count() === 2
+            && $groups[1]->modelKeys() === [$monday->id, $future->id])
+        ->assertViewHas('schedulesByCommunity', fn ($groups) => $groups->count() === 3
             && $groups[$late->community_id]->modelKeys() === [$early->id, $late->id]);
 });
 

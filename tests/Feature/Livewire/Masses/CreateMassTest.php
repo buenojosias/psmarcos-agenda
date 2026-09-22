@@ -140,6 +140,36 @@ it('creates an extraordinary mass without a schedule and with padded reservation
     $this->assertDatabaseHas('place_reservations', ['mass_id' => $mass->id, 'reserved_from' => '2026-09-22 18:30:00', 'reserved_to' => '2026-09-22 20:30:00', 'is_primary' => true]);
 });
 
+it('shows the selected community for a created mass even without a primary reservation', function (string $component) {
+    $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
+    $community = massCreationCommunity([]);
+    $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $data      = $component === CreateSchedule::class ? recurringMassData($community) : extraordinaryMassData($community);
+
+    Livewire::actingAs($user)->test($component)->set($data)->call('save')->assertHasNoErrors()->assertDispatched('created');
+
+    $this->assertDatabaseHas('masses', ['community_id' => $community->id, 'motivation' => $data['motivation']]);
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertSee($community->name)
+        ->set('community_id', $community->id)
+        ->assertViewHas('masses', fn ($rows): bool => $rows->total() === ($component === CreateSchedule::class ? 3 : 1));
+})->with([CreateSchedule::class, CreateExtraordinary::class]);
+
+it('shows a newly created future recurring schedule in the weekly timetable', function () {
+    $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
+    $community = massCreationCommunity();
+    $user      = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(CreateSchedule::class)
+        ->set(recurringMassData($community))->call('save')->assertHasNoErrors()->assertDispatched('created');
+
+    $schedule = MassSchedule::sole();
+    expect($schedule->community_id)->toBe($community->id);
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertViewHas('schedulesByWeekday', fn ($groups): bool => $groups[2]->modelKeys() === [$schedule->id])
+        ->assertSee('Missa semanal');
+});
+
 it('refuses retroactive dates and invalid intervals', function (string $component, string $field, mixed $value) {
     $this->travelTo(now()->setDate(2026, 9, 20)->startOfDay());
     $community = massCreationCommunity();

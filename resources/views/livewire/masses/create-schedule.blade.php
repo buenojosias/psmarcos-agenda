@@ -1,7 +1,7 @@
 <div>
-    <x-button text="Cadastrar horário recorrente" wire:click="$toggle('modal')" />
+    <x-button text="Cadastrar missa recorrente" wire:click="$toggle('modal')" />
 
-    <x-modal id="mass-schedule-modal" title="Cadastrar horário recorrente" size="lg" persistent wire>
+    <x-modal id="mass-schedule-modal" title="Cadastrar missa recorrente" size="lg" persistent wire>
         @if ($pending !== null)
             <div class="space-y-4" role="alert">
                 <p class="font-semibold">Existem conflitos de reserva de espaço. Deseja cadastrar mesmo assim?</p>
@@ -33,9 +33,11 @@
                         <option wire:key="weekday-option-{{ $value }}" value="{{ $value }}">{{ $label }}</option>
                     @endforeach
                 </x-select.native>
-                <x-time wire:model="starts_at" label="Horário inicial *" format="24" required />
-                <x-number wire:model="duration_minutes" label="Duração em minutos *" :min="15" :max="150" :step="15" required />
-                <x-date id="mass-schedule-date-range" wire:model="dateRange" label="Intervalo de datas *" range format="DD/MM/YYYY" min-date="{{ today()->toDateString() }}" hint="A data inicial será ajustada para a primeira ocorrência do dia da semana escolhido." required />
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <x-time wire:model="starts_at" label="Horário inicial *" format="24" required />
+                    <x-number wire:model="duration_minutes" label="Duração em minutos *" :min="15" :max="150" :step="15" required />
+                </div>
+                <x-date id="mass-schedule-date-range" wire:model="dateRange" label="Intervalo de datas *" range format="DD/MM/YYYY" min-date="{{ today()->toDateString() }}" hint="Serão cadastradas missas em datas correspondentes ao intervalo selecionado." required />
             </form>
         @endif
 

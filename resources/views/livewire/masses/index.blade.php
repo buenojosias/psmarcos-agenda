@@ -8,7 +8,49 @@
         </div>
     @endcan
 
-    <x-tab selected="scheduled">
+    <x-tab selected="weekly">
+        <x-tab.items tab="weekly" title="Cronograma semanal">
+            <div class="grid gap-6 lg:grid-cols-2">
+                <section class="space-y-4">
+                    <h2 class="text-lg font-semibold">Por dia da semana</h2>
+                    <x-accordion bordered>
+                        @forelse ($schedulesByWeekday as $day => $schedules)
+                            <x-accordion.items :title="$weekdays[$day]" id="weekday-{{ $day }}" wire:key="weekday-{{ $day }}">
+                                <ul class="space-y-4">
+                                    @foreach ($schedules as $schedule)
+                                        <li wire:key="day-schedule-{{ $schedule->id }}">
+                                            <p class="font-medium">{{ substr($schedule->starts_at, 0, 5) }} - {{ $schedule->community->name }}</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->motivation ?? 'Missa' }}</p>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </x-accordion.items>
+                        @empty
+                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
+                        @endforelse
+                    </x-accordion>
+                </section>
+                <section class="space-y-4">
+                    <h2 class="text-lg font-semibold">Por comunidade</h2>
+                    <x-accordion bordered>
+                        @forelse ($schedulesByCommunity as $communityId => $schedules)
+                            <x-accordion.items :title="$schedules->first()->community->name" id="schedule-community-{{ $communityId }}" wire:key="schedule-community-{{ $communityId }}">
+                                <ul class="space-y-4">
+                                    @foreach ($schedules as $schedule)
+                                        <li wire:key="community-schedule-{{ $schedule->id }}">
+                                            <p class="font-medium">{{ $weekdays[$schedule->weekday] }} - {{ substr($schedule->starts_at, 0, 5) }}</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->motivation ?? 'Missa' }}</p>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </x-accordion.items>
+                        @empty
+                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
+                        @endforelse
+                    </x-accordion>
+                </section>
+            </div>
+        </x-tab.items>
         <x-tab.items tab="scheduled" title="Missas programadas">
             <div class="space-y-6">
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -55,51 +97,9 @@
                     @endinteract
 
                     @interact('column_community', $row)
-                        {{ $row->primaryReservation?->place?->community?->name ?? 'Comunidade não informada' }}
+                        {{ $row->community?->name ?? 'Comunidade não informada' }}
                     @endinteract
                 </x-table>
-            </div>
-        </x-tab.items>
-        <x-tab.items tab="weekly" title="Cronograma semanal">
-            <div class="grid gap-6 lg:grid-cols-2">
-                <section class="space-y-4">
-                    <h2 class="text-lg font-semibold">Por dia da semana</h2>
-                    <x-accordion>
-                        @forelse ($schedulesByWeekday as $day => $schedules)
-                            <x-accordion.items :title="$weekdays[$day]" id="weekday-{{ $day }}" wire:key="weekday-{{ $day }}">
-                                <ul class="space-y-3">
-                                    @foreach ($schedules as $schedule)
-                                        <li wire:key="day-schedule-{{ $schedule->id }}">
-                                            <p class="font-medium">{{ substr($schedule->starts_at, 0, 5) }} - {{ $schedule->community->name }}</p>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->motivation ?? 'Missa' }}</p>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </x-accordion.items>
-                        @empty
-                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
-                        @endforelse
-                    </x-accordion>
-                </section>
-                <section class="space-y-4">
-                    <h2 class="text-lg font-semibold">Por comunidade</h2>
-                    <x-accordion>
-                        @forelse ($schedulesByCommunity as $communityId => $schedules)
-                            <x-accordion.items :title="$schedules->first()->community->name" id="schedule-community-{{ $communityId }}" wire:key="schedule-community-{{ $communityId }}">
-                                <ul class="space-y-3">
-                                    @foreach ($schedules as $schedule)
-                                        <li wire:key="community-schedule-{{ $schedule->id }}">
-                                            <p class="font-medium">{{ $weekdays[$schedule->weekday] }} — {{ substr($schedule->starts_at, 0, 5) }}</p>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->motivation ?? 'Missa' }}</p>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </x-accordion.items>
-                        @empty
-                            <p class="p-4 text-sm">Nenhum horário fixo vigente.</p>
-                        @endforelse
-                    </x-accordion>
-                </section>
             </div>
         </x-tab.items>
     </x-tab>

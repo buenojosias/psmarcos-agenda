@@ -94,13 +94,11 @@ class Index extends Component
         }
 
         if ($this->community_id !== 0) {
-            $query->whereHas('primaryReservation.place', fn (Builder $query): Builder => $query
-                ->where('community_id', $this->community_id));
+            $query->where('community_id', $this->community_id);
         }
 
         $schedules = MassSchedule::query()->with('community:id,name')
             ->where('is_active', true)
-            ->where(fn (Builder $query) => $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', today()))
             ->where(fn (Builder $query) => $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', today()))
             ->orderBy('weekday')->orderBy('starts_at')->orderBy('id')->get();
 
@@ -109,11 +107,8 @@ class Index extends Component
             'schedulesByWeekday'   => $schedules->groupBy('weekday'),
             'schedulesByCommunity' => $schedules->sortBy('community.name')->groupBy('community_id'),
             'communities'          => $communities,
-            'masses'               => $query->with([
-                'primaryReservation:id,mass_id,place_id',
-                'primaryReservation.place:id,community_id',
-                'primaryReservation.place.community:id,name',
-            ])->orderBy('starts_at')->orderBy('id')->paginate(10),
+            'masses'               => $query->with('community:id,name')
+                ->orderBy('starts_at')->orderBy('id')->paginate(10),
         ]);
     }
 }

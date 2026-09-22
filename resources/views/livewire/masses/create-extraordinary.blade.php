@@ -28,8 +28,10 @@
                 </x-select.native>
                 <x-input wire:model="motivation" label="Motivação *" maxlength="255" required />
                 <x-date wire:model="date" label="Data *" format="DD/MM/YYYY" min-date="{{ today()->toDateString() }}" required />
-                <x-time wire:model="starts_at" label="Horário inicial *" format="24" required />
-                <x-time wire:model="ends_at" label="Horário final *" format="24" required />
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <x-time wire:model="starts_at" label="Horário inicial *" format="24" required />
+                    <x-time wire:model="ends_at" label="Horário final *" format="24" required />
+                </div>
             </form>
         @endif
 
