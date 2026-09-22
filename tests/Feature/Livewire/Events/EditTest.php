@@ -10,6 +10,7 @@ use App\Livewire\Events\Edit;
 use App\Livewire\Events\Show;
 use App\Enums\EventStatusEnum;
 use Illuminate\Support\Facades\Gate;
+use App\Livewire\Events\Edit\Details;
 use App\Livewire\Events\Edit\General;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -121,4 +122,93 @@ it('allows an authorized user to edit general information', function () {
         ->assertHasNoErrors();
 
     expect($event->refresh()->name)->toBe('Nome atualizado');
+});
+
+it('loads the current event details', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['advertisable' => false]);
+    $event->detail()->create([
+        'subtitle'                   => 'Complemento atual',
+        'description'                => '<p>Descrição atual</p>',
+        'target_audience'            => 'Famílias',
+        'participation_instructions' => 'Levar documento',
+        'registration_required'      => true,
+        'registration_url'           => 'https://example.com/inscricao',
+        'registration_deadline'      => '2026-10-15',
+        'participation_cost'         => 'R$ 20,00',
+        'contact_name'               => 'Maria',
+        'contact_phone'              => '(11) 99999-9999',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Details::class, ['event' => $event])
+        ->assertSet('subtitle', 'Complemento atual')
+        ->assertSet('description', '<p>Descrição atual</p>')
+        ->assertSet('target_audience', 'Famílias')
+        ->assertSet('participation_instructions', 'Levar documento')
+        ->assertSet('registration_required', true)
+        ->assertSet('registration_url', 'https://example.com/inscricao')
+        ->assertSet('registration_deadline', '2026-10-15')
+        ->assertSet('participation_cost', 'R$ 20,00')
+        ->assertSet('contact_name', 'Maria')
+        ->assertSet('contact_phone', '(11) 99999-9999')
+        ->assertSee('Detalhes do evento');
+});
+
+it('starts with an empty details form when the event has no details', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['advertisable' => false]);
+
+    Livewire::actingAs($user)
+        ->test(Details::class, ['event' => $event])
+        ->assertSet('subtitle', null)
+        ->assertSet('description', null)
+        ->assertSet('registration_required', false)
+        ->assertSee('Público-alvo')
+        ->assertSee('Salvar detalhes');
+});
+
+it('allows an authorized user to save event details', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(Details::class, ['event' => $event])
+        ->set('subtitle', 'Encontro das famílias')
+        ->set('registration_required', true)
+        ->set('registration_url', 'https://example.com/inscricao')
+        ->set('registration_deadline', '2026-10-15')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $detail = $event->detail()->firstOrFail();
+
+    expect($detail->subtitle)->toBe('Encontro das famílias')
+        ->and($detail->registration_required)->toBeTrue()
+        ->and($detail->registration_url)->toBe('https://example.com/inscricao')
+        ->and($detail->registration_deadline?->format('Y-m-d'))->toBe('2026-10-15')
+        ->and($event->logs()->count())->toBe(1);
+});
+
+it('does not save invalid event details', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(Details::class, ['event' => $event])
+        ->set('registration_required', true)
+        ->set('registration_url', 'endereco-invalido')
+        ->set('registration_deadline', '15/10/2026')
+        ->call('save')
+        ->assertHasErrors([
+            'registration_url'      => 'url',
+            'registration_deadline' => 'date_format',
+        ]);
+
+    expect($event->detail()->exists())->toBeFalse()
+        ->and($event->logs()->exists())->toBeFalse();
 });

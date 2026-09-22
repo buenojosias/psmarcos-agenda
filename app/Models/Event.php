@@ -34,13 +34,13 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'type'         => EventTypeEnum::class,
-        'starts_at'    => 'datetime',
-        'ends_at'      => 'datetime',
-        'is_external'  => 'boolean',
-        'is_public'    => 'boolean',
-        'status'       => EventStatusEnum::class,
-        'advertisable' => 'boolean',
+        'type'                   => EventTypeEnum::class,
+        'starts_at'              => 'datetime',
+        'ends_at'                => 'datetime',
+        'is_external'            => 'boolean',
+        'is_public'              => 'boolean',
+        'status'                 => EventStatusEnum::class,
+        'advertisable'           => 'boolean',
         'reservation_hold_until' => 'datetime',
     ];
 
@@ -105,6 +105,7 @@ class Event extends Model
         return $query->whereIn('status', [EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED]);
     }
 
+    /** @return HasOne<EventDetail, $this> */
     public function detail(): HasOne
     {
         return $this->hasOne(EventDetail::class);
