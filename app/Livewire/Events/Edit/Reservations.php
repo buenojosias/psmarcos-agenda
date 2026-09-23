@@ -35,7 +35,7 @@ class Reservations extends Component
 
     /** @var list<array{index: string, label: string, sortable: bool, align?: string}> */
     public array $headers = [
-        ['index' => 'place.name', 'label' => 'Ambiente', 'sortable' => false],
+        ['index' => 'place', 'label' => 'Ambiente', 'sortable' => false],
         ['index' => 'reserved_from', 'label' => 'Início', 'sortable' => false],
         ['index' => 'reserved_to', 'label' => 'Fim', 'sortable' => false],
         ['index' => 'is_primary', 'label' => 'Principal', 'sortable' => false, 'align' => 'center'],
@@ -145,7 +145,7 @@ class Reservations extends Component
                 ->values(),
             'reservations' => PlaceReservation::query()
                 ->where('event_id', $this->event->id)
-                ->with('place')
+                ->with('place.main:id,name')
                 ->orderByDesc('is_primary')
                 ->orderBy('reserved_from')
                 ->orderBy('id')

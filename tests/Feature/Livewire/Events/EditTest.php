@@ -386,8 +386,30 @@ it('lists event reservations with their individual actions', function () {
         ->assertSee('10/10/2026 09:00')
         ->assertSee('Principal')
         ->assertSee('Editar')
-        ->assertSee('Excluir')
+        ->assertSee('Remover')
         ->assertSee('Adicionar reserva');
+});
+
+it('shows a reserved child environment with its parent in the reservations table', function () {
+    Gate::before(static fn (): bool => true);
+    $user           = User::factory()->create();
+    $parent         = editReservationPlace('Salão paroquial');
+    $child          = $parent->subplaces()->create(['name' => 'Sala de apoio', 'community_id' => $parent->community_id]);
+    $otherCommunity = Community::create(['name' => 'Outra comunidade', 'alias' => 'outra', 'abbreviation' => 'OT']);
+    $event          = Event::factory()->create([
+        'community_id' => $otherCommunity->id,
+        'status'       => EventStatusEnum::CONFIRMED,
+        'is_external'  => false,
+    ]);
+    $event->reservations()->create([
+        'place_id'      => $child->id,
+        'reserved_from' => '2026-10-10 09:00:00',
+        'reserved_to'   => '2026-10-10 12:00:00',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->assertSee('Salão paroquial: Sala de apoio');
 });
 
 it('offers parent and child environments from the event community without showing community names', function () {

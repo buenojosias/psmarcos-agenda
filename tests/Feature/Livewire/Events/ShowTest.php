@@ -31,6 +31,22 @@ it('displays event details and the reservation period', function () {
         ->assertSee('<script>alert(1)</script>')->assertDontSee('<script>alert(1)</script>', false);
 });
 
+it('shows a reserved child space with its parent in the reservations table', function () {
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $parent    = $community->places()->create(['name' => 'Salão principal']);
+    $child     = $parent->subplaces()->create(['name' => 'Sala de apoio', 'community_id' => $community->id]);
+    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED]);
+    $event->reservations()->create([
+        'place_id'      => $child->id,
+        'reserved_from' => '2026-10-02 09:00',
+        'reserved_to'   => '2026-10-02 13:00',
+    ]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test(Show::class, ['event' => $event])
+        ->assertSee('Salão principal: Sala de apoio');
+});
+
 it('shows the event community only in its information card, not in the reservations list', function () {
     $community      = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $placeCommunity = Community::create(['name' => 'Outra comunidade', 'alias' => 'outra', 'abbreviation' => 'OT']);

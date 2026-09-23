@@ -13,6 +13,14 @@
     @enderror
 
     <x-table :$headers :rows="$reservations" :paginate="false" :filter="false" compact>
+        @interact('column_place', $row)
+            @if ($row->place?->main)
+                {{ $row->place->main->name }}: {{ $row->place->name }}
+            @else
+                {{ $row->place?->name ?? 'Ambiente não informado' }}
+            @endif
+        @endinteract
+
         @interact('column_reserved_from', $row)
             <span class="whitespace-nowrap">{{ $row->reserved_from->format('d/m/Y H:i') }}</span>
         @endinteract

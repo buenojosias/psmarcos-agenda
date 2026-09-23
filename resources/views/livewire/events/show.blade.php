@@ -83,7 +83,13 @@
                         ['index' => 'reserved_to', 'label' => 'Fim da reserva', 'sortable' => false],
                     ]" :rows="$reservations" highlight compact empty="Nenhuma reserva de espaço para este evento.">
                         @interact('column_place', $row)
-                            <p class="font-medium">{{ $row->place?->name ?? 'Espaço não informado' }}</p>
+                            <p class="font-medium">
+                                @if ($row->place?->main)
+                                    {{ $row->place->main->name }}: {{ $row->place->name }}
+                                @else
+                                    {{ $row->place?->name ?? 'Espaço não informado' }}
+                                @endif
+                            </p>
                         @endinteract
                         @interact('column_reserved_from', $row)
                             {{ $row->reserved_from->format('d/m/Y H:i') }}
