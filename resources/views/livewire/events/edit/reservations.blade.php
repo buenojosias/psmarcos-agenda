@@ -2,7 +2,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Reservas de ambientes</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Cada alteração é salva imediatamente.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Gerencie os ambientes que serão usados para o evento.</p>
         </div>
 
         <x-button text="Adicionar reserva" icon="plus" wire:click="openCreate" />
@@ -13,10 +13,6 @@
     @enderror
 
     <x-table :$headers :rows="$reservations" :paginate="false" :filter="false" compact>
-        @interact('column_place_community_name', $row)
-            {{ $row->place->community?->name ?? '—' }}
-        @endinteract
-
         @interact('column_reserved_from', $row)
             <span class="whitespace-nowrap">{{ $row->reserved_from->format('d/m/Y H:i') }}</span>
         @endinteract
@@ -27,7 +23,7 @@
 
         @interact('column_is_primary', $row)
             @if ($row->is_primary)
-                <x-badge text="Principal" color="green" light />
+                <x-badge text="Principal" color="amber" light />
             @else
                 <span class="text-gray-400">—</span>
             @endif
@@ -36,13 +32,13 @@
         @interact('column_action', $row)
             <div class="flex flex-wrap justify-end gap-2">
                 @if (! $row->is_primary)
-                    <x-button text="Definir como principal" sm light
+                    <x-button icon="bolt" x-tooltip="Definir como principal" flat color="amber"
                               wire:click="setPrimary({{ $row->id }})"
                               loading="setPrimary({{ $row->id }})" />
                 @endif
 
-                <x-button text="Editar" sm outline wire:click="openEdit({{ $row->id }})" />
-                <x-button text="Excluir" sm color="red" light
+                <x-button icon="pencil-square" x-tooltip="Editar" flat wire:click="openEdit({{ $row->id }})" />
+                <x-button icon="trash" x-tooltip="Remover" flat color="red"
                           wire:click="deleteReservation({{ $row->id }})"
                           loading="deleteReservation({{ $row->id }})" />
             </div>
@@ -63,7 +59,7 @@
                     <option value="">Selecione</option>
                     @foreach ($places as $place)
                         <option wire:key="reservation-place-{{ $place->id }}" value="{{ $place->id }}">
-                            {{ $place->name }} — {{ $place->community?->name ?? 'Sem comunidade' }}
+                            {{ $place->name }}
                         </option>
                     @endforeach
                 </x-select.native>

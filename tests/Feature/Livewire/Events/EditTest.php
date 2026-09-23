@@ -334,7 +334,8 @@ it('lists event reservations with their individual actions', function () {
     Livewire::actingAs($user)
         ->test(Reservations::class, ['event' => $event])
         ->assertSee('Salão paroquial')
-        ->assertSee('Comunidade São José')
+        ->assertDontSee('Comunidade São José')
+        ->assertDontSee('Comunidade')
         ->assertSee('10/10/2026 09:00')
         ->assertSee('Principal')
         ->assertSee('Editar')
@@ -342,17 +343,39 @@ it('lists event reservations with their individual actions', function () {
         ->assertSee('Adicionar reserva');
 });
 
+it('offers only environments from the event community without showing community names', function () {
+    Gate::before(static fn (): bool => true);
+    $user           = User::factory()->create();
+    $place          = editReservationPlace('Salão da Matriz');
+    $otherCommunity = Community::create([
+        'name'         => 'Capela do Beato',
+        'alias'        => 'beato-reservas',
+        'abbreviation' => 'BRS',
+    ]);
+    $otherCommunity->places()->create(['name' => 'Sala da Capela']);
+    $event = Event::factory()->create(['community_id' => $place->community_id]);
+
+    Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->call('openCreate')
+        ->assertSee('Salão da Matriz')
+        ->assertDontSee('Sala da Capela')
+        ->assertDontSee('Comunidade São José')
+        ->assertDontSee('Capela do Beato')
+        ->assertDontSee('Comunidade');
+});
+
 it('creates an event reservation immediately from the modal form', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create([
-        'starts_at'   => '2026-10-10 10:00:00',
-        'ends_at'     => '2026-10-10 11:00:00',
-        'status'      => EventStatusEnum::CONFIRMED,
-        'is_external' => false,
-    ]);
     $place = editReservationPlace();
-
+    $event = Event::factory()->create([
+        'community_id' => $place->community_id,
+        'starts_at'    => '2026-10-10 10:00:00',
+        'ends_at'      => '2026-10-10 11:00:00',
+        'status'       => EventStatusEnum::CONFIRMED,
+        'is_external'  => false,
+    ]);
     Livewire::actingAs($user)
         ->test(Reservations::class, ['event' => $event])
         ->call('openCreate')
