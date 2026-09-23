@@ -21,6 +21,8 @@ class General extends Component
 
     public string $name = '';
 
+    public ?string $complement = null;
+
     public mixed $type = '';
 
     public bool $is_public = false;
@@ -66,22 +68,19 @@ class General extends Component
     /** @return array<string, array<int, mixed>> */
     private function rules(): array
     {
-        $rules = [
-            'name'      => ['required', 'string', 'max:255'],
-            'type'      => ['required', Rule::enum(EventTypeEnum::class)],
-            'is_public' => ['boolean'],
+        return [
+            'name'         => ['required', 'string', 'max:255'],
+            'complement'   => ['nullable', 'string', 'max:255'],
+            'type'         => ['required', Rule::enum(EventTypeEnum::class)],
+            'is_public'    => ['boolean'],
+            'advertisable' => ['boolean'],
         ];
-
-        if ($this->event->recurrence_code === null) {
-            $rules['advertisable'] = ['boolean'];
-        }
-
-        return $rules;
     }
 
     private function loadEventValues(): void
     {
         $this->name         = $this->event->name;
+        $this->complement   = $this->event->complement;
         $this->type         = $this->event->type->value;
         $this->is_public    = $this->event->is_public;
         $this->advertisable = $this->event->advertisable;

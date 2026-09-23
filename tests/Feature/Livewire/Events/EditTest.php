@@ -150,7 +150,8 @@ it('loads only the current occurrence of a recurring event', function () {
     Livewire::actingAs($user)
         ->test(Edit::class, ['event' => $currentOccurrence])
         ->assertSet('event.id', $currentOccurrence->id)
-        ->assertDontSee('Solicitar divulgação');
+        ->assertSee('Solicitar divulgação')
+        ->assertSee('Ao ativar esta opção, será solicitada divulgação apenas desta ocorrência de evento.');
 });
 
 it('links the reschedule button to the reschedule edit tab', function () {
@@ -168,6 +169,7 @@ it('loads the current general information', function () {
     $user  = User::factory()->create();
     $event = Event::factory()->create([
         'name'         => 'Encontro atual',
+        'complement'   => 'Partilha e formação',
         'type'         => EventTypeEnum::MEETING,
         'is_public'    => true,
         'advertisable' => true,
@@ -176,23 +178,70 @@ it('loads the current general information', function () {
     Livewire::actingAs($user)
         ->test(General::class, ['event' => $event])
         ->assertSet('name', 'Encontro atual')
+        ->assertSet('complement', 'Partilha e formação')
         ->assertSet('type', EventTypeEnum::MEETING->value)
         ->assertSet('is_public', true)
-        ->assertSet('advertisable', true);
+        ->assertSet('advertisable', true)
+        ->assertSee('Solicitar divulgação')
+        ->assertDontSee('Ao ativar esta opção, será solicitada divulgação apenas desta ocorrência de evento.');
 });
 
 it('allows an authorized user to edit general information', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
-    $event = Event::factory()->create(['name' => 'Nome anterior']);
+    $event = Event::factory()->create(['name' => 'Nome anterior', 'complement' => null]);
 
     Livewire::actingAs($user)
         ->test(General::class, ['event' => $event])
         ->set('name', 'Nome atualizado')
+        ->set('complement', 'Encontro das famílias')
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($event->refresh()->name)->toBe('Nome atualizado');
+    expect($event->refresh()->name)->toBe('Nome atualizado')
+        ->and($event->complement)->toBe('Encontro das famílias');
+});
+
+it('saves a recurring occurrence complement and advertising request without changing another occurrence', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'recurrence_code' => 'weekly-event',
+        'advertisable'    => false,
+        'complement'      => null,
+    ]);
+    $otherOccurrence = Event::factory()->create([
+        'recurrence_code' => 'weekly-event',
+        'advertisable'    => false,
+        'complement'      => null,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(General::class, ['event' => $event])
+        ->assertSee('Ao ativar esta opção, será solicitada divulgação apenas desta ocorrência de evento.')
+        ->set('complement', 'Celebração das famílias')
+        ->set('advertisable', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($event->refresh()->complement)->toBe('Celebração das famílias')
+        ->and($event->advertisable)->toBeTrue()
+        ->and($otherOccurrence->refresh()->complement)->toBeNull()
+        ->and($otherOccurrence->advertisable)->toBeFalse();
+});
+
+it('rejects a complement longer than 255 characters', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['complement' => null]);
+
+    Livewire::actingAs($user)
+        ->test(General::class, ['event' => $event])
+        ->set('complement', str_repeat('a', 256))
+        ->call('save')
+        ->assertHasErrors(['complement' => 'max']);
+
+    expect($event->refresh()->complement)->toBeNull();
 });
 
 it('keeps a refused event refused after editing general information', function () {
@@ -218,7 +267,6 @@ it('loads the current event details', function () {
     $user  = User::factory()->create();
     $event = Event::factory()->create(['advertisable' => false]);
     $event->detail()->create([
-        'subtitle'                   => 'Complemento atual',
         'description'                => '<p>Descrição atual</p>',
         'target_audience'            => 'Famílias',
         'participation_instructions' => 'Levar documento',
@@ -232,7 +280,6 @@ it('loads the current event details', function () {
 
     Livewire::actingAs($user)
         ->test(Details::class, ['event' => $event])
-        ->assertSet('subtitle', 'Complemento atual')
         ->assertSet('description', '<p>Descrição atual</p>')
         ->assertSet('target_audience', 'Famílias')
         ->assertSet('participation_instructions', 'Levar documento')
@@ -242,7 +289,8 @@ it('loads the current event details', function () {
         ->assertSet('participation_cost', 'R$ 20,00')
         ->assertSet('contact_name', 'Maria')
         ->assertSet('contact_phone', '(11) 99999-9999')
-        ->assertSee('Detalhes do evento');
+        ->assertSee('Detalhes do evento')
+        ->assertDontSee('Complemento');
 });
 
 it('starts with an empty details form when the event has no details', function () {
@@ -252,7 +300,6 @@ it('starts with an empty details form when the event has no details', function (
 
     Livewire::actingAs($user)
         ->test(Details::class, ['event' => $event])
-        ->assertSet('subtitle', null)
         ->assertSet('description', null)
         ->assertSet('registration_required', false)
         ->assertSee('Público-alvo')
@@ -266,7 +313,7 @@ it('allows an authorized user to save event details', function () {
 
     Livewire::actingAs($user)
         ->test(Details::class, ['event' => $event])
-        ->set('subtitle', 'Encontro das famílias')
+        ->set('description', '<p>Encontro das famílias</p>')
         ->set('registration_required', true)
         ->set('registration_url', 'https://example.com/inscricao')
         ->set('registration_deadline', '2026-10-15')
@@ -275,7 +322,7 @@ it('allows an authorized user to save event details', function () {
 
     $detail = $event->detail()->firstOrFail();
 
-    expect($detail->subtitle)->toBe('Encontro das famílias')
+    expect($detail->description)->toBe('<p>Encontro das famílias</p>')
         ->and($detail->registration_required)->toBeTrue()
         ->and($detail->registration_url)->toBe('https://example.com/inscricao')
         ->and($detail->registration_deadline?->format('Y-m-d'))->toBe('2026-10-15')

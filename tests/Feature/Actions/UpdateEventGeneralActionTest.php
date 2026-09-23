@@ -30,11 +30,12 @@ it('does not persist changes from an unauthorized user', function () {
         ->and($event->logs()->count())->toBe(0);
 });
 
-it('updates the four permitted fields', function () {
+it('updates the five permitted fields', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
     $event = Event::factory()->create([
         'name'         => 'Nome anterior',
+        'complement'   => null,
         'type'         => EventTypeEnum::MEETING,
         'is_public'    => false,
         'advertisable' => false,
@@ -43,6 +44,7 @@ it('updates the four permitted fields', function () {
     actingAs($user);
     $changed = app(UpdateEventGeneralAction::class)->handle($event, [
         'name'         => 'Nome atualizado',
+        'complement'   => 'Partilha e formação',
         'type'         => EventTypeEnum::COURSE->value,
         'is_public'    => true,
         'advertisable' => true,
@@ -50,16 +52,21 @@ it('updates the four permitted fields', function () {
 
     expect($changed)->toBeTrue()
         ->and($event->refresh()->name)->toBe('Nome atualizado')
+        ->and($event->complement)->toBe('Partilha e formação')
         ->and($event->type)->toBe(EventTypeEnum::COURSE)
         ->and($event->is_public)->toBeTrue()
         ->and($event->advertisable)->toBeTrue();
 });
 
-it('does not change advertisable for a recurring event', function () {
+it('changes advertisable only for the selected recurring occurrence', function () {
     Gate::before(static fn (): bool => true);
     $user  = User::factory()->create();
     $event = Event::factory()->create([
         'name'            => 'Ocorrência atual',
+        'recurrence_code' => 'weekly-event',
+        'advertisable'    => false,
+    ]);
+    $otherOccurrence = Event::factory()->create([
         'recurrence_code' => 'weekly-event',
         'advertisable'    => false,
     ]);
@@ -71,7 +78,8 @@ it('does not change advertisable for a recurring event', function () {
     ], $user);
 
     expect($event->refresh()->name)->toBe('Ocorrência atualizada')
-        ->and($event->advertisable)->toBeFalse();
+        ->and($event->advertisable)->toBeTrue()
+        ->and($otherOccurrence->refresh()->advertisable)->toBeFalse();
 });
 
 it('does not update a canceled event', function () {

@@ -3,8 +3,6 @@
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Todos os campos são opcionais.</p>
 
         <div class="grid gap-4 md:grid-cols-2">
-            <x-input wire:model="subtitle" label="Complemento" maxlength="255" class="md:col-span-2" />
-
             <div class="md:col-span-2">
                 <x-editor wire:model="description" label="Descrição" hint="Informe uma descrição para a divulgação do evento."
                           :toolbar="['style', 'bold', 'italic', 'unordered-list', 'ordered-list', 'link']" />

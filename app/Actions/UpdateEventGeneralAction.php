@@ -27,14 +27,11 @@ class UpdateEventGeneralAction
 
             $attributes = Arr::only($validated, [
                 'name',
+                'complement',
                 'type',
                 'is_public',
                 'advertisable',
             ]);
-
-            if ($event->recurrence_code !== null) {
-                unset($attributes['advertisable']);
-            }
 
             $event->fill($attributes);
             $dirty = $event->getDirty();

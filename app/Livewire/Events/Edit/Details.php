@@ -17,8 +17,6 @@ class Details extends Component
 
     public Event $event;
 
-    public ?string $subtitle = null;
-
     public ?string $description = null;
 
     public ?string $target_audience = null;
@@ -75,7 +73,6 @@ class Details extends Component
     protected function rules(): array
     {
         return [
-            'subtitle'                   => ['nullable', 'string', 'max:255'],
             'description'                => ['nullable', 'string'],
             'target_audience'            => ['nullable', 'string', 'max:255'],
             'participation_instructions' => ['nullable', 'string'],
@@ -92,7 +89,6 @@ class Details extends Component
     {
         $detail = $this->event->detail()->first();
 
-        $this->subtitle                   = $detail?->subtitle;
         $this->description                = $detail?->description;
         $this->target_audience            = $detail?->target_audience;
         $this->participation_instructions = $detail?->participation_instructions;
