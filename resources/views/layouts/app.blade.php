@@ -32,6 +32,7 @@
             <x-layout.header>
                 <x-slot:right>
                     <x-dropdown>
+                        <div class="px-4 pb-2 text-sm font-medium text-gray-700 dark:text-gray-200">{{ auth()->user()->name }}</div>
                         <x-slot:action>
                             <div>
                                 <x-avatar :model="auth()->user()" color="fff" borderless sm x-on:click="show = !show" class="cursor-pointer" />                                    
@@ -42,7 +43,7 @@
                         </x-slot:header>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <x-dropdown.items :text="__('Profile')" :href="route('user.profile')" />
+                            <x-dropdown.items :text="__('Profile')" :href="route('user.profile')" separator />
                             <x-dropdown.items :text="__('Logout')" onclick="event.preventDefault(); this.closest('form').submit();" separator />
                         </form>
                     </x-dropdown>
