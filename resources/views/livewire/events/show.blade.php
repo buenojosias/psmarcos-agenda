@@ -111,12 +111,17 @@
                     <x-button text="Editar" icon="pencil-square" :href="route('events.edit', $event)" outline />
                     <x-button text="Remarcar" icon="arrow-path-rounded-square" :href="route('events.edit', ['event' => $event, 'tab' => 'reschedule'])" outline />
                 @endif
-                <x-button text="Mensagens" icon="chat-bubble-bottom-center-text" outline />
+                @if ($canViewNotes)
+                    <x-button text="Notas" icon="chat-bubble-bottom-center-text" wire:click="openNotes" outline />
+                @endif
                 <x-button text="Auditoria" icon="eye" outline />
                 @if ($canManage)
                     <x-button text="Cancelar" color="red" icon="x-circle" disabled />
                 @endif
             </x-button.group>
+            @if ($showNotes && $canViewNotes)
+                <livewire:events.notes :event="$event" />
+            @endif
         </div>
     </div>
 </div>

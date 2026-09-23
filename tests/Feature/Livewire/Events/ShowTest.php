@@ -31,6 +31,40 @@ it('displays event details and the reservation period', function () {
         ->assertSee('<script>alert(1)</script>')->assertDontSee('<script>alert(1)</script>', false);
 });
 
+it('loads notes only after clicking the button', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+    $event->notes()->create(['user_id' => $user->id, 'content' => 'Nota reservada']);
+
+    Livewire::actingAs($user)
+        ->test(Show::class, ['event' => $event])
+        ->assertSee('Notas')
+        ->assertDontSee('Nota reservada')
+        ->assertDontSee('wire:name="events.notes"', false)
+        ->call('openNotes')
+        ->assertSet('showNotes', true)
+        ->assertSee('Nota reservada');
+});
+
+it('shows notes to a priest but denies the button and action to an unrelated member', function () {
+    $event  = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED]);
+    $priest = User::factory()->create(['roles' => ['priest'], 'is_active' => true]);
+    $member = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+
+    Livewire::actingAs($priest)
+        ->test(Show::class, ['event' => $event])
+        ->assertSee('Notas')
+        ->assertDontSee('Editar')
+        ->call('openNotes')
+        ->assertSee('Nenhuma nota cadastrada.');
+
+    Livewire::actingAs($member)
+        ->test(Show::class, ['event' => $event])
+        ->assertDontSee('Notas')
+        ->call('openNotes')
+        ->assertForbidden();
+});
+
 it('shows a reserved child space with its parent in the reservations table', function () {
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $parent    = $community->places()->create(['name' => 'Salão principal']);
