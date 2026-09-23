@@ -22,8 +22,8 @@ class PlaceReservationFactory extends Factory
             'event_id'      => $event?->id,
             'mass_id'       => null,
             'place_id'      => Place::query()->inRandomOrder()->value('id'),
-            'reserved_from' => $event?->starts_at?->copy()->subMinutes(fake()->numberBetween(30, 120)),
-            'reserved_to'   => $event?->ends_at?->copy()->addMinutes(fake()->numberBetween(30, 90)),
+            'reserved_from' => $event->starts_at->copy()->floorMinutes(15)->subMinutes(fake()->numberBetween(2, 8) * 15),
+            'reserved_to'   => $event->ends_at->copy()->ceilMinutes(15)->addMinutes(fake()->numberBetween(2, 6) * 15),
             'is_primary'    => false,
         ];
     }
@@ -36,8 +36,8 @@ class PlaceReservationFactory extends Factory
             return [
                 'event_id'      => null,
                 'mass_id'       => $mass->id,
-                'reserved_from' => $mass->starts_at->copy()->subMinutes(fake()->numberBetween(30, 120)),
-                'reserved_to'   => $mass->ends_at->copy()->addMinutes(fake()->numberBetween(30, 90)),
+                'reserved_from' => $mass->starts_at->copy()->floorMinutes(15)->subMinutes(fake()->numberBetween(2, 8) * 15),
+                'reserved_to'   => $mass->ends_at->copy()->ceilMinutes(15)->addMinutes(fake()->numberBetween(2, 6) * 15),
             ];
         });
     }

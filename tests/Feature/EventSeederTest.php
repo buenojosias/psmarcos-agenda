@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\Community;
+use App\Models\PlaceReservation;
 use Database\Seeders\EventSeeder;
 
 it('seeds internal events with reservations only in their own community', function () {
@@ -21,12 +22,29 @@ it('seeds internal events with reservations only in their own community', functi
 
     $events = Event::query()->with('reservations.place')->get();
     expect($events)->toHaveCount(16);
+    expect($events->whereNotNull('recurrence_code'))->toHaveCount(8);
+    expect($events->whereNull('recurrence_code'))->toHaveCount(8);
+    expect($events->filter(fn (Event $event): bool => filled($event->complement)))->toHaveCount(8);
+    expect($events->flatMap(fn (Event $event) => $event->reservations)->every(
+        fn (PlaceReservation $reservation): bool => $reservation->reserved_from->minute % 15 === 0
+            && $reservation->reserved_to->minute % 15 === 0
+            && $reservation->reserved_from->second === 0
+            && $reservation->reserved_to->second === 0
+    ))->toBeTrue();
     expect($events->every(fn (Event $event): bool => ! $event->is_external
         && in_array($event->community_id, [$first->id, $second->id], true)
-        && filled($event->complement)
         && $event->reservations->where('is_primary', true)->count() === 1
         && $event->reservations->every(fn ($reservation): bool => $reservation->place->community_id === $event->community_id)))->toBeTrue();
     expect($events->whereNotNull('recurrence_code')->groupBy('recurrence_code')->every(
         fn ($series): bool => $series->pluck('community_id')->unique()->count() === 1
     ))->toBeTrue();
+
+    foreach ([
+        'Jantar dançante'           => 'Noite de confraternização',
+        'Ensaio geral do coral'     => 'Preparação para a celebração',
+        'Festa da comunidade'       => 'Confraternização paroquial',
+        'Encontro de coordenadores' => 'Planejamento das atividades',
+    ] as $name => $complement) {
+        $this->assertDatabaseHas('events', ['name' => $name, 'complement' => $complement]);
+    }
 });

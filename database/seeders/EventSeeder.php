@@ -55,7 +55,9 @@ class EventSeeder extends Seeder
                     'name'               => $series === 1
                         ? 'Encontro mensal - '.$group->name
                         : 'Reunião mensal - '.$group->name,
-                    'complement'      => $series === 1 ? 'Convivência e formação' : 'Planejamento pastoral',
+                    'complement' => $occurrence % 2 === 0
+                        ? ($series === 1 ? 'Partilha e formação' : 'Planejamento das atividades')
+                        : null,
                     'type'            => EventTypeEnum::MEETING,
                     'recurrence_code' => $recurrenceCode,
                     'starts_at'       => $startsAt,
@@ -72,31 +74,20 @@ class EventSeeder extends Seeder
         }
 
         // Oito eventos únicos, em datas distintas.
-        $uniqueNames = [
-            'Jantar dançante',
-            'Formação de lideranças',
-            'Ensaio geral do coral',
-            'Café comunitário',
-            'Festa da comunidade',
-            'Treinamento de informática',
-            'Encontro de coordenadores',
-            'Oficina de música',
-        ];
-
-        $uniqueTypes = [
-            EventTypeEnum::FOOD,
-            EventTypeEnum::COURSE,
-            EventTypeEnum::REHEARSAL,
-            EventTypeEnum::FOOD,
-            EventTypeEnum::PARTY,
-            EventTypeEnum::COURSE,
-            EventTypeEnum::MEETING,
-            EventTypeEnum::COURSE,
+        $uniqueEvents = [
+            ['name' => 'Jantar dançante', 'type' => EventTypeEnum::FOOD, 'complement' => 'Noite de confraternização'],
+            ['name' => 'Formação de lideranças', 'type' => EventTypeEnum::COURSE, 'complement' => null],
+            ['name' => 'Ensaio geral do coral', 'type' => EventTypeEnum::REHEARSAL, 'complement' => 'Preparação para a celebração'],
+            ['name' => 'Café comunitário', 'type' => EventTypeEnum::FOOD, 'complement' => null],
+            ['name' => 'Festa da comunidade', 'type' => EventTypeEnum::PARTY, 'complement' => 'Confraternização paroquial'],
+            ['name' => 'Treinamento de informática', 'type' => EventTypeEnum::COURSE, 'complement' => null],
+            ['name' => 'Encontro de coordenadores', 'type' => EventTypeEnum::MEETING, 'complement' => 'Planejamento das atividades'],
+            ['name' => 'Oficina de música', 'type' => EventTypeEnum::COURSE, 'complement' => null],
         ];
 
         $baseUniqueDate = CarbonImmutable::now()->addWeeks(3)->startOfDay();
 
-        foreach ($uniqueNames as $index => $name) {
+        foreach ($uniqueEvents as $index => $uniqueEvent) {
             $startsAt = $baseUniqueDate
                 ->addDays(($index + 1) * 3)
                 ->setTime(14 + ($index % 6), 0);
@@ -108,9 +99,9 @@ class EventSeeder extends Seeder
                 'community_id'       => $primaryPlace->community_id,
                 'group_id'           => $groups->random()->id,
                 'created_by_user_id' => $users->random()->id,
-                'name'               => $name,
-                'complement'         => fake()->sentence(6),
-                'type'               => $uniqueTypes[$index],
+                'name'               => $uniqueEvent['name'],
+                'complement'         => $uniqueEvent['complement'],
+                'type'               => $uniqueEvent['type'],
                 'recurrence_code'    => null,
                 'starts_at'          => $startsAt,
                 'ends_at'            => $endsAt,
@@ -133,8 +124,8 @@ class EventSeeder extends Seeder
         PlaceReservation::factory()->create([
             'event_id'      => $event->id,
             'place_id'      => $primaryPlace->id,
-            'reserved_from' => $event->starts_at->copy()->subMinutes(random_int(30, 120)),
-            'reserved_to'   => $event->ends_at->copy()->addMinutes(random_int(30, 90)),
+            'reserved_from' => $event->starts_at->copy()->floorMinutes(15)->subMinutes(random_int(2, 8) * 15),
+            'reserved_to'   => $event->ends_at->copy()->ceilMinutes(15)->addMinutes(random_int(2, 6) * 15),
             'is_primary'    => true,
         ]);
 
@@ -147,8 +138,8 @@ class EventSeeder extends Seeder
             PlaceReservation::factory()->create([
                 'event_id'      => $event->id,
                 'place_id'      => $place->id,
-                'reserved_from' => $event->starts_at->copy()->subMinutes(random_int(30, 180)),
-                'reserved_to'   => $event->ends_at->copy()->addMinutes(random_int(30, 120)),
+                'reserved_from' => $event->starts_at->copy()->floorMinutes(15)->subMinutes(random_int(2, 12) * 15),
+                'reserved_to'   => $event->ends_at->copy()->ceilMinutes(15)->addMinutes(random_int(2, 8) * 15),
                 'is_primary'    => false,
             ]);
         }
