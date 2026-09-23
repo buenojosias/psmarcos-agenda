@@ -16,12 +16,14 @@ it('shows user search to managers and lets them create a group without a user', 
         ->assertSee('É coordenador deste grupo')
         ->assertDontSee('Sou coordenador deste grupo')
         ->set('name', 'Pastoral da Saúde')
+        ->set('abbreviation', 'PS')
         ->set('type', GroupTypeEnum::PASTORAL->value)
         ->call('save')
         ->assertHasNoErrors()
         ->assertDispatched('created');
 
     $group = Group::where('slug', 'pastoral-da-saude')->firstOrFail();
+    expect($group->abbreviation)->toBe('PS');
     expect($group->users()->count())->toBe(0);
 })->with(['admin', 'cpp', 'pascom', 'secretary']);
 
@@ -90,6 +92,19 @@ it('refuses a nonexistent selected user', function () {
         ->set('userId', 999999)
         ->call('save')
         ->assertHasErrors(['userId' => 'exists']);
+
+    expect(Group::count())->toBe(0);
+});
+
+it('refuses an abbreviation longer than the database column', function () {
+    $manager = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($manager)->test(Create::class)
+        ->set('name', 'Grupo Novo')
+        ->set('abbreviation', str_repeat('A', 31))
+        ->set('type', GroupTypeEnum::GROUP->value)
+        ->call('save')
+        ->assertHasErrors(['abbreviation' => 'max']);
 
     expect(Group::count())->toBe(0);
 });

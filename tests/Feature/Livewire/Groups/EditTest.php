@@ -29,26 +29,26 @@ it('uses the same permissions as membership management', function (string $role,
 
 it('loads and updates group details and closes the modal', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
-    $group = Group::create(['name' => 'Grupo Original', 'slug' => 'grupo-original', 'type' => GroupTypeEnum::GROUP]);
+    $group = Group::create(['name' => 'Grupo Original', 'abbreviation' => 'GO', 'slug' => 'grupo-original', 'type' => GroupTypeEnum::GROUP]);
 
     Livewire::actingAs($user)->test(Edit::class, ['group' => $group])
-        ->call('open')->assertSet('name', 'Grupo Original')->assertSet('modal', true)
-        ->set('name', 'Pastoral Renovada')->set('type', GroupTypeEnum::PASTORAL->value)
+        ->call('open')->assertSet('name', 'Grupo Original')->assertSet('abbreviation', 'GO')->assertSet('modal', true)
+        ->set('name', 'Pastoral Renovada')->set('abbreviation', 'PR')->set('type', GroupTypeEnum::PASTORAL->value)
         ->set('description', 'Descrição atualizada')->call('save')
         ->assertHasNoErrors()->assertSet('modal', false)->assertDispatched('group-updated');
 
-    $this->assertDatabaseHas('groups', ['id' => $group->id, 'name' => 'Pastoral Renovada', 'slug' => 'pastoral-renovada', 'type' => GroupTypeEnum::PASTORAL->value, 'description' => 'Descrição atualizada']);
+    $this->assertDatabaseHas('groups', ['id' => $group->id, 'name' => 'Pastoral Renovada', 'abbreviation' => 'PR', 'slug' => 'pastoral-renovada', 'type' => GroupTypeEnum::PASTORAL->value, 'description' => 'Descrição atualizada']);
 });
 
 it('allows saving an unchanged name and clearing optional details', function () {
     $user  = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
-    $group = Group::create(['name' => 'Grupo Original', 'slug' => 'grupo-original', 'type' => GroupTypeEnum::GROUP, 'description' => 'Descrição']);
+    $group = Group::create(['name' => 'Grupo Original', 'abbreviation' => 'GO', 'slug' => 'grupo-original', 'type' => GroupTypeEnum::GROUP, 'description' => 'Descrição']);
     $group->users()->attach($user, ['is_coordinator' => true]);
 
     Livewire::actingAs($user)->test(Edit::class, ['group' => $group])
-        ->call('open')->set('description', null)->set('communityId', null)->call('save')->assertHasNoErrors();
+        ->call('open')->set('abbreviation', null)->set('description', null)->set('communityId', null)->call('save')->assertHasNoErrors();
 
-    $this->assertDatabaseHas('groups', ['id' => $group->id, 'name' => 'Grupo Original', 'description' => null, 'community_id' => null]);
+    $this->assertDatabaseHas('groups', ['id' => $group->id, 'name' => 'Grupo Original', 'abbreviation' => null, 'description' => null, 'community_id' => null]);
 });
 
 it('hides editing and forbids crafted actions for a coordinator of another group', function () {
@@ -87,6 +87,7 @@ it('validates edited details without changing the group', function (string $fiel
 })->with([
     'required name'     => ['name', '', 'required'],
     'long name'         => ['name', str_repeat('a', 256), 'max'],
+    'long abbreviation' => ['abbreviation', str_repeat('A', 31), 'max'],
     'required type'     => ['type', '', 'required'],
     'invalid type'      => ['type', 'invalid', 'Illuminate\Validation\Rules\Enum'],
     'missing community' => ['communityId', 999999, 'exists'],

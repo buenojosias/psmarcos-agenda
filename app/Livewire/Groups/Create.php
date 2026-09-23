@@ -21,6 +21,8 @@ class Create extends Component
 
     public string $name = '';
 
+    public ?string $abbreviation = null;
+
     public string $type = '';
 
     public ?int $communityId = null;
@@ -59,12 +61,13 @@ class Create extends Component
         $slug = Str::slug($this->name);
 
         $this->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'type'        => ['required', Rule::enum(GroupTypeEnum::class)],
-            'communityId' => ['nullable', 'integer', Rule::exists('communities', 'id')],
-            'description' => ['nullable', 'string'],
-            'userId'      => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'isLeader'    => ['boolean'],
+            'name'         => ['required', 'string', 'max:255'],
+            'abbreviation' => ['nullable', 'string', 'max:30'],
+            'type'         => ['required', Rule::enum(GroupTypeEnum::class)],
+            'communityId'  => ['nullable', 'integer', Rule::exists('communities', 'id')],
+            'description'  => ['nullable', 'string'],
+            'userId'       => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'isLeader'     => ['boolean'],
         ]);
 
         if ($slug === '' || Group::withTrashed()->where('slug', $slug)->exists()) {
@@ -75,6 +78,7 @@ class Create extends Component
 
         $group = Group::create([
             'name'         => $this->name,
+            'abbreviation' => $this->abbreviation,
             'type'         => $this->type,
             'community_id' => $this->communityId,
             'description'  => $this->description,

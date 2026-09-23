@@ -20,6 +20,8 @@ class Edit extends Component
 
     public string $name = '';
 
+    public ?string $abbreviation = null;
+
     public string $type = '';
 
     public ?int $communityId = null;
@@ -51,11 +53,12 @@ class Edit extends Component
 
         $this->resetValidation();
         $this->group->refresh();
-        $this->name        = $this->group->name;
-        $this->type        = $this->group->type->value;
-        $this->communityId = $this->group->community_id;
-        $this->description = $this->group->description;
-        $this->modal       = true;
+        $this->name         = $this->group->name;
+        $this->abbreviation = $this->group->abbreviation;
+        $this->type         = $this->group->type->value;
+        $this->communityId  = $this->group->community_id;
+        $this->description  = $this->group->description;
+        $this->modal        = true;
     }
 
     public function save(): void
@@ -65,10 +68,11 @@ class Edit extends Component
         $slug = Str::slug($this->name);
 
         $this->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'type'        => ['required', Rule::enum(GroupTypeEnum::class)],
-            'communityId' => ['nullable', 'integer', Rule::exists('communities', 'id')],
-            'description' => ['nullable', 'string'],
+            'name'         => ['required', 'string', 'max:255'],
+            'abbreviation' => ['nullable', 'string', 'max:30'],
+            'type'         => ['required', Rule::enum(GroupTypeEnum::class)],
+            'communityId'  => ['nullable', 'integer', Rule::exists('communities', 'id')],
+            'description'  => ['nullable', 'string'],
         ]);
 
         if ($slug === '' || Group::withTrashed()->where('slug', $slug)->whereKeyNot($this->group->id)->exists()) {
@@ -79,6 +83,7 @@ class Edit extends Component
 
         $this->group->update([
             'name'         => $this->name,
+            'abbreviation' => $this->abbreviation,
             'type'         => $this->type,
             'community_id' => $this->communityId,
             'description'  => $this->description,
