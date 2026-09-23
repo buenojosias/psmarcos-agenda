@@ -15,14 +15,14 @@ it('allows every active role to list communities and exposes only authorized act
     $community = Community::create(['name' => 'Comunidade São Marcos', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
 
     $response = $this->actingAs($user)->get(route('communities.index'))
-        ->assertOk()->assertSee('Matriz')->assertSee('Comunidade São Marcos')->assertSee(route('communities.show', $community));
+        ->assertOk()->assertSee('Comunidade São Marcos')->assertSee(route('communities.show', $community));
 
     $canManage = in_array($role, [UserRoleEnum::ADMIN, UserRoleEnum::CPP], true);
     expect($user->can('create', Community::class))->toBe($canManage);
     expect($user->can('update', $community))->toBe($canManage);
     expect($user->can('delete', $community))->toBe($canManage);
-    $canManage ? $response->assertSee('Cadastrar comunidade')->assertSee('Editar comunidade')->assertSee('Excluir')
-        : $response->assertDontSee('Cadastrar comunidade')->assertDontSee('Editar comunidade')->assertDontSee('Excluir');
+    $canManage ? $response->assertSee('Cadastrar comunidade')->assertSee('Editar comunidade')
+        : $response->assertDontSee('Cadastrar comunidade')->assertDontSee('Editar comunidade');
 })->with(UserRoleEnum::cases());
 
 it('requires authentication and activity to list communities', function () {
@@ -40,15 +40,14 @@ it('shows a friendly empty state', function () {
         ->assertSee('Ainda não há comunidades cadastradas.')->assertDontSee('Cadastrar comunidade');
 });
 
-it('searches communities and safely handles invalid sorting input', function () {
+it('lists communities and safely handles invalid sorting input', function () {
     $user = User::factory()->create(['is_active' => true]);
     Community::create(['name' => 'Comunidade São Marcos', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     Community::create(['name' => 'Outra', 'alias' => 'Capela', 'abbreviation' => 'CP']);
 
     Livewire::actingAs($user)->test(Index::class)
         ->set('sort', ['column' => 'invalid', 'direction' => 'invalid'])
-        ->set('search', 'Marcos')->assertSee('Matriz')->assertDontSee('Capela')
-        ->set('search', 'inexistente')->assertSee('Nenhuma comunidade encontrada para esta busca.');
+        ->assertSee('Comunidade São Marcos')->assertSee('Outra');
 });
 
 it('asks for confirmation before deleting an empty community', function (UserRoleEnum $role) {

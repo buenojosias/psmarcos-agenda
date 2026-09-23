@@ -12,14 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\QueryException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class Index extends Component
 {
     use Alert;
-
-    public ?string $search = null;
 
     public array $sort = [
         'column'    => 'name',
@@ -27,7 +24,7 @@ class Index extends Component
     ];
 
     public array $headers = [
-        ['index' => 'name', 'label' => 'Nome oficial'],
+        ['index' => 'name', 'label' => 'Nome'],
         ['index' => 'address', 'label' => 'Endereço', 'sortable' => false],
         ['index' => 'action', 'label' => 'Ações', 'sortable' => false],
     ];
@@ -50,7 +47,6 @@ class Index extends Component
         $sortDirection = ($this->sort['direction'] ?? null) === 'desc' ? 'desc' : 'asc';
 
         return Community::query()
-            ->when(filled($this->search), fn (Builder $query) => $query->whereAny(['name', 'alias', 'abbreviation'], 'like', '%'.mb_trim($this->search).'%'))
             ->orderBy($sortColumn, $sortDirection)
             ->get();
     }

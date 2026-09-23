@@ -8,9 +8,9 @@
         @endcan
     </div>
 
-    <x-table :$headers :$sort :rows="$this->rows" filter loading>
+    <x-table :$headers :$sort :rows="$this->rows" :filter="false" loading>
         <x-slot:empty>
-            {{ filled($search) ? 'Nenhuma comunidade encontrada para esta busca.' : 'Ainda não há comunidades cadastradas.' }}
+            Ainda não há comunidades cadastradas.
         </x-slot:empty>
 
         @interact('column_name', $row)
