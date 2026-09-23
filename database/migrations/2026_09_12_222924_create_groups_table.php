@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('community_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
+            $table->string('abbreviation', 30)->nullable();
             $table->string('type', 30);
             $table->string('slug')->unique();
             $table->text('description')->nullable();

@@ -17,6 +17,7 @@ class Group extends Model
     protected $fillable = [
         'community_id',
         'name',
+        'abbreviation',
         'type',
         'slug',
         'description',

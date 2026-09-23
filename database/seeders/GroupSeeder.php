@@ -19,15 +19,15 @@ class GroupSeeder extends Seeder
         $beatoId  = Community::query()->where('name', 'Capela Beato Giacomo Cusmano')->firstOrFail()->id;
 
         $groups = [
-            ['name' => 'Pastoral Familiar', 'type' => GroupTypeEnum::PASTORAL],
-            ['name' => 'Pastoral da Liturgia', 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
-            ['name' => 'Pastoral da Comunicação', 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
-            ['name' => 'Legião de Maria', 'type' => GroupTypeEnum::MOVEMENT],
-            ['name' => 'Ministros Extraordinários da Comunhão', 'type' => GroupTypeEnum::MINISTRY],
-            ['name' => 'Conselho Pastoral Paroquial', 'type' => GroupTypeEnum::COUNCIL, 'community_id' => $matrizId],
-            ['name' => 'Grupo de Jovens do Beato', 'type' => GroupTypeEnum::GROUP, 'community_id' => $beatoId],
-            ['name' => 'Movimento de Irmãos', 'type' => GroupTypeEnum::MOVEMENT],
-            ['name' => 'Coral Doce Canto', 'type' => GroupTypeEnum::GROUP, 'community_id' => $matrizId],
+            ['name' => 'Pastoral Familiar', 'abbreviation' => null, 'type' => GroupTypeEnum::PASTORAL],
+            ['name' => 'Pastoral da Liturgia', 'abbreviation' => null, 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
+            ['name' => 'Pastoral da Comunicação', 'abbreviation' => 'Pascom', 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
+            ['name' => 'Legião de Maria', 'abbreviation' => 'L.M.', 'type' => GroupTypeEnum::MOVEMENT],
+            ['name' => 'Ministros Extraordinários da Comunhão', 'abbreviation' => 'MESCs', 'type' => GroupTypeEnum::MINISTRY],
+            ['name' => 'Conselho Pastoral Paroquial', 'abbreviation' => 'CPP', 'type' => GroupTypeEnum::COUNCIL, 'community_id' => $matrizId],
+            ['name' => 'Grupo de Jovens do Beato', 'abbreviation' => 'GJB', 'type' => GroupTypeEnum::GROUP, 'community_id' => $beatoId],
+            ['name' => 'Movimento de Irmãos', 'abbreviation' => 'MI', 'type' => GroupTypeEnum::MOVEMENT],
+            ['name' => 'Coral Doce Canto', 'abbreviation' => 'Coral', 'type' => GroupTypeEnum::GROUP, 'community_id' => $matrizId],
         ];
 
         $communityIds = Community::query()->pluck('id');
@@ -47,6 +47,7 @@ class GroupSeeder extends Seeder
         foreach ($groups as $data) {
             $group = Group::factory()->create([
                 'name'         => $data['name'],
+                'abbreviation' => $data['abbreviation'],
                 'type'         => $data['type'],
                 'community_id' => $data['community_id'] ?? (fake()->boolean(70) && $communityIds->isNotEmpty()
                     ? $communityIds->random()

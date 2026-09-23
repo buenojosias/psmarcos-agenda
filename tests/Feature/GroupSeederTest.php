@@ -29,10 +29,20 @@ it('assigns the requested communities and group memberships', function () {
         'community_id' => $beatoId,
     ]);
 
+    $this->assertDatabaseHas('groups', [
+        'name'         => 'Pastoral da Comunicação',
+        'abbreviation' => 'Pascom',
+    ]);
+
+    $this->assertDatabaseHas('groups', [
+        'name'         => 'Pastoral Familiar',
+        'abbreviation' => null,
+    ]);
+
     foreach ([
         ['Pastoral da Comunicação', 'josias@email.com', false],
-        ['Pastoral da Comunicação', 'pascom@email.com', false],
-        ['Conselho Pastoral Paroquial', 'cpp@email.com', false],
+        ['Pastoral da Comunicação', 'pascom@email.com', true],
+        ['Conselho Pastoral Paroquial', 'cpp@email.com', true],
         ['Coral Doce Canto', 'josias@email.com', true],
     ] as [$groupName, $email, $isCoordinator]) {
         $this->assertDatabaseHas('group_user', [
