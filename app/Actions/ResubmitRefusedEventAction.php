@@ -93,7 +93,7 @@ class ResubmitRefusedEventAction
         ], [
             'name.required' => 'Informe o nome do evento antes de reenviá-lo.',
             'type.required' => 'Informe o tipo do evento antes de reenviá-lo.',
-            'ends_at.after' => 'O término do evento deve ser posterior ao início.',
+            'ends_at.after' => 'O encerramento do evento deve ser posterior ao início.',
         ])->validate();
     }
 

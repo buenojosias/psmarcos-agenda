@@ -9,7 +9,7 @@
     <x-table :headers="[
         ['index' => 'name', 'label' => 'Evento', 'sortable' => false],
         ['index' => 'starts_at', 'label' => 'Início', 'sortable' => false],
-        ['index' => 'ends_at', 'label' => 'Término', 'sortable' => false],
+        ['index' => 'ends_at', 'label' => 'Encerramento', 'sortable' => false],
         ['index' => 'location', 'label' => 'Local', 'sortable' => false],
         ...($canViewStatus ? [
             ['index' => 'created_at', 'label' => 'Cadastrado em', 'sortable' => false],

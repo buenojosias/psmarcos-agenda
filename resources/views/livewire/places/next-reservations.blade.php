@@ -11,7 +11,7 @@
                         <div class="font-medium">{{ $reservation['type'] }}</div>
                         <div class="mt-1 text-sm text-gray-500 dark:text-dark-400">
                             <div>Início: {{ $reservation['starts_at'] }}</div>
-                            <div>Término: {{ $reservation['ends_at'] }}</div>
+                            <div>Encerramento: {{ $reservation['ends_at'] }}</div>
                         </div>
                     </div>
                 @empty

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('type', 20); // Tipo do evento, vindo do enum
             $table->ulid('recurrence_code')->nullable()->index(); // Identificador para eventos recorrentes, a fim de editar ou cancelar em massa (ex: Encontros semanais)
             $table->dateTime('starts_at'); // Horário de início efetivo do evento
-            $table->dateTime('ends_at'); // Horário de término efetivo do evento
+            $table->dateTime('ends_at'); // Horário de encerramento efetivo do evento
             $table->string('status', 20)->default('pending'); // Status do agendamento, vindo do enum
             $table->boolean('is_external')->default(false); // O evento não acontecerá nas dependências da igreja, mas deve ser registrado assim mesmo (neste caso, nã haverá relacionamento com places)
             $table->boolean('is_public')->default(true); // Se o evento pode aparecer publicamente no calendário e no site

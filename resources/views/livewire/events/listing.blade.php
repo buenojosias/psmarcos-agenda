@@ -3,7 +3,7 @@
     ['index' => 'location', 'label' => 'Local', 'sortable' => false],
     ['index' => 'group', 'label' => 'Grupo organizador', 'sortable' => false],
     ['index' => 'starts_at', 'label' => 'Início', 'sortable' => false],
-    ['index' => 'ends_at', 'label' => 'Término', 'sortable' => false],
+    ['index' => 'ends_at', 'label' => 'Encerramento', 'sortable' => false],
     ['index' => 'status', 'label' => 'Status', 'sortable' => false],
 ]" :rows="$events" paginate loading empty="Nenhum evento encontrado.">
     @interact('column_name', $row)

@@ -8,7 +8,7 @@
 
     <x-table :headers="[
         ['index' => 'starts_at', 'label' => 'Início', 'sortable' => false],
-        ['index' => 'ends_at', 'label' => 'Término', 'sortable' => false],
+        ['index' => 'ends_at', 'label' => 'Encerramento', 'sortable' => false],
         ['index' => 'event', 'label' => 'Evento', 'sortable' => false],
         ['index' => 'group', 'label' => 'Grupo organizador', 'sortable' => false],
     ]" :rows="$reservations" empty="Nenhuma reserva atual ou futura para este espaço.">

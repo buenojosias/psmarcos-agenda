@@ -175,7 +175,7 @@ class External extends Component
     private function messages(): array
     {
         return [
-            'ends_at.after' => 'O término deve ser posterior ao início.',
+            'ends_at.after' => 'O encerramento deve ser posterior ao início.',
         ];
     }
 

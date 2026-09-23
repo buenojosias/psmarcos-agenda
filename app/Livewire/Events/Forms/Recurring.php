@@ -316,7 +316,7 @@ class Recurring extends Component
         return [
             'dates.min'              => 'Selecione pelo menos duas datas.',
             'dates.*.after_or_equal' => 'As datas devem ser hoje ou futuras.',
-            'ends_time.after'        => 'O término deve ser posterior ao início.',
+            'ends_time.after'        => 'O encerramento deve ser posterior ao início.',
         ];
     }
 

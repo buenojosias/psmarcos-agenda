@@ -69,7 +69,7 @@ it('shows the mass community without depending on its primary reservation or laz
             ->assertSee('Matriz')->assertDontSee('Comunidade não informada')
             ->assertDontSee('Espaço reservado')
             ->assertDontSee('Grupo organizador')->assertDontSee('Tipo')->assertDontSee('Status')
-            ->assertDontSee('Pendente')->assertDontSee('Local principal')->assertDontSee('Término')
+            ->assertDontSee('Pendente')->assertDontSee('Local principal')->assertDontSee('Encerramento')
             ->assertDontSee('filtersOpen')->assertDontSee('Missa/celebração');
 
         $document = new DOMDocument;

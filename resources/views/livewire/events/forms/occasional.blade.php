@@ -16,7 +16,7 @@
                              select="label:label|value:value" required :searchable="$isMemberOnly" />
 
             <x-input type="datetime-local" wire:model="starts_at" label="Início *" required />
-            <x-input type="datetime-local" wire:model="ends_at" label="Término *" required />
+            <x-input type="datetime-local" wire:model="ends_at" label="Encerramento *" required />
             <x-toggle wire:model="is_public" label="Evento público" />
             <x-toggle wire:model.live="advertisable" label="Solicitar divulgação" />
             @if ($canConfirmImmediately)
