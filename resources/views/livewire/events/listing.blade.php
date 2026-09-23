@@ -8,6 +8,11 @@
 ]" :rows="$events" paginate loading empty="Nenhum evento encontrado.">
     @interact('column_name', $row)
         <a href="{{ route('events.show', $row) }}" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+        @if ($row->complement)
+            <div>
+                <a href="{{ route('events.show', $row) }}" class=" text-gray-500 dark:text-dark-400 hover:underline">{{ $row->complement }}</a>
+            </div>
+        @endif
         <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->type->label() }}</div>
     @endinteract
 
@@ -16,18 +21,33 @@
     @endinteract
 
     @interact('column_starts_at', $row)
-        {{ $row->starts_at->format('d/m/Y - H:i') }}
+        {{ $row->starts_at->format('d/m/Y') }}
+        <div class="flex items-center gap-1">
+            <x-icon name="clock" outline sm />
+            {{ $row->starts_at->format('H:i') }}
+        </div>
     @endinteract
 
     @interact('column_ends_at', $row)
-        {{ $row->ends_at->format('d/m/Y - H:i') }}
+        {{ $row->ends_at->format('d/m/Y') }}
+        <div class="flex items-center gap-1">
+            <x-icon name="clock" outline sm />
+            {{ $row->ends_at->format('H:i') }}
+        </div>
     @endinteract
 
     @interact('column_location', $row)
-        @if ($row->community?->name)
-            <div>{{ $row->community?->name }}</div>
+        @if (! $row->is_external)
+            @if ($row->community?->name)
+                <div>{{ $row->community?->name }}</div>
+            @endif
+            <div class="text text-gray-500 dark:text-dark-400 flex gap-1">
+                <x-icon name="arrow-turn-down-right" sm />
+                {{ $row->primaryReservation?->place?->name ?? 'Local não informado' }}
+            </div>
+        @else
+            <div>{{ $row->detail->external_location_name }}</div>
         @endif
-        <div class="text-xs text-gray-500 dark:text-dark-400">{{ $row->primaryReservation?->place?->name ?? 'Local não informado' }}</div>
     @endinteract
 
     @interact('column_status', $row, $memberOnly, $userGroupIds)

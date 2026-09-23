@@ -11,9 +11,9 @@
 
     <x-card header="Nova data e horário">
         <div class="grid gap-4 md:grid-cols-3">
-            <x-date wire:model.live="date" label="Nova data" format="DD/MM/YYYY" />
-            <x-time wire:model.live="starts_at" label="Horário inicial" format="24" />
-            <x-time wire:model.live="ends_at" label="Horário final" format="24" />
+            <x-date wire:model.live="date" label="Nova data" format="DD/MM/YYYY" typeable />
+            <x-time wire:model.live="starts_at" label="Horário de início" format="24" />
+            <x-time wire:model.live="ends_at" label="Horário de encerramento" format="24" />
 
             @unless ($event->is_external)
                 <div class="md:col-span-3">
