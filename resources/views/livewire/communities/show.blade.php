@@ -29,7 +29,12 @@
                     ['index' => 'actions', 'label' => '', 'sortable' => false],
                 ]" :rows="$groups" empty="Nenhum grupo está vinculado a esta comunidade.">
                     @interact('column_name', $row)
-                        <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+                        <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">
+                            {{ $row->name }}
+                            @if ($row->abbreviation)
+                                ({{ $row->abbreviation }})
+                            @endif
+                        </a>
                     @endinteract
                     @interact('column_type', $row)
                         {{ $row->type->label() }}

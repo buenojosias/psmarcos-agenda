@@ -43,7 +43,7 @@ class Show extends Component
 
         return view('livewire.communities.show', [
             'groups' => $this->tab === 'groups'
-                ? $this->community->groups()->orderBy('name')->get(['id', 'name', 'type'])
+                ? $this->community->groups()->orderBy('name')->get(['id', 'name', 'abbreviation', 'type'])
                 : null,
         ]);
     }

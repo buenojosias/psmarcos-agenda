@@ -13,6 +13,8 @@
         <div class="lg:col-span-2">
             <x-card shadowless bordered header="Detalhes do grupo" class="space-y-4">
                 <dl class="grid gap-4 sm:grid-cols-2">
+                    <x-detail label="Nome" :value="$group->name" />
+                    <x-detail label="Abreviação" :value="$group->abbreviation ?? '—'" />
                     <x-detail label="Tipo" :value="$group->type->label()" />
                     <x-detail label="Comunidade" :value="$group->community?->name ?? '—'" />
                 </dl>

@@ -46,7 +46,12 @@
         @endinteract
 
         @interact('column_name', $row)
-            <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
+            <a href="{{ route('groups.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">
+                {{ $row->name }}
+                @if ($row->abbreviation)
+                    ({{ $row->abbreviation }})
+                @endif
+            </a>
         @endinteract
 
         @interact('column_actions', $row)

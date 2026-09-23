@@ -1,7 +1,7 @@
 <div class="space-y-4">
     <div class="header">
         <div>
-            <h1>Eventos de {{ $group->name }}</h1>
+            <h1>Eventos de {{ $group->abbreviation ?? $group->name }}</h1>
             <a href="{{ route('groups.show', $group) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar ao grupo</a>
         </div>
     </div>
