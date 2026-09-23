@@ -58,8 +58,8 @@
                 <x-select.native wire:model="place_id" label="Ambiente *">
                     <option value="">Selecione</option>
                     @foreach ($places as $place)
-                        <option wire:key="reservation-place-{{ $place->id }}" value="{{ $place->id }}">
-                            {{ $place->name }}
+                        <option wire:key="reservation-place-{{ $place['value'] }}" value="{{ $place['value'] }}">
+                            {{ $place['label'] }}
                         </option>
                     @endforeach
                 </x-select.native>

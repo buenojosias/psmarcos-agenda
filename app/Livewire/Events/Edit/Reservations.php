@@ -132,9 +132,17 @@ class Reservations extends Component
     {
         return view('livewire.events.edit.reservations', [
             'places' => Place::query()
+                ->with('main:id,name')
                 ->where('community_id', $this->event->community_id)
                 ->orderBy('name')
-                ->get(),
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Place $place): array => [
+                    'label' => $place->main === null ? $place->name : $place->main->name.': '.$place->name,
+                    'value' => $place->id,
+                ])
+                ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values(),
             'reservations' => PlaceReservation::query()
                 ->where('event_id', $this->event->id)
                 ->with('place')

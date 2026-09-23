@@ -390,23 +390,28 @@ it('lists event reservations with their individual actions', function () {
         ->assertSee('Adicionar reserva');
 });
 
-it('offers only environments from the event community without showing community names', function () {
+it('offers parent and child environments from the event community without showing community names', function () {
     Gate::before(static fn (): bool => true);
     $user           = User::factory()->create();
     $place          = editReservationPlace('Salão da Matriz');
+    $child          = $place->subplaces()->create(['name' => 'Sala de apoio', 'community_id' => $place->community_id]);
     $otherCommunity = Community::create([
         'name'         => 'Capela do Beato',
         'alias'        => 'beato-reservas',
         'abbreviation' => 'BRS',
     ]);
-    $otherCommunity->places()->create(['name' => 'Sala da Capela']);
+    $otherParent = $otherCommunity->places()->create(['name' => 'Sala da Capela']);
+    $otherParent->subplaces()->create(['name' => 'Sala auxiliar', 'community_id' => $otherCommunity->id]);
     $event = Event::factory()->create(['community_id' => $place->community_id]);
 
     Livewire::actingAs($user)
         ->test(Reservations::class, ['event' => $event])
         ->call('openCreate')
         ->assertSee('Salão da Matriz')
+        ->assertSee('Salão da Matriz: Sala de apoio')
+        ->assertSeeHtml('value="'.$child->id.'"')
         ->assertDontSee('Sala da Capela')
+        ->assertDontSee('Sala da Capela: Sala auxiliar')
         ->assertDontSee('Comunidade São José')
         ->assertDontSee('Capela do Beato')
         ->assertDontSee('Comunidade');
