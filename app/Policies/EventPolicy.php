@@ -67,6 +67,24 @@ class EventPolicy
         return $this->belongsToEventGroup($user, $event);
     }
 
+    public function audit(User $user, Event $event): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([
+            UserRoleEnum::ADMIN->value,
+            UserRoleEnum::PRIEST->value,
+            UserRoleEnum::CPP->value,
+        ])) {
+            return true;
+        }
+
+        return $event->group_id !== null
+            && $user->groups()->whereKey($event->group_id)->wherePivot('is_coordinator', true)->exists();
+    }
+
     public function manage(User $user, Event $event): bool
     {
         return ! $user->hasRole(UserRoleEnum::PASCOM->value) && $this->isCreator($user, $event);

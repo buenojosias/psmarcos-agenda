@@ -91,3 +91,57 @@ it('authorizes event updates according to active roles, creation, and group memb
     'pascom and member in group' => [['pascom', 'member'], true, true, false, true],
     'pascom and admin unrelated' => [['pascom', 'admin'], true, false, false, false],
 ]);
+
+it('allows active global roles to audit events with or without a group', function (string $role) {
+    $user  = User::factory()->create(['roles' => [$role], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    foreach ([$group->id, null] as $groupId) {
+        $event = Event::factory()->create(['group_id' => $groupId]);
+
+        expect(Gate::forUser($user)->allows('audit', $event))->toBeTrue();
+    }
+})->with(['admin', 'priest', 'cpp']);
+
+it('denies inactive users access to event audits even with a global role or coordinator membership', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => false]);
+    $group = Group::factory()->create();
+    $group->users()->attach($user, ['is_coordinator' => true]);
+    $event = Event::factory()->for($group)->create();
+
+    expect(Gate::forUser($user)->allows('audit', $event))->toBeFalse();
+});
+
+it('allows coordinators of the organizing group to audit regardless of role', function (string $role) {
+    $user  = User::factory()->create(['roles' => [$role], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $group->users()->attach($user, ['is_coordinator' => true]);
+    $event = Event::factory()->for($group)->create();
+
+    expect(Gate::forUser($user)->allows('audit', $event))->toBeTrue();
+})->with(['member', 'secretary', 'pascom']);
+
+it('denies auditing to users without coordinator membership of the organizing group', function (string $membership) {
+    $user  = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+    $group = Group::factory()->create();
+
+    if ($membership === 'ordinary member') {
+        $group->users()->attach($user, ['is_coordinator' => false]);
+    }
+
+    if ($membership === 'another group coordinator') {
+        Group::factory()->create()->users()->attach($user, ['is_coordinator' => true]);
+    }
+
+    $event = Event::factory()->for($group)->create();
+
+    expect(Gate::forUser($user)->allows('audit', $event))->toBeFalse();
+})->with(['ordinary member', 'unrelated user', 'another group coordinator']);
+
+it('denies a coordinator without a global role when the event has no organizing group', function () {
+    $user = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+    Group::factory()->create()->users()->attach($user, ['is_coordinator' => true]);
+    $event = Event::factory()->create(['group_id' => null]);
+
+    expect(Gate::forUser($user)->allows('audit', $event))->toBeFalse();
+});

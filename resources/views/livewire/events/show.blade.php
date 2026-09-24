@@ -125,7 +125,9 @@
                 @if ($canViewNotes)
                     <x-button text="Notas" icon="chat-bubble-bottom-center-text" wire:click="openNotes" outline />
                 @endif
-                <x-button text="Auditoria" icon="eye" outline />
+                @if ($canAudit)
+                    <x-button text="Auditoria" icon="eye" :href="route('events.audit', $event)" outline />
+                @endif
                 @if ($canManage)
                     <x-button text="Cancelar" color="red" icon="x-circle" disabled />
                 @endif

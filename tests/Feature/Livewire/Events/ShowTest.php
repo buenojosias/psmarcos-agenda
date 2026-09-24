@@ -124,6 +124,24 @@ it('shows an edit link to a user who can update the event', function () {
         ->assertDontSee('Aprovar')->assertDontSee('Recusar');
 });
 
+it('shows the audit button with its link to an authorized user', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+
+    Livewire::actingAs($user)->test(Show::class, ['event' => $event])
+        ->assertSee('Auditoria')
+        ->assertSee('href="'.route('events.audit', $event).'"', false);
+});
+
+it('hides the audit button from a user without audit permission', function () {
+    $user  = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+
+    Livewire::actingAs($user)->test(Show::class, ['event' => $event])
+        ->assertDontSee('Auditoria')
+        ->assertDontSee(route('events.audit', $event));
+});
+
 it('shows review buttons to reviewers for pending and rescheduled events', function (string $role, EventStatusEnum $status) {
     $event = Event::factory()->create(['status' => $status]);
 

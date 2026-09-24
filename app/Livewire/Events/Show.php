@@ -46,6 +46,7 @@ class Show extends Component
         $canUpdate = Gate::allows('update', $this->event);
 
         return view('livewire.events.show', [
+            'canAudit'           => Gate::allows('audit', $this->event),
             'canManage'          => Gate::allows('manage', $this->event),
             'canUpdate'          => $canUpdate,
             'canViewNotes'       => $this->canAccessNotes($canUpdate),
