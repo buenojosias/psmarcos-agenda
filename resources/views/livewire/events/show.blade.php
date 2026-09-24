@@ -1,10 +1,14 @@
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ actionsOpen: false }">
     <div class="header">
         <div>
             <h1>{{ $event->name }}</h1>
             @if ($event->group)
                 <a href="{{ route('groups.events.index', $event->group) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar aos eventos do grupo</a>
             @endif
+        </div>
+        <div class="mt-3 sm:mt-0 lg:hidden">
+            <x-button text="Ações" outline block color="gray" x-on:click="actionsOpen = !actionsOpen"
+                      x-bind:aria-expanded="actionsOpen" aria-controls="actions" />
         </div>
     </div>
 
@@ -102,7 +106,14 @@
             @endif
         </div>
 
-        <div class="space-y-4">
+        <div id="actions" class="order-first space-y-4 lg:order-last lg:block!"
+             x-cloak x-show="actionsOpen"
+             x-transition:enter="transition duration-300 ease-out motion-reduce:transition-none"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition duration-200 ease-in motion-reduce:transition-none"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2">
             @if (Gate::allows('review', $event))
                 <livewire:events.review-actions :event="$event" @event-reviewed="$refresh" />
             @endif
