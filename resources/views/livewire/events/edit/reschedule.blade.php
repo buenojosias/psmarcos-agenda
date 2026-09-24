@@ -165,7 +165,7 @@
                                         wire:key="reschedule-primary-alternative-{{ $place->id }}"
                                         value="{{ $place->id }}"
                                     >
-                                        {{ $place->name }}
+                                        {{ $place->main === null ? $place->name : $place->main->name.': '.$place->name }}
                                     </option>
                                 @endforeach
                             </x-select.native>
@@ -254,7 +254,7 @@
                                     class="flex flex-col gap-1 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                                 >
                                     <p class="font-medium text-gray-900 dark:text-white">
-                                        {{ $place?->name }}
+                                        {{ $place?->main === null ? $place?->name : $place->main->name.': '.$place->name }}
                                         @if ($reservation['is_primary'])
                                             <span class="text-xs text-blue-700 dark:text-blue-300">(principal)</span>
                                         @endif

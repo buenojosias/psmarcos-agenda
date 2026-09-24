@@ -281,21 +281,19 @@ class Reschedule extends Component
     {
         $places = $this->community_id === null
             ? collect()
-            : Place::query()->where('community_id', $this->community_id)->orderBy('name')->get(['id', 'name']);
+            : Place::query()->with('main:id,name')->where('community_id', $this->community_id)->orderBy('name')->get(['id', 'name', 'main_place_id']);
+
+        $placeOptions = $places->map(fn (Place $place): array => [
+            'label' => $place->main === null ? $place->name : $place->main->name.': '.$place->name,
+            'value' => $place->id,
+        ])->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
         return view('livewire.events.edit.reschedule', [
-            'communities'  => Community::query()->orderBy('name')->get(['id', 'name']),
-            'places'       => $places,
-            'placeOptions' => $places->map(fn (Place $place): array => [
-                'label' => $place->name,
-                'value' => $place->id,
-            ]),
-            'primaryPlaceOptions' => $places
-                ->whereIn('id', collect($this->selected_place_ids)->map(fn (int|string $id): int => (int) $id))
-                ->map(fn (Place $place): array => [
-                    'label' => $place->name,
-                    'value' => $place->id,
-                ])
+            'communities'         => Community::query()->orderBy('name')->get(['id', 'name']),
+            'places'              => $places,
+            'placeOptions'        => $placeOptions,
+            'primaryPlaceOptions' => $placeOptions
+                ->whereIn('value', collect($this->selected_place_ids)->map(fn (int|string $id): int => (int) $id))
                 ->values(),
         ]);
     }
@@ -313,10 +311,7 @@ class Reschedule extends Component
             ->where('event_id', $this->event->id)
             ->orderBy('id')
             ->get();
-        $primaryReservation = $currentReservations->firstWhere('is_primary', true);
-        $this->community_id = $primaryReservation === null
-            ? null
-            : Place::query()->whereKey($primaryReservation->place_id)->value('community_id');
+        $this->community_id          = $this->event->community_id;
         $this->original_community_id = $this->community_id;
         $detail                      = EventDetail::query()->where('event_id', $this->event->id)->first();
 
@@ -400,14 +395,7 @@ class Reschedule extends Component
 
     private function originalCommunityId(): ?int
     {
-        $primaryReservation = PlaceReservation::query()
-            ->where('event_id', $this->event->id)
-            ->where('is_primary', true)
-            ->first();
-
-        return $primaryReservation === null
-            ? null
-            : Place::query()->whereKey($primaryReservation->place_id)->value('community_id');
+        return $this->event->fresh()?->community_id;
     }
 
     private function validateForm(): void

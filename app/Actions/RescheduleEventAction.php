@@ -117,6 +117,8 @@ class RescheduleEventAction
                     $currentReservations->modelKeys(),
                 );
 
+                $event->community_id = $communityId;
+
                 if ($oldReservations !== $normalizedReservations) {
                     $oldPrimary     = $currentReservations->firstWhere('is_primary', true);
                     $oldCommunityId = $oldPrimary === null

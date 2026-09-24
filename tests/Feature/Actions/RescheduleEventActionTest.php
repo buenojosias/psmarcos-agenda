@@ -72,6 +72,7 @@ it('persists the reservation proposal and changes a confirmed event to reschedul
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-17 20:00:00')
         ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-17 22:00:00')
+        ->and($event->community_id)->toBe($community->id)
         ->and($event->status)->toBe(EventStatusEnum::RESCHEDULED);
     $this->assertDatabaseHas('place_reservations', [
         'event_id'      => $event->id,

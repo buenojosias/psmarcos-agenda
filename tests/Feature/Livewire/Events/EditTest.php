@@ -580,7 +580,32 @@ it('proposes new reservation intervals preserving start and end offsets', functi
         ->assertSet('reservations.0.reserved_to', '2026-10-11T00:15');
 });
 
-it('selects environments after changing community and keeps old reservations untouched', function () {
+it('loads the community from the event rather than its primary reservation', function () {
+    Gate::before(static fn (): bool => true);
+    $user           = User::factory()->create();
+    $eventCommunity = Community::create([
+        'name' => 'Comunidade do evento', 'alias' => 'event-community', 'abbreviation' => 'CDE',
+    ]);
+    $reservationCommunity = Community::create([
+        'name' => 'Comunidade da reserva', 'alias' => 'reservation-community', 'abbreviation' => 'CDR',
+    ]);
+    $place = $reservationCommunity->places()->create(['name' => 'Salão']);
+    $event = Event::factory()->create(['community_id' => $eventCommunity->id, 'is_external' => false]);
+    $event->reservations()->create([
+        'place_id'      => $place->id,
+        'reserved_from' => $event->starts_at,
+        'reserved_to'   => $event->ends_at,
+        'is_primary'    => true,
+    ]);
+
+    Livewire::actingAs($user)->test(Reschedule::class, ['event' => $event])
+        ->assertSet('community_id', $eventCommunity->id)
+        ->assertSet('original_community_id', $eventCommunity->id)
+        ->set('community_id', $reservationCommunity->id)
+        ->assertSet('reservations', []);
+});
+
+it('keeps old reservations until confirmation and persists the new community', function () {
     Gate::before(static fn (): bool => true);
     $user     = User::factory()->create();
     $oldPlace = editReservationPlace('Salão atual');
@@ -630,6 +655,13 @@ it('selects environments after changing community and keeps old reservations unt
 
     $this->assertModelExists($oldReservation);
     expect($event->reservations()->count())->toBe(1);
+
+    $component->call('openConfirmation')->assertSet('confirmationModal', true)
+        ->call('confirm')->assertHasNoErrors();
+
+    $this->assertDatabaseHas('events', ['id' => $event->id, 'community_id' => $newCommunity->id]);
+    $this->assertModelMissing($oldReservation);
+    $this->assertDatabaseHas('place_reservations', ['event_id' => $event->id, 'place_id' => $newPrimary->id]);
 });
 
 it('renders a preview without persisting the proposed changes', function () {
