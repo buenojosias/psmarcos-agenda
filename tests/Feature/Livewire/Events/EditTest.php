@@ -655,10 +655,14 @@ it('renders a preview without persisting the proposed changes', function () {
         ->call('preview')
         ->assertHasNoErrors()
         ->assertSet('previewReady', true)
+        ->assertSet('previewSlide', true)
         ->assertSet('canConfirm', true)
         ->assertSee('Resumo da remarcação')
         ->assertSee('Ambientes que serão mantidos')
-        ->assertSee('17/10/2026 18:00');
+        ->assertSee('17/10/2026 18:00')
+        ->call('openConfirmation')
+        ->assertSet('previewSlide', false)
+        ->assertSet('confirmationModal', true);
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
         ->and($reservation->refresh()->reserved_from->format('Y-m-d H:i:s'))->toBe('2026-10-10 18:00:00');
@@ -699,7 +703,7 @@ it('does not confirm when a new conflict appears after the preview', function ()
         ->call('confirm')
         ->assertHasErrors('reservations')
         ->assertSet('canConfirm', false)
-        ->assertSee('Conflitos encontrados')
+        ->assertSee('Conflitos de ambientes')
         ->assertSee('Ambiente em conflito: Salão disputado');
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
@@ -750,6 +754,7 @@ it('shows only a conflicting auxiliary reservation and rechecks after removing i
         ->set('date', '2026-10-17')
         ->call('preview')
         ->assertSet('canConfirm', false)
+        ->assertSet('previewSlide', true)
         ->assertSee('Sala auxiliar')
         ->assertDontSee('Igreja principal')
         ->assertSee('Remover desta remarcação')
@@ -761,6 +766,7 @@ it('shows only a conflicting auxiliary reservation and rechecks after removing i
         ->call('removeReservationFromProposal', 1)
         ->assertHasNoErrors()
         ->assertSet('conflicts', [])
+        ->assertSet('previewSlide', true)
         ->assertSet('canConfirm', true)
         ->assertCount('reservations', 1);
 
@@ -803,6 +809,7 @@ it('keeps a conflicting primary reservation and allows another environment', fun
         ->set('date', '2026-10-17')
         ->call('preview')
         ->assertSet('canConfirm', false)
+        ->assertSet('previewSlide', true)
         ->assertSee('Igreja ocupada')
         ->assertSee('Selecionar outro ambiente da comunidade')
         ->assertSee('Ajustar intervalo')
@@ -811,6 +818,7 @@ it('keeps a conflicting primary reservation and allows another environment', fun
         ->call('preview')
         ->assertHasNoErrors()
         ->assertSet('conflicts', [])
+        ->assertSet('previewSlide', true)
         ->assertSet('canConfirm', true)
         ->assertSee('Salão disponível');
 
@@ -836,8 +844,10 @@ it('updates an external event through the reschedule component without reservati
         ->set('external_location_url', 'https://example.com/local')
         ->call('preview')
         ->assertHasNoErrors()
+        ->assertSet('previewSlide', true)
         ->call('confirm')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertSet('previewSlide', false);
 
     $detail = $event->refresh()->detail()->firstOrFail();
 

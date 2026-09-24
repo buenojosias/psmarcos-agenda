@@ -93,26 +93,18 @@
             loading="preview"
             outline
         />
-
-        @if ($previewReady && $canConfirm)
-            <x-button
-                wire:click="openConfirmation"
-                text="Confirmar remarcação"
-                icon="check"
-                loading="openConfirmation"
-            />
-        @endif
     </div>
 
     @error('reschedule')
         <x-alert :text="$message" color="red" icon="exclamation-circle" light />
     @enderror
 
-    @if ($conflicts !== [])
-        <x-card header="Conflitos encontrados">
+    <x-slide :title="$conflicts !== [] ? 'Conflitos de ambientes' : 'Resumo da remarcação'" size="lg" wire="previewSlide" persistent>
+        @if ($conflicts !== [])
             <div class="space-y-5">
                 <p class="text-sm text-gray-600 dark:text-dark-300">
-                    Resolva somente as reservas abaixo. As demais serão mantidas conforme a proposta recalculada.
+                    Os ambientes abaixo já estão reservados no intervalo proposto. Ajuste cada conflito e verifique novamente antes de confirmar.
+                    As outras reservas da proposta serão mantidas.
                 </p>
 
                 @error('reservations')
@@ -222,23 +214,14 @@
                         @error("reservations.{$reservationIndex}.reserved_to")
                             <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-
-                        <div class="flex justify-end">
-                            <x-button
-                                wire:click="preview"
-                                text="Verificar novamente"
-                                icon="arrow-path"
-                                loading="preview"
-                                sm
-                            />
-                        </div>
                     </section>
                 @endforeach
             </div>
-        </x-card>
-    @elseif ($previewReady)
-        <x-card header="Resumo da remarcação">
+        @elseif ($previewReady)
             <div class="space-y-5">
+                <p class="text-sm text-gray-600 dark:text-dark-300">
+                    Confira os dados abaixo. A configuração atual só será substituída após a confirmação.
+                </p>
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-dark-300">Nova data e horário</p>
                     <p class="mt-1 font-medium text-gray-900 dark:text-white">
@@ -286,8 +269,19 @@
                     </div>
                 @endif
             </div>
-        </x-card>
-    @endif
+        @endif
+
+        <x-slot:footer>
+            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <x-button wire:click="$set('previewSlide', false)" text="Voltar e ajustar" color="gray" outline />
+                @if ($conflicts !== [])
+                    <x-button wire:click="preview" text="Verificar novamente" icon="arrow-path" loading="preview" />
+                @elseif ($canConfirm)
+                    <x-button wire:click="openConfirmation" text="Confirmar remarcação" icon="check" loading="openConfirmation" />
+                @endif
+            </div>
+        </x-slot:footer>
+    </x-slide>
 
     <x-modal
         wire="confirmationModal"

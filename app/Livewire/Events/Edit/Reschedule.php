@@ -56,6 +56,8 @@ class Reschedule extends Component
 
     public bool $previewReady = false;
 
+    public bool $previewSlide = false;
+
     public bool $canConfirm = false;
 
     public bool $confirmationModal = false;
@@ -211,6 +213,7 @@ class Reschedule extends Component
         $this->previewReady       = true;
         $this->previewFingerprint = $this->currentFingerprint();
         $this->canConfirm         = $this->getErrorBag()->isEmpty() && $this->conflicts === [];
+        $this->previewSlide       = true;
     }
 
     public function openConfirmation(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
@@ -218,6 +221,7 @@ class Reschedule extends Component
         $this->preview($checkPlaceAvailability);
 
         if ($this->canConfirm) {
+            $this->previewSlide      = false;
             $this->confirmationModal = true;
         }
     }
@@ -260,12 +264,14 @@ class Reschedule extends Component
             }
 
             $this->canConfirm        = false;
+            $this->previewSlide      = $this->conflicts !== [];
             $this->confirmationModal = false;
 
             return;
         }
 
         $this->confirmationModal = false;
+        $this->previewSlide      = false;
         $this->saved             = true;
         $this->loadForm();
         $this->dispatch('event-rescheduled', eventId: $this->event->id);
@@ -338,6 +344,7 @@ class Reschedule extends Component
         $this->primary_place_id       = null;
         $this->adjusting_reservations = [];
         $this->previewReady           = false;
+        $this->previewSlide           = false;
         $this->canConfirm             = false;
         $this->previewFingerprint     = '';
         $this->proposalGenerated      = false;
@@ -677,7 +684,8 @@ class Reschedule extends Component
         $this->previewFingerprint = '';
 
         if ($clearConflicts) {
-            $this->conflicts = [];
+            $this->previewSlide = false;
+            $this->conflicts    = [];
         }
     }
 }
