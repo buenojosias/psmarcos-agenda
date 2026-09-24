@@ -89,7 +89,7 @@
             @foreach ($placeConflicts as $requestedConflict)
                 <section wire:key="place-conflict-{{ $requestedConflict['requested_place']['id'] }}" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
                     <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ $requestedConflict['requested_place']['name'] }}</h3>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ $conflictPlaceNames[$requestedConflict['requested_place']['id']] ?? $requestedConflict['requested_place']['name'] }}</h3>
                         <p class="text-sm text-gray-500 dark:text-dark-300">
                             Solicitado de {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_from'])->format('d/m/Y H:i') }}
                             a {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_to'])->format('d/m/Y H:i') }}
@@ -99,7 +99,7 @@
                     <div class="space-y-2">
                         @foreach ($requestedConflict['conflicts'] as $conflict)
                             <div wire:key="reservation-conflict-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
-                                <p class="font-medium text-gray-800 dark:text-dark-100">Ambiente reservado: {{ $conflict['reserved_place']['name'] }}</p>
+                                <p class="font-medium text-gray-800 dark:text-dark-100">Ambiente reservado: {{ $conflictPlaceNames[$conflict['reserved_place']['id']] ?? $conflict['reserved_place']['name'] }}</p>
                                 <p class="text-gray-500 dark:text-dark-300">
                                     De {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
                                     a {{ \Carbon\CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i') }}

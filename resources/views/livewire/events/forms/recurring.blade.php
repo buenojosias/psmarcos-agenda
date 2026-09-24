@@ -94,7 +94,7 @@
                         <div wire:key="recurring-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}" class="space-y-2 rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
                             <div>
                                 <p class="font-medium text-gray-800 dark:text-dark-100">
-                                    Ambiente solicitado: {{ $requestedConflict['requested_place']['name'] }}
+                                    Ambiente solicitado: {{ $conflictPlaceNames[$requestedConflict['requested_place']['id']] ?? $requestedConflict['requested_place']['name'] }}
                                 </p>
                                 <p class="text-gray-500 dark:text-dark-300">
                                     Intervalo solicitado: {{ \Carbon\CarbonImmutable::parse($requestedConflict['requested_reserved_from'])->format('d/m/Y H:i') }}
@@ -105,7 +105,7 @@
                             @foreach ($requestedConflict['conflicts'] as $conflict)
                                 <div wire:key="recurring-reservation-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="border-t border-gray-200 pt-2 dark:border-dark-600">
                                     <p class="font-medium text-gray-800 dark:text-dark-100">
-                                        Ambiente reservado: {{ $conflict['reserved_place']['name'] }}
+                                        Ambiente reservado: {{ $conflictPlaceNames[$conflict['reserved_place']['id']] ?? $conflict['reserved_place']['name'] }}
                                     </p>
                                     <p class="text-gray-500 dark:text-dark-300">
                                         Reserva existente: {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}

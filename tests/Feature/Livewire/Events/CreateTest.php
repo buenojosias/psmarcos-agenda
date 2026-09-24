@@ -222,8 +222,10 @@ it('groups conflicts by date and removes conflicting places only from their occu
     $data      = recurringEventData($group);
     $community = Community::query()->findOrFail($data['community_id']);
     $nave      = $community->places()->findOrFail($data['place_ids'][0]);
-    $hall      = $community->places()->create(['name' => 'Salão']);
-    $event     = Event::factory()->create([
+    $parent    = $community->places()->create(['name' => 'Centro Catequético']);
+    $nave->update(['name' => 'Sala 2', 'main_place_id' => $parent->id]);
+    $hall  = $community->places()->create(['name' => 'Salão']);
+    $event = Event::factory()->create([
         'name'      => 'Evento reservado confidencial',
         'starts_at' => '2026-10-10 09:30:00',
         'ends_at'   => '2026-10-10 10:30:00',
@@ -272,11 +274,11 @@ it('groups conflicts by date and removes conflicting places only from their occu
         ->assertSee('10/10/2026')
         ->assertSee('17/10/2026')
         ->assertSee('24/10/2026')
-        ->assertSee('Ambiente solicitado: '.$nave->name)
+        ->assertSee('Ambiente solicitado: Centro Catequético: Sala 2')
         ->assertSee('Intervalo solicitado:')
         ->assertSee('10/10/2026 08:30')
         ->assertSee('10/10/2026 11:15')
-        ->assertSee('Ambiente reservado: '.$nave->name)
+        ->assertSee('Ambiente reservado: Centro Catequético: Sala 2')
         ->assertSee('Reserva existente:')
         ->assertSee('10/10/2026 09:30')
         ->assertSee('10/10/2026 10:30')
@@ -658,9 +660,12 @@ it('persists a validated occasional event and redirects to its page', function (
 });
 
 it('reopens the conflict slide without persisting when final availability changes', function () {
-    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
-    $group = Group::factory()->create();
-    $data  = occasionalEventData($group);
+    $user   = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group  = Group::factory()->create();
+    $data   = occasionalEventData($group);
+    $place  = Community::query()->findOrFail($data['community_id'])->places()->findOrFail($data['place_ids'][0]);
+    $parent = $place->community->places()->create(['name' => 'Centro Catequético']);
+    $place->update(['name' => 'Sala 2', 'main_place_id' => $parent->id]);
 
     $component = Livewire::actingAs($user)->test(Occasional::class)
         ->set($data)
@@ -682,7 +687,9 @@ it('reopens the conflict slide without persisting when final availability change
 
     $component->call('save')
         ->assertSet('conflictsSlide', true)
-        ->assertSet('draftValidated', false);
+        ->assertSet('draftValidated', false)
+        ->assertSee('Centro Catequético: Sala 2')
+        ->assertSee('Ambiente reservado: Centro Catequético: Sala 2');
 
     expect($component->get('placeConflicts'))->toHaveCount(1)
         ->and(Event::count())->toBe($eventCount);

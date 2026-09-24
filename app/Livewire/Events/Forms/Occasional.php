@@ -246,7 +246,8 @@ class Occasional extends Component
     {
         Gate::authorize('create', Event::class);
 
-        $user = auth()->user();
+        $user   = auth()->user();
+        $places = $this->places();
 
         return view('livewire.events.forms.occasional', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
@@ -254,9 +255,10 @@ class Occasional extends Component
             'isMemberOnly'          => $user->isMemberOnly(),
             'communities'           => Community::query()->orderBy('id')->get(['id', 'name'])
                 ->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id]),
-            'places'         => $this->places(),
-            'selectedPlaces' => $this->selectedPlaces(),
-            'types'          => EventTypeEnum::cases(),
+            'places'             => $places,
+            'conflictPlaceNames' => $places->pluck('label', 'value'),
+            'selectedPlaces'     => $this->selectedPlaces(),
+            'types'              => EventTypeEnum::cases(),
         ]);
     }
 
