@@ -48,7 +48,7 @@
         </x-card>
     @endif
 
-    <x-card header="Ambientes" shadowless bordered>
+    <x-card header="Local e ambientes" shadowless bordered>
         <div class="grid gap-4 md:grid-cols-2">
             <x-select.native wire:model.live="community_id" label="Comunidade *" required>
                 <option value="">Selecione uma comunidade</option>
