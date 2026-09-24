@@ -166,33 +166,47 @@ it('paginates and resets the page when a filter changes', function () {
         ->set('status', 'confirmed')->assertSet('paginators.page', 1);
 });
 
-it('renders escaped names and the main place with its event community in the second column', function () {
-    $group     = Group::factory()->create(['name' => 'Pastoral organizadora']);
-    $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
-    $event     = Event::factory()->for($group)->create(['name' => '<script>alert(1)</script>', 'community_id' => $community->id]);
-    $place     = $community->places()->create(['name' => 'Salão principal']);
+it('renders escaped names, parent places, and group abbreviations with fallbacks', function () {
+    $group       = Group::factory()->create(['name' => 'Pastoral organizadora', 'abbreviation' => 'PO']);
+    $otherGroup  = Group::factory()->create(['name' => 'Grupo sem sigla', 'abbreviation' => null]);
+    $community   = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $event       = Event::factory()->for($group)->create(['name' => '<script>alert(1)</script>', 'community_id' => $community->id]);
+    $parentPlace = $community->places()->create(['name' => 'Salão principal']);
+    $place       = $community->places()->create(['name' => 'Sala menor', 'main_place_id' => $parentPlace->id]);
     $event->reservations()->create([
         'place_id'      => $place->id, 'is_primary' => true,
         'reserved_from' => $event->starts_at, 'reserved_to' => $event->ends_at,
     ]);
-    Event::factory()->for($group)->create([
+    Event::factory()->for($otherGroup)->create([
         'community_id' => $community->id,
         'starts_at'    => $event->starts_at->copy()->addDay(),
         'ends_at'      => $event->ends_at->copy()->addDay(),
+    ]);
+    $eventAtParent = Event::factory()->for($otherGroup)->create([
+        'community_id' => $community->id,
+        'starts_at'    => $event->starts_at->copy()->addDays(2),
+        'ends_at'      => $event->ends_at->copy()->addDays(2),
+    ]);
+    $eventAtParent->reservations()->create([
+        'place_id'      => $parentPlace->id, 'is_primary' => true,
+        'reserved_from' => $eventAtParent->starts_at, 'reserved_to' => $eventAtParent->ends_at,
     ]);
     Illuminate\Database\Eloquent\Model::preventLazyLoading();
 
     try {
         $html = Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))->test(Index::class)
-            ->assertSee('Salão principal')->assertSee('Matriz')->assertSee('Pastoral organizadora')
+            ->assertSee('Salão principal: Sala menor')->assertSee('Matriz')
             ->assertSee($event->name)->assertDontSee($event->name, false)->html();
 
         $document = new DOMDocument;
         @$document->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
         $table = new DOMXPath($document);
         expect(mb_trim($table->evaluate('string(//thead/tr/th[2])')))->toBe('Local');
-        expect($table->evaluate('string(//tbody/tr[1]/td[2])'))->toContain('Salão principal')->toContain('Matriz');
+        expect($table->evaluate('string(//tbody/tr[1]/td[2])'))->toContain('Salão principal: Sala menor')->toContain('Matriz');
+        expect(mb_trim($table->evaluate('string(//tbody/tr[1]/td[3])')))->toBe('PO');
         expect($table->evaluate('string(//tbody/tr[2]/td[2])'))->toContain('Local não informado')->toContain('Matriz');
+        expect(mb_trim($table->evaluate('string(//tbody/tr[2]/td[3])')))->toBe('Grupo sem sigla');
+        expect(mb_trim($table->evaluate('string(//tbody/tr[3]/td[2])')))->toContain('Salão principal')->not->toContain(':');
     } finally {
         Illuminate\Database\Eloquent\Model::preventLazyLoading(false);
     }

@@ -17,7 +17,7 @@
     @endinteract
 
     @interact('column_group', $row)
-        {{ $row->group?->name ?? 'Sem grupo organizador' }}
+        {{ $row->group?->abbreviation ?: ($row->group?->name ?? 'Sem grupo organizador') }}
     @endinteract
 
     @interact('column_starts_at', $row)
@@ -38,15 +38,16 @@
 
     @interact('column_location', $row)
         @if (! $row->is_external)
+            @php($place = $row->primaryReservation?->place)
             @if ($row->community?->name)
                 <div>{{ $row->community?->name }}</div>
             @endif
             <div class="text text-gray-500 dark:text-dark-400 flex gap-1">
                 <x-icon name="arrow-turn-down-right" sm />
-                {{ $row->primaryReservation?->place?->name ?? 'Local não informado' }}
+                {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Local não informado' }}
             </div>
         @else
-            <div>{{ $row->detail->external_location_name }}</div>
+            <div>{{ $row->detail?->external_location_name ?? 'Local não informado' }}</div>
         @endif
     @endinteract
 
