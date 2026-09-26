@@ -16,36 +16,42 @@ class CommunitySeeder extends Seeder
                 'abbreviation' => 'MSM',
                 'alias' => 'Matriz',
                 'address' => 'Rua Roberto Gava, 310',
+                'neighborhood' => null,
             ],
             [
                 'name' => 'Capela Beato Giacomo Cusmano',
                 'abbreviation' => 'BGC',
                 'alias' => 'Beato',
-                'address' => 'Rua Victório Gabardo, 325 (Bracatinga/Primavera)',
+                'address' => 'Rua Victório Gabardo, 325',
+                'neighborhood' => 'Bracatinga/Primavera',
             ],
             [
                 'name' => 'Capela Nossa Senhora da Misericórdia',
                 'abbreviation' => 'NSM',
                 'alias' => 'Misericórdia',
-                'address' => 'Rua Campo Largo da Piedade, 462 (Vila Nori/Jardim Kosmos)',
+                'address' => 'Rua Campo Largo da Piedade, 462',
+                'neighborhood' => 'Vila Nori/Jardim Kosmos',
             ],
             [
                 'name' => 'Capela Nossa Senhora da Perseverança',
                 'abbreviation' => 'NSP',
                 'alias' => 'Perseverança',
-                'address' => 'Rua Alexandre Von Humboldt, 283 (Próximo à Cruz do Pilarzinho)',
+                'address' => 'Rua Alexandre Von Humboldt, 283',
+                'neighborhood' => 'Cruz do Pilarzinho',
             ],
             [
                 'name' => 'Capela Nossa Senhora do Pilar',
                 'abbreviation' => 'PIL',
                 'alias' => 'Pilar',
                 'address' => 'Rua São Salvador, 420',
+                'neighborhood' => null,
             ],
             [
                 'name' => 'Capela São João Neumann',
                 'abbreviation' => 'SJN',
                 'alias' => 'São João',
-                'address' => 'Rua Ten. Miguel Anselmo da Silva, 485 (Vila dos Imigrantes)',
+                'address' => 'Rua Ten. Miguel Anselmo da Silva, 485',
+                'neighborhood' => 'Vila dos Imigrantes',
             ]
         ];
 

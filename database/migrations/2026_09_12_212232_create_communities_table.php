@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('abbreviation', 4)->unique();
             $table->string('alias', 30)->unique();
             $table->string('address')->nullable();
+            $table->string('neighborhood')->nullable();
             $table->timestamps();
         });
     }

@@ -8,7 +8,7 @@
         @endcan
     </div>
 
-    <x-table :$headers :$sort :rows="$this->rows" :filter="false" loading>
+    <x-table :$headers :rows="$this->rows" :filter="false" loading>
         <x-slot:empty>
             Ainda não há comunidades cadastradas.
         </x-slot:empty>
@@ -17,17 +17,17 @@
             <a href="{{ route('communities.show', $row) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $row->name }}</a>
         @endinteract
 
-        @interact('column_address', $row)
-            {{ $row->address ?? '—' }}
+        @interact('column_neighborhood', $row)
+            {{ $row->neighborhood }}
         @endinteract
 
         @interact('column_action', $row)
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-nowrap gap-2">
                 @can('update', $row)
                     <livewire:communities.edit :community="$row" :key="'community-edit-'.$row->id" @community-updated="$refresh" />
                 @endcan
                 @can('delete', $row)
-                    <x-button icon="trash" flat color="red" wire:click="delete({{ $row->id }})" loading="delete" />
+                    <x-button icon="trash" flat color="red" tooltip="Excluir comunidade" wire:click="delete({{ $row->id }})" loading="delete" />
                 @endcan
             </div>
         @endinteract

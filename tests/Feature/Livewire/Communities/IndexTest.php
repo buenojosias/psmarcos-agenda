@@ -40,14 +40,25 @@ it('shows a friendly empty state', function () {
         ->assertSee('Ainda não há comunidades cadastradas.')->assertDontSee('Cadastrar comunidade');
 });
 
-it('lists communities and safely handles invalid sorting input', function () {
+it('lists communities by ascending id regardless of their names', function () {
     $user = User::factory()->create(['is_active' => true]);
-    Community::create(['name' => 'Comunidade São Marcos', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
-    Community::create(['name' => 'Outra', 'alias' => 'Capela', 'abbreviation' => 'CP']);
+    Community::create(['name' => 'Zeladora', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    Community::create(['name' => 'Alvorada', 'alias' => 'Capela', 'abbreviation' => 'CP']);
 
     Livewire::actingAs($user)->test(Index::class)
-        ->set('sort', ['column' => 'invalid', 'direction' => 'invalid'])
-        ->assertSee('Comunidade São Marcos')->assertSee('Outra');
+        ->assertSeeInOrder(['Zeladora', 'Alvorada']);
+});
+
+it('shows the neighborhood and leaves a missing neighborhood blank', function () {
+    $user = User::factory()->create(['is_active' => true]);
+    Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT', 'address' => 'Rua das Flores', 'neighborhood' => 'Centro']);
+    Community::create(['name' => 'Capela', 'alias' => 'Capela', 'abbreviation' => 'CP', 'neighborhood' => null]);
+
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertSee('Bairro')
+        ->assertSee('Centro')
+        ->assertDontSee('Rua das Flores')
+        ->assertDontSee('—');
 });
 
 it('asks for confirmation before deleting an empty community', function (UserRoleEnum $role) {

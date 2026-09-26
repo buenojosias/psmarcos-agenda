@@ -15,6 +15,7 @@ class Community extends Model
         'abbreviation',
         'alias',
         'address',
+        'neighborhood'
     ];
 
     public function places(): HasMany

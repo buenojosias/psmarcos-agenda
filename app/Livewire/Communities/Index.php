@@ -18,14 +18,9 @@ class Index extends Component
 {
     use Alert;
 
-    public array $sort = [
-        'column'    => 'name',
-        'direction' => 'asc',
-    ];
-
     public array $headers = [
-        ['index' => 'name', 'label' => 'Nome'],
-        ['index' => 'address', 'label' => 'Endereço', 'sortable' => false],
+        ['index' => 'name', 'label' => 'Nome', 'sortable' => false],
+        ['index' => 'neighborhood', 'label' => '', 'sortable' => false],
         ['index' => 'action', 'label' => 'Ações', 'sortable' => false],
     ];
 
@@ -41,13 +36,8 @@ class Index extends Component
     {
         Gate::authorize('viewAny', Community::class);
 
-        $sortColumn = in_array($this->sort['column'] ?? null, ['alias', 'name', 'abbreviation'], true)
-            ? $this->sort['column']
-            : 'alias';
-        $sortDirection = ($this->sort['direction'] ?? null) === 'desc' ? 'desc' : 'asc';
-
         return Community::query()
-            ->orderBy($sortColumn, $sortDirection)
+            ->orderBy('id')
             ->get();
     }
 
