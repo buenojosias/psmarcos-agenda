@@ -1,9 +1,13 @@
 <div class="space-y-4">
     <div class="header">
         <div>
-            <h1>Reservas de {{ $place->name }}</h1>
+            <h1>Reservas de {{ $place->main ? $place->main->name.': ' : '' }}{{ $place->name }}</h1>
             <a href="{{ route('communities.show', ['community' => $place->community_id, 'tab' => 'spaces']) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar aos espaços</a>
         </div>
+    </div>
+
+    <div class="max-w-xs">
+        <x-date wire:model.live="date" label="Buscar por data" format="DD/MM/YYYY" />
     </div>
 
     <x-table :headers="[
@@ -11,7 +15,7 @@
         ['index' => 'ends_at', 'label' => 'Encerramento', 'sortable' => false],
         ['index' => 'event', 'label' => 'Evento', 'sortable' => false],
         ['index' => 'group', 'label' => 'Grupo organizador', 'sortable' => false],
-    ]" :rows="$reservations" empty="Nenhuma reserva atual ou futura para este espaço.">
+    ]" :rows="$reservations" paginate empty="Nenhuma reserva atual ou futura para este espaço.">
         @interact('column_starts_at', $row)
             {{ $row->reserved_from->format('d/m/Y H:i') }}
         @endinteract
