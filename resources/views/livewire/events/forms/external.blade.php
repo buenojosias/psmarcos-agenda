@@ -1,4 +1,4 @@
-<form wire:submit="validateDraft" class="space-y-6">
+<form wire:submit="validateDraft" class="min-w-0 space-y-6">
     <x-card header="Dados do evento" shadowless bordered>
         <div class="grid gap-4 md:grid-cols-2">
             <x-input wire:model="name" label="Nome do evento *" maxlength="255" required class="md:col-span-2" />
@@ -17,7 +17,7 @@
 
             <x-input type="datetime-local" wire:model="starts_at" label="Início *" required />
             <x-input type="datetime-local" wire:model="ends_at" label="Encerramento *" required />
-            <x-toggle wire:model="is_public" label="Evento público" />
+            <x-toggle wire:model.live="is_public" label="Evento público" />
             <x-toggle wire:model.live="advertisable" label="Solicitar divulgação" />
             @if ($canConfirmImmediately)
                 <x-toggle wire:model="confirm_immediately" label="Confirmar imediatamente" />
@@ -37,9 +37,9 @@
         <x-card header="Detalhes do evento" shadowless bordered>
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Não é obrigatório preencher estes campos neste momento, mas será necessário preenchê-los posteriormente para a Pascom divulgar o evento.</p>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
                 <div class="md:col-span-2">
-                    <x-editor wire:model="description" label="Descrição" hint="Informe uma descrição para a divulgação do evento."
+                    <x-editor wire:model="description" class="w-full min-w-0" label="Descrição" hint="Informe uma descrição para a divulgação do evento."
                               :toolbar="['style', 'bold', 'italic', 'unordered-list', 'ordered-list', 'link']" />
                 </div>
                 <x-input wire:model="target_audience" label="Público-alvo" maxlength="255" />

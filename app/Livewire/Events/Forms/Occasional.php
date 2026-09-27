@@ -85,6 +85,19 @@ class Occasional extends Component
 
     public function updatedAdvertisable(): void
     {
+        if ($this->advertisable) {
+            $this->is_public = true;
+        }
+
+        $this->draftValidated = false;
+    }
+
+    public function updatedIsPublic(): void
+    {
+        if (! $this->is_public) {
+            $this->advertisable = false;
+        }
+
         $this->draftValidated = false;
     }
 
@@ -279,7 +292,7 @@ class Occasional extends Component
             'type'                       => ['required', Rule::enum(EventTypeEnum::class)],
             'starts_at'                  => ['required', 'date_format:Y-m-d\TH:i'],
             'ends_at'                    => ['required', 'date_format:Y-m-d\TH:i', 'after:starts_at'],
-            'is_public'                  => ['boolean'],
+            'is_public'                  => ['boolean', 'accepted_if:advertisable,true'],
             'advertisable'               => ['boolean'],
             'confirm_immediately'        => ['boolean'],
             'complement'                 => ['nullable', 'string', 'max:255'],
@@ -305,7 +318,8 @@ class Occasional extends Component
     private function messages(): array
     {
         return [
-            'ends_at.after' => 'O encerramento deve ser posterior ao início.',
+            'ends_at.after'         => 'O encerramento deve ser posterior ao início.',
+            'is_public.accepted_if' => 'Um evento com divulgação solicitada deve ser público.',
         ];
     }
 

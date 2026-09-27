@@ -145,6 +145,45 @@ it('validates the required external location and shows optional advertising deta
     $this->assertDatabaseCount('place_reservations', 0);
 });
 
+it('keeps public and advertising toggles in sync', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->assertSet('is_public', false)
+        ->assertSet('advertisable', false)
+        ->set('advertisable', true)
+        ->assertSet('is_public', true)
+        ->assertSee('Detalhes do evento')
+        ->set('is_public', false)
+        ->assertSet('advertisable', false)
+        ->assertDontSee('Detalhes do evento')
+        ->set('is_public', true)
+        ->assertSet('advertisable', false)
+        ->set('advertisable', true)
+        ->set('advertisable', false)
+        ->assertSet('is_public', true);
+})->with([Occasional::class, External::class]);
+
+it('saves private events without advertising after public is turned off', function (string $form) {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set($data)
+        ->set('advertisable', true)
+        ->set('is_public', false)
+        ->assertSet('advertisable', false)
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->call('save');
+
+    $event = Event::query()->sole();
+
+    expect($event->is_public)->toBeFalse()
+        ->and($event->advertisable)->toBeFalse();
+})->with([Occasional::class, External::class]);
+
 it('persists a validated external event and redirects to its page', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
