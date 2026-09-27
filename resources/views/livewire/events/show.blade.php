@@ -30,7 +30,11 @@
                             @if ($event->community)
                                 {{ $event->community?->name ?? 'Sem comunidade' }}
                             @endif
-                            <span class="block text-sm text-gray-500 dark:text-dark-400">{{ $primaryReservation?->place?->name ?? 'Não informado' }}</span>
+                            @php($place = $primaryReservation?->place)
+                            <span class="flex items-center gap-1 font-normal text-gray-500 dark:text-dark-400">
+                                <x-icon name="arrow-turn-down-right" sm />
+                                {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Não informado' }}
+                            </span>
                         @endif
                     </x-detail>
                     <x-detail label="Grupo organizador" :value="$event->group?->name ?? 'Não informado'" />

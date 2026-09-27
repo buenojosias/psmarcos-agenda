@@ -31,7 +31,7 @@
         <x-select.styled wire:model.live="group" label="Grupo organizador" placeholder="Todos os grupos"
                          :options="$groups" select="label:label|value:value" searchable />
 
-        <x-select.native wire:model.live="community" label="Comunidade/local">
+        <x-select.native wire:model.live="community" label="Local (comunidade)">
             <option value="">Todas as comunidades</option>
             @foreach ($communities as $eventCommunity)
                 <option wire:key="community-{{ $eventCommunity->id }}" value="{{ $eventCommunity->id }}">{{ $eventCommunity->name }}</option>
