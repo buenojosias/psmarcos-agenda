@@ -4,21 +4,27 @@
             <h1>{{ $community->name }}</h1>
             <a href="{{ route('communities.index') }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar às comunidades</a>
         </div>
-        @can('update', $community)
-            <livewire:communities.edit :community="$community" @community-updated="refreshCommunity" />
-        @endcan
     </div>
 
     <x-tab wire:model.live="tab" shadowless bordered scroll-on-mobile>
         <x-tab.items tab="information" title="Informações">
             <dl class="grid gap-4 sm:grid-cols-2">
-                <x-detail label="Nome oficial" :value="$community->name" />
+                <x-detail label="Nome da comunidade" :value="$community->name" />
                 <x-detail label="Nome curto" :value="$community->alias" />
                 <x-detail label="Sigla" :value="$community->abbreviation" />
                 @if ($community->address)
-                    <x-detail label="Endereço" :value="$community->address" />
+                    <x-detail label="Endereço" :value="$community->address">
+                        {{ $community->address }}
+                        @if ($community->neighborhood)
+                            <div class="text-sm font-normal">({{ $community->neighborhood }})</div>
+                        @endif
+                    </x-detail>
                 @endif
             </dl>
+            @can('update', $community)
+                <livewire:communities.edit :community="$community" @community-updated="refreshCommunity" />
+            @endcan
+
         </x-tab.items>
 
         <x-tab.items tab="groups" title="Grupos">

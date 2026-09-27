@@ -1,5 +1,5 @@
-<div>
-    <x-button icon="pencil-square" flat tooltip="Editar comunidade" wire:click="open" />
+<div class="mt-6">
+    <x-button text="Editar" wire:click="open" />
 
     <x-modal title="Editar comunidade" size="lg" wire>
         <form id="community-edit-{{ $community->id }}" wire:submit="save" class="space-y-4">
