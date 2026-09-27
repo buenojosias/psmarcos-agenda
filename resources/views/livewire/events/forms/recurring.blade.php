@@ -57,9 +57,9 @@
     </div>
 
     <x-slide title="Disponibilidade das ocorrências" size="lg" wire="conflictsSlide">
-        <div class="space-y-5">
+        <div class="space-y-4">
             <p class="text-sm text-gray-600 dark:text-dark-300">
-                A disponibilidade é verificada separadamente em cada data. Nenhuma informação do evento ou da missa reservada é exibida.
+                A disponibilidade é verificada separadamente em cada data.
             </p>
 
             @foreach ($occurrences as $date => $occurrence)

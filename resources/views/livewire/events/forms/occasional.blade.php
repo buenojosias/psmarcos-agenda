@@ -79,7 +79,7 @@
     <x-slide title="Conflitos de ambientes" size="lg" wire="conflictsSlide" persistent>
         <div class="space-y-5">
             <p class="text-sm text-gray-600 dark:text-dark-300">
-                Os ambientes abaixo já possuem reserva no período solicitado. Nenhuma informação do evento ou da missa reservada é exibida.
+                Os ambientes abaixo já possuem reserva no período solicitado.
             </p>
 
             @error('place_ids')
@@ -99,9 +99,8 @@
                     <div class="space-y-2">
                         @foreach ($requestedConflict['conflicts'] as $conflict)
                             <div wire:key="reservation-conflict-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
-                                <p class="font-medium text-gray-800 dark:text-dark-100">Ambiente reservado: {{ $conflictPlaceNames[$conflict['reserved_place']['id']] ?? $conflict['reserved_place']['name'] }}</p>
                                 <p class="text-gray-500 dark:text-dark-300">
-                                    De {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
+                                    Reservado de {{ \Carbon\CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i') }}
                                     a {{ \Carbon\CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i') }}
                                 </p>
                             </div>

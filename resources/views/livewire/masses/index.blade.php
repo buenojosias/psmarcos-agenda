@@ -8,7 +8,7 @@
         </div>
     @endcan
 
-    <x-tab selected="weekly">
+    <x-tab selected="weekly" scroll-on-mobile>
         <x-tab.items tab="weekly" title="Cronograma semanal">
             <div class="grid gap-6 lg:grid-cols-2">
                 <section class="space-y-4">
