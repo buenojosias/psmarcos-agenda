@@ -10,18 +10,29 @@ use App\Livewire\Communities\Edit;
 
 it('allows administrators and CPP to edit while retaining unique values', function (UserRoleEnum $role) {
     $user      = User::factory()->create(['roles' => [$role->value], 'is_active' => true]);
-    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT', 'address' => 'Rua antiga']);
+    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT', 'address' => 'Rua antiga', 'neighborhood' => 'Centro']);
 
     Livewire::actingAs($user)->test(Edit::class, ['community' => $community])
-        ->call('open')->assertSet('name', 'Original')->assertSet('alias', 'Matriz')->assertSet('modal', true)
-        ->set('name', 'Nome atualizado')->set('address', null)
+        ->call('open')->assertSet('name', 'Original')->assertSet('alias', 'Matriz')->assertSet('neighborhood', 'Centro')->assertSet('modal', true)
+        ->set('name', 'Nome atualizado')->set('address', null)->set('neighborhood', 'Batel')
         ->call('save')->assertHasNoErrors()->assertSet('modal', false)->assertDispatched('community-updated');
 
     $this->assertDatabaseHas('communities', [
         'id'           => $community->id, 'name' => 'Nome atualizado', 'alias' => 'Matriz',
-        'abbreviation' => 'MT', 'address' => null,
+        'abbreviation' => 'MT', 'address' => null, 'neighborhood' => 'Batel',
     ]);
 })->with([UserRoleEnum::ADMIN, UserRoleEnum::CPP]);
+
+it('allows clearing a community neighborhood', function () {
+    $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
+    $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT', 'neighborhood' => 'Centro']);
+
+    Livewire::actingAs($user)->test(Edit::class, ['community' => $community])
+        ->call('open')->set('neighborhood', null)
+        ->call('save')->assertHasNoErrors();
+
+    $this->assertDatabaseHas('communities', ['id' => $community->id, 'neighborhood' => null]);
+});
 
 it('forbids opening and saving edits for other roles even when linked to the community', function (UserRoleEnum $role, bool $active) {
     $user      = User::factory()->create(['roles' => [$role->value], 'is_active' => $active]);
@@ -56,4 +67,5 @@ it('refuses invalid edits and values owned by another community', function (stri
     ['alias', 'Capela', 'unique'], ['abbreviation', 'cp', 'unique'],
     ['name', str_repeat('a', 121), 'max'], ['alias', str_repeat('a', 31), 'max'],
     ['abbreviation', 'ABCDE', 'max'], ['address', str_repeat('a', 256), 'max'],
+    ['neighborhood', str_repeat('a', 256), 'max'],
 ]);

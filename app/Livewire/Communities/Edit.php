@@ -23,6 +23,8 @@ class Edit extends Component
 
     public ?string $address = null;
 
+    public ?string $neighborhood = null;
+
     public bool $modal = false;
 
     public Community $community;
@@ -42,6 +44,7 @@ class Edit extends Component
         $this->alias        = $this->community->alias;
         $this->abbreviation = $this->community->abbreviation;
         $this->address      = $this->community->address;
+        $this->neighborhood = $this->community->neighborhood;
         $this->modal        = true;
     }
 
@@ -56,6 +59,7 @@ class Edit extends Component
             'alias'        => ['required', 'string', 'max:30', Rule::unique('communities', 'alias')->ignore($this->community)],
             'abbreviation' => ['required', 'string', 'max:4', Rule::unique('communities', 'abbreviation')->ignore($this->community)],
             'address'      => ['nullable', 'string', 'max:255'],
+            'neighborhood' => ['nullable', 'string', 'max:255'],
         ]);
 
         $this->community->update($validated);

@@ -6,7 +6,8 @@
             <x-input label="Nome da comunidade *" wire:model="name" maxlength="120" required />
             <x-input label="Nome curto *" wire:model="alias" maxlength="30" required />
             <x-input label="Sigla *" wire:model="abbreviation" maxlength="4" required />
-            <x-textarea label="Endereço" wire:model="address" maxlength="255" />
+            <x-input label="Endereço" wire:model="address" maxlength="255" />
+            <x-input label="Vila" wire:model="neighborhood" maxlength="255" />
         </form>
 
         <x-slot:footer>

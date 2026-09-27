@@ -23,6 +23,8 @@ class Create extends Component
 
     public ?string $address = null;
 
+    public ?string $neighborhood = null;
+
     public bool $modal = false;
 
     public function render(): View
@@ -41,6 +43,7 @@ class Create extends Component
             'alias'        => ['required', 'string', 'max:30', Rule::unique('communities', 'alias')],
             'abbreviation' => ['required', 'string', 'max:4', Rule::unique('communities', 'abbreviation')],
             'address'      => ['nullable', 'string', 'max:255'],
+            'neighborhood' => ['nullable', 'string', 'max:255'],
         ]);
 
         Community::create($validated);

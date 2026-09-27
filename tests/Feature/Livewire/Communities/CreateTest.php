@@ -16,14 +16,25 @@ it('allows active administrators and CPP to create communities', function (UserR
         ->set('alias', 'São Marcos')
         ->set('abbreviation', ' sm ')
         ->set('address', 'Rua da Matriz, 10')
+        ->set('neighborhood', 'Centro')
         ->call('save')->assertHasNoErrors()
         ->assertSet('modal', false)->assertDispatched('created');
 
     $this->assertDatabaseHas('communities', [
         'name'         => 'Comunidade São Marcos', 'alias' => 'São Marcos',
-        'abbreviation' => 'SM', 'address' => 'Rua da Matriz, 10',
+        'abbreviation' => 'SM', 'address' => 'Rua da Matriz, 10', 'neighborhood' => 'Centro',
     ]);
 })->with([UserRoleEnum::ADMIN, UserRoleEnum::CPP]);
+
+it('allows creating a community without a neighborhood', function () {
+    $user = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Create::class)
+        ->set('name', 'Capela')->set('alias', 'Capela')->set('abbreviation', 'CP')
+        ->call('save')->assertHasNoErrors();
+
+    $this->assertDatabaseHas('communities', ['alias' => 'Capela', 'neighborhood' => null]);
+});
 
 it('forbids creation by other roles and inactive managers', function (UserRoleEnum $role, bool $active) {
     $user = User::factory()->create(['roles' => [$role->value], 'is_active' => $active]);
@@ -66,4 +77,5 @@ it('refuses duplicate and oversized fields', function (string $field, string $va
     'long alias'                        => ['alias', str_repeat('a', 31), 'max'],
     'long name'                         => ['name', str_repeat('a', 121), 'max'],
     'long address'                      => ['address', str_repeat('a', 256), 'max'],
+    'long neighborhood'                 => ['neighborhood', str_repeat('a', 256), 'max'],
 ]);
