@@ -47,8 +47,8 @@
 
                 <x-button icon="pencil-square" x-tooltip="Editar" flat wire:click="openEdit({{ $row->id }})" />
                 <x-button icon="trash" x-tooltip="Remover" flat color="red"
-                          wire:click="deleteReservation({{ $row->id }})"
-                          loading="deleteReservation({{ $row->id }})" />
+                          wire:click="confirmDeleteReservation({{ $row->id }})"
+                          loading="confirmDeleteReservation({{ $row->id }})" />
             </div>
         @endinteract
 

@@ -9,30 +9,17 @@
         />
     @endif
 
-    <x-card header="Nova data e horário">
-        <div class="grid gap-4 md:grid-cols-3">
-            <x-date wire:model.live="date" label="Nova data" format="DD/MM/YYYY" typeable />
+    <x-card header="Alterar data e horário">
+        <div class="grid gap-4 md:grid-cols-2">
+            <x-date wire:model.live="date" label="Data de início" format="DD/MM/YYYY" typeable />
             <x-time wire:model.live="starts_at" label="Horário de início" format="24" />
+            <x-date wire:model.live="ends_date" label="Data de encerramento" format="DD/MM/YYYY" typeable />
             <x-time wire:model.live="ends_at" label="Horário de encerramento" format="24" />
-
-            @unless ($event->is_external)
-                <div class="md:col-span-3">
-                    <x-select.native wire:model.live="community_id" label="Comunidade">
-                        <option value="">Selecione uma comunidade</option>
-                        @foreach ($communities as $community)
-                            <option wire:key="reschedule-community-{{ $community->id }}" value="{{ $community->id }}">
-                                {{ $community->name }}
-                            </option>
-                        @endforeach
-                    </x-select.native>
-                </div>
-            @endunless
         </div>
-
     </x-card>
 
-    @if ($event->is_external)
-        <x-card header="Local externo">
+    <x-card header="Alterar local">
+        @if ($event->is_external)
             <div class="grid gap-4 md:grid-cols-2">
                 <x-input wire:model.live="external_location_name" label="Nome do local" />
                 <x-input wire:model.live="external_location_address" label="Endereço" />
@@ -45,13 +32,26 @@
                     />
                 </div>
             </div>
-        </x-card>
-    @elseif ($community_id !== null && $community_id !== $original_community_id)
+        @else
+            <div class="grid gap-4 md:grid-cols-[8rem_minmax(0,24rem)] md:items-center">
+                <label for="reschedule-community" class="text-sm font-medium text-gray-700 dark:text-dark-200">Comunidade</label>
+                <x-select.native id="reschedule-community" wire:model.live="community_id">
+                    <option value="">Selecione uma comunidade</option>
+                    @foreach ($communities as $community)
+                        <option wire:key="reschedule-community-{{ $community->id }}" value="{{ $community->id }}">
+                            {{ $community->name }}
+                        </option>
+                    @endforeach
+                </x-select.native>
+            </div>
+        @endif
+    </x-card>
+
+    @if (! $event->is_external && $community_id !== null && $community_id !== $original_community_id)
         <x-card header="Ambientes da nova comunidade">
             <div class="space-y-4">
                 <x-alert
-                    title="As reservas atuais não serão transferidas automaticamente"
-                    text="Escolha os ambientes da nova comunidade. As reservas atuais permanecerão intactas até a confirmação final."
+                    text="As reservas atuais não serão transferidas automaticamente. Escolha os ambientes da nova comunidade; as reservas atuais permanecerão intactas até a confirmação final."
                     color="yellow"
                     icon="exclamation-triangle"
                     light
@@ -226,7 +226,7 @@
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-dark-300">Nova data e horário</p>
                     <p class="mt-1 font-medium text-gray-900 dark:text-white">
                         {{ \Carbon\CarbonImmutable::parse("{$date} {$starts_at}")->format('d/m/Y H:i') }}
-                        — {{ $ends_at }}
+                        — {{ \Carbon\CarbonImmutable::parse("{$ends_date} {$ends_at}")->format('d/m/Y H:i') }}
                     </p>
                 </div>
 
@@ -277,35 +277,9 @@
                 @if ($conflicts !== [])
                     <x-button wire:click="preview" text="Verificar novamente" icon="arrow-path" loading="preview" />
                 @elseif ($canConfirm)
-                    <x-button wire:click="openConfirmation" text="Confirmar remarcação" icon="check" loading="openConfirmation" />
+                    <x-button wire:click="confirm" text="Confirmar remarcação" icon="check" loading="confirm" />
                 @endif
             </div>
         </x-slot:footer>
     </x-slide>
-
-    <x-modal
-        wire="confirmationModal"
-        title="Confirmar remarcação"
-        size="md"
-        center
-        persistent
-    >
-        <p class="text-sm text-gray-600 dark:text-dark-300">
-            Confirma a substituição da configuração atual por esta proposta? Os conflitos serão verificados novamente antes de salvar.
-        </p>
-
-        <x-slot:footer>
-            <x-button
-                wire:click="$set('confirmationModal', false)"
-                text="Voltar"
-                outline
-            />
-            <x-button
-                wire:click="confirm"
-                text="Confirmar"
-                color="green"
-                loading="confirm"
-            />
-        </x-slot:footer>
-    </x-modal>
 </div>

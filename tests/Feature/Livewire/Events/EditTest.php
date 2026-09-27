@@ -127,7 +127,7 @@ it('persists the selected tab in the query string', function () {
         ->withQueryParams(['tab' => 'reschedule'])
         ->test(Edit::class, ['event' => $event])
         ->assertSet('tab', 'reschedule')
-        ->assertSee('Nova data e horário')
+        ->assertSee('Alterar data e horário')
         ->assertDontSee('Seção de informações do evento.');
 });
 
@@ -410,6 +410,48 @@ it('lists event reservations with their individual actions', function () {
         ->assertSee('Adicionar reserva');
 });
 
+it('asks for confirmation before removing an environment reservation', function () {
+    Gate::before(static fn (): bool => true);
+    $user           = User::factory()->create();
+    $primaryPlace   = editReservationPlace('Igreja principal');
+    $secondaryPlace = $primaryPlace->community->places()->create(['name' => 'Sala de apoio']);
+    $event          = Event::factory()->create([
+        'community_id' => $primaryPlace->community_id,
+        'is_external'  => false,
+    ]);
+    $primaryReservation = $event->reservations()->create([
+        'place_id'      => $primaryPlace->id,
+        'reserved_from' => $event->starts_at,
+        'reserved_to'   => $event->ends_at,
+        'is_primary'    => true,
+    ]);
+    $secondaryReservation = $event->reservations()->create([
+        'place_id'      => $secondaryPlace->id,
+        'reserved_from' => $event->starts_at,
+        'reserved_to'   => $event->ends_at,
+        'is_primary'    => false,
+    ]);
+
+    $component = Livewire::actingAs($user)
+        ->test(Reservations::class, ['event' => $event])
+        ->assertSeeHtml('wire:click="confirmDeleteReservation('.$secondaryReservation->id.')"')
+        ->call('confirmDeleteReservation', $secondaryReservation->id)
+        ->assertDispatched('ts-ui:dialog', fn (string $event, array $data): bool => $data['type'] === 'question'
+            && $data['title'] === 'Remover ambiente?'
+            && str_contains($data['description'], 'Sala de apoio')
+            && $data['options']['confirm']['method'] === 'deleteReservation'
+            && $data['options']['confirm']['params'] === $secondaryReservation->id
+            && $data['options']['cancel']['text'] === 'Cancelar');
+
+    $this->assertModelExists($secondaryReservation);
+
+    $component->call('deleteReservation', $secondaryReservation->id)
+        ->assertHasNoErrors();
+
+    $this->assertModelMissing($secondaryReservation);
+    $this->assertModelExists($primaryReservation);
+});
+
 it('shows a reserved child environment with its parent in the reservations table', function () {
     Gate::before(static fn (): bool => true);
     $user           = User::factory()->create();
@@ -600,6 +642,56 @@ it('proposes new reservation intervals preserving start and end offsets', functi
         ->assertSet('reservations.0.reserved_to', '2026-10-11T00:15');
 });
 
+it('saves a reschedule ending on another day directly from the preview', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create([
+        'starts_at'   => '2026-10-10 19:00:00',
+        'ends_at'     => '2026-10-10 21:00:00',
+        'is_external' => true,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->assertSet('ends_date', '2026-10-10')
+        ->assertSee('Data de encerramento')
+        ->assertSee('Alterar local')
+        ->set('date', '2026-10-17')
+        ->assertSet('ends_date', '2026-10-17')
+        ->set('ends_date', '2026-10-18')
+        ->set('starts_at', '23:00')
+        ->set('ends_at', '01:00')
+        ->set('external_location_name', 'Centro cultural')
+        ->set('external_location_address', 'Rua Nova, 200')
+        ->call('preview')
+        ->assertHasNoErrors()
+        ->assertSee('18/10/2026 01:00')
+        ->call('confirm')
+        ->assertHasNoErrors()
+        ->assertSet('saved', true)
+        ->assertSet('previewSlide', false)
+        ->assertDispatched('event-rescheduled');
+
+    expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-17 23:00:00')
+        ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-18 01:00:00');
+});
+
+it('rejects a reschedule ending before it starts', function () {
+    Gate::before(static fn (): bool => true);
+    $user  = User::factory()->create();
+    $event = Event::factory()->create(['is_external' => true]);
+
+    Livewire::actingAs($user)
+        ->test(Reschedule::class, ['event' => $event])
+        ->set('date', '2026-10-17')
+        ->set('ends_date', '2026-10-16')
+        ->set('external_location_name', 'Centro cultural')
+        ->set('external_location_address', 'Rua Nova, 200')
+        ->call('preview')
+        ->assertHasErrors('ends_at')
+        ->assertSet('previewSlide', false);
+});
+
 it('loads the community from the event rather than its primary reservation', function () {
     Gate::before(static fn (): bool => true);
     $user           = User::factory()->create();
@@ -676,8 +768,10 @@ it('keeps old reservations until confirmation and persists the new community', f
     $this->assertModelExists($oldReservation);
     expect($event->reservations()->count())->toBe(1);
 
-    $component->call('openConfirmation')->assertSet('confirmationModal', true)
-        ->call('confirm')->assertHasNoErrors();
+    $component->call('confirm')
+        ->assertHasNoErrors()
+        ->assertSet('previewSlide', false)
+        ->assertSet('saved', true);
 
     $this->assertDatabaseHas('events', ['id' => $event->id, 'community_id' => $newCommunity->id]);
     $this->assertModelMissing($oldReservation);
@@ -712,9 +806,7 @@ it('renders a preview without persisting the proposed changes', function () {
         ->assertSee('Resumo da remarcação')
         ->assertSee('Ambientes que serão mantidos')
         ->assertSee('17/10/2026 18:00')
-        ->call('openConfirmation')
-        ->assertSet('previewSlide', false)
-        ->assertSet('confirmationModal', true);
+        ->assertSeeHtml('wire:click="confirm"');
 
     expect($event->refresh()->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 19:00:00')
         ->and($reservation->refresh()->reserved_from->format('Y-m-d H:i:s'))->toBe('2026-10-10 18:00:00');

@@ -26,6 +26,8 @@ class Reschedule extends Component
 
     public string $date = '';
 
+    public string $ends_date = '';
+
     public string $starts_at = '';
 
     public string $ends_at = '';
@@ -60,8 +62,6 @@ class Reschedule extends Component
 
     public bool $canConfirm = false;
 
-    public bool $confirmationModal = false;
-
     public bool $saved = false;
 
     public string $previewFingerprint = '';
@@ -95,6 +95,13 @@ class Reschedule extends Component
         }
     }
 
+    public function updatingDate(string $date): void
+    {
+        if ($this->ends_date === $this->date) {
+            $this->ends_date = $date;
+        }
+    }
+
     public function updatedDate(): void
     {
         $this->resetGeneratedProposal();
@@ -108,6 +115,12 @@ class Reschedule extends Component
     }
 
     public function updatedEndsAt(): void
+    {
+        $this->resetGeneratedProposal();
+        $this->refreshAutomaticProposal();
+    }
+
+    public function updatedEndsDate(): void
     {
         $this->resetGeneratedProposal();
         $this->refreshAutomaticProposal();
@@ -216,23 +229,12 @@ class Reschedule extends Component
         $this->previewSlide       = true;
     }
 
-    public function openConfirmation(CheckPlaceAvailabilityAction $checkPlaceAvailability): void
-    {
-        $this->preview($checkPlaceAvailability);
-
-        if ($this->canConfirm) {
-            $this->previewSlide      = false;
-            $this->confirmationModal = true;
-        }
-    }
-
     public function confirm(
         RescheduleEventAction $rescheduleEvent,
         CheckPlaceAvailabilityAction $checkPlaceAvailability,
     ): void {
         if (! $this->previewReady || $this->previewFingerprint !== $this->currentFingerprint()) {
             $this->addError('reschedule', 'A proposta foi alterada. Gere um novo preview antes de confirmar.');
-            $this->confirmationModal = false;
 
             return;
         }
@@ -263,16 +265,14 @@ class Reschedule extends Component
                 $this->conflicts = $this->findConflicts($checkPlaceAvailability, $startsAt, $endsAt);
             }
 
-            $this->canConfirm        = false;
-            $this->previewSlide      = $this->conflicts !== [];
-            $this->confirmationModal = false;
+            $this->canConfirm   = false;
+            $this->previewSlide = $this->conflicts !== [];
 
             return;
         }
 
-        $this->confirmationModal = false;
-        $this->previewSlide      = false;
-        $this->saved             = true;
+        $this->previewSlide = false;
+        $this->saved        = true;
         $this->loadForm();
         $this->dispatch('event-rescheduled', eventId: $this->event->id);
     }
@@ -305,6 +305,7 @@ class Reschedule extends Component
 
         $this->date      = $this->event->starts_at->format('Y-m-d');
         $this->starts_at = $this->event->starts_at->format('H:i');
+        $this->ends_date = $this->event->ends_at->format('Y-m-d');
         $this->ends_at   = $this->event->ends_at->format('H:i');
 
         $currentReservations = PlaceReservation::query()
@@ -403,6 +404,7 @@ class Reschedule extends Component
         $rules = [
             'date'      => ['required', 'date_format:Y-m-d'],
             'starts_at' => ['required', 'date_format:H:i'],
+            'ends_date' => ['required', 'date_format:Y-m-d'],
             'ends_at'   => ['required', 'date_format:H:i'],
         ];
 
@@ -597,7 +599,7 @@ class Reschedule extends Component
     {
         return [
             CarbonImmutable::parse("{$this->date} {$this->starts_at}:00"),
-            CarbonImmutable::parse("{$this->date} {$this->ends_at}:00"),
+            CarbonImmutable::parse("{$this->ends_date} {$this->ends_at}:00"),
         ];
     }
 
@@ -606,10 +608,12 @@ class Reschedule extends Component
         return Validator::make([
             'date'      => $this->date,
             'starts_at' => $this->starts_at,
+            'ends_date' => $this->ends_date,
             'ends_at'   => $this->ends_at,
         ], [
             'date'      => ['required', 'date_format:Y-m-d'],
             'starts_at' => ['required', 'date_format:H:i'],
+            'ends_date' => ['required', 'date_format:Y-m-d'],
             'ends_at'   => ['required', 'date_format:H:i'],
         ])->passes();
     }
@@ -619,6 +623,7 @@ class Reschedule extends Component
         return hash('sha256', json_encode([
             $this->date,
             $this->starts_at,
+            $this->ends_date,
             $this->ends_at,
             $this->community_id,
             $this->reservations,
@@ -668,7 +673,6 @@ class Reschedule extends Component
         $this->resetValidation();
         $this->previewReady       = false;
         $this->canConfirm         = false;
-        $this->confirmationModal  = false;
         $this->previewFingerprint = '';
 
         if ($clearConflicts) {

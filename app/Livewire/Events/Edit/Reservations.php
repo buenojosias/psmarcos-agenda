@@ -96,6 +96,22 @@ class Reservations extends Component
         $this->toast()->success('Reserva salva', $message)->send();
     }
 
+    public function confirmDeleteReservation(int $reservationId): void
+    {
+        Gate::authorize('update', $this->event);
+
+        $reservation = PlaceReservation::query()
+            ->where('event_id', $this->event->id)
+            ->with('place:id,name')
+            ->findOrFail($reservationId);
+
+        $this->dialog()
+            ->question('Remover ambiente?', 'A reserva de '.$reservation->place?->name.' será removida deste evento.')
+            ->confirm('Remover', 'deleteReservation', $reservationId)
+            ->cancel('Cancelar')
+            ->send();
+    }
+
     public function deleteReservation(
         int $reservationId,
         DeleteEventReservationAction $deleteReservation,
