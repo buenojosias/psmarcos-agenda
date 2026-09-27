@@ -11,10 +11,10 @@
         </x-select.native>
 
         <div class="flex flex-col gap-4">
-            <x-toggle wire:model="is_public" label="Evento público" />
+            <x-toggle wire:model.live="is_public" label="Evento público" />
 
             <div>
-                <x-toggle wire:model="advertisable" label="Solicitar divulgação" />
+                <x-toggle wire:model.live="advertisable" label="Solicitar divulgação" />
                 @if ($event->recurrence_code !== null)
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Ao ativar esta opção, será solicitada divulgação apenas desta ocorrência de evento.</p>
                 @endif

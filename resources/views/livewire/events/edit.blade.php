@@ -61,11 +61,12 @@
     <div class="header">
         <div>
             <h1>Editar evento</h1>
+            <p class="mt-1 text-base font-medium text-gray-700 dark:text-dark-200">{{ $event->name }}</p>
             <a href="{{ route('events.show', $event) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar ao evento</a>
         </div>
     </div>
 
-    <x-tab wire:model.live="tab">
+    <x-tab wire:model.live="tab" scroll-on-mobile>
         <x-tab.items tab="general" title="Informações">
             @if ($tab === 'general')
                 <livewire:events.edit.general :$event />

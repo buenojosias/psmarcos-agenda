@@ -37,12 +37,30 @@ class General extends Component
         $this->loadEventValues();
     }
 
+    public function updatedAdvertisable(bool $value): void
+    {
+        if ($value) {
+            $this->is_public = true;
+        }
+    }
+
+    public function updatedIsPublic(bool $value): void
+    {
+        if (! $value) {
+            $this->advertisable = false;
+        }
+    }
+
     public function save(UpdateEventGeneralAction $updateEventGeneral): void
     {
         Gate::authorize('update', $this->event);
 
         $user = user();
         abort_if($user === null, 401);
+
+        if ($this->advertisable) {
+            $this->is_public = true;
+        }
 
         $changed = $updateEventGeneral->handle($this->event, $this->validate($this->rules()), $user);
 

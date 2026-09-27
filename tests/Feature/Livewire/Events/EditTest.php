@@ -28,7 +28,7 @@ it('allows an authorized user to access the edit page', function () {
 
     Livewire::actingAs($user)
         ->test(Edit::class, ['event' => $event])
-        ->assertSee('Editar evento')
+        ->assertSeeInOrder(['Editar evento', $event->name, 'Voltar ao evento'])
         ->assertSee('Nome do evento');
 });
 
@@ -207,11 +207,13 @@ it('saves a recurring occurrence complement and advertising request without chan
     $user  = User::factory()->create();
     $event = Event::factory()->create([
         'recurrence_code' => 'weekly-event',
+        'is_public'       => false,
         'advertisable'    => false,
         'complement'      => null,
     ]);
     $otherOccurrence = Event::factory()->create([
         'recurrence_code' => 'weekly-event',
+        'is_public'       => false,
         'advertisable'    => false,
         'complement'      => null,
     ]);
@@ -221,13 +223,31 @@ it('saves a recurring occurrence complement and advertising request without chan
         ->assertSee('Ao ativar esta opção, será solicitada divulgação apenas desta ocorrência de evento.')
         ->set('complement', 'Celebração das famílias')
         ->set('advertisable', true)
+        ->assertSet('is_public', true)
         ->call('save')
         ->assertHasNoErrors();
 
     expect($event->refresh()->complement)->toBe('Celebração das famílias')
+        ->and($event->is_public)->toBeTrue()
         ->and($event->advertisable)->toBeTrue()
         ->and($otherOccurrence->refresh()->complement)->toBeNull()
+        ->and($otherOccurrence->is_public)->toBeFalse()
         ->and($otherOccurrence->advertisable)->toBeFalse();
+});
+
+it('clears the advertising request when a public event becomes private', function () {
+    Gate::before(static fn (): bool => true);
+    $event = Event::factory()->create(['is_public' => true, 'advertisable' => true]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test(General::class, ['event' => $event])
+        ->set('is_public', false)
+        ->assertSet('advertisable', false)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($event->refresh()->is_public)->toBeFalse()
+        ->and($event->advertisable)->toBeFalse();
 });
 
 it('rejects a complement longer than 255 characters', function () {
