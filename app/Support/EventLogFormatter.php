@@ -57,7 +57,7 @@ class EventLogFormatter
 
             if (isset($changes['community_id']) && is_array($changes['community_id'])) {
                 foreach (['old', 'new'] as $side) {
-                    $id = $this->identifier($changes['community_id'][$side] ?? null);
+                    $id = $this->identifier($this->changeValue($changes['community_id'], $side));
 
                     if ($id !== null) {
                         $communityIds[$id] = $id;
@@ -67,7 +67,7 @@ class EventLogFormatter
 
             if (isset($changes['reservations']) && is_array($changes['reservations'])) {
                 foreach (['old', 'new'] as $side) {
-                    foreach ($this->reservationList($changes['reservations'][$side] ?? null) as $reservation) {
+                    foreach ($this->reservationList($this->changeValue($changes['reservations'], $side)) as $reservation) {
                         $id = $this->identifier($reservation['place_id'] ?? null);
 
                         if ($id !== null) {
@@ -104,8 +104,8 @@ class EventLogFormatter
 
                 $fields[] = [
                     'label' => self::LABELS[$name] ?? Str::headline(Str::beforeLast((string) $name, '_id')),
-                    'old'   => $this->formatValue((string) $name, $change['old'] ?? null, $communities),
-                    'new'   => $this->formatValue((string) $name, $change['new'] ?? null, $communities),
+                    'old'   => $this->formatValue((string) $name, $this->changeValue($change, 'old'), $communities),
+                    'new'   => $this->formatValue((string) $name, $this->changeValue($change, 'new'), $communities),
                 ];
             }
 
@@ -113,6 +113,20 @@ class EventLogFormatter
         }
 
         return $formatted;
+    }
+
+    /** @param array<string, mixed> $change */
+    private function changeValue(array $change, string $side): mixed
+    {
+        $keys = $side === 'old' ? ['old', 'from', 'before'] : ['new', 'to', 'after'];
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $change)) {
+                return $change[$key];
+            }
+        }
+
+        return null;
     }
 
     /** @param  array<int, string>  $communities */
@@ -196,8 +210,8 @@ class EventLogFormatter
      */
     private function formatReservations(array $change, array $places): array
     {
-        $old    = $this->reservationList($change['old'] ?? null);
-        $new    = $this->reservationList($change['new'] ?? null);
+        $old    = $this->reservationList($this->changeValue($change, 'old'));
+        $new    = $this->reservationList($this->changeValue($change, 'new'));
         $result = [];
 
         foreach ($old as $oldIndex => $oldReservation) {

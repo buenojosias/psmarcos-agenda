@@ -136,9 +136,14 @@
                     <x-button text="Cancelar" color="red" icon="x-circle" disabled />
                 @endif
             </x-button.group>
-            @if ($showNotes && $canViewNotes)
-                <livewire:events.notes :event="$event" />
-            @endif
         </div>
     </div>
+
+    @if ($canViewNotes)
+        <x-slide id="event-notes-slide" title="Notas" wire="showNotes">
+            @if ($showNotes)
+                <livewire:events.notes :event="$event" />
+            @endif
+        </x-slide>
+    @endif
 </div>

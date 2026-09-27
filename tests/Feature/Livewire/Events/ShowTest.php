@@ -10,6 +10,7 @@ use App\Models\Community;
 use App\Livewire\Events\Show;
 use App\Enums\EventStatusEnum;
 use App\Enums\EventLogActionEnum;
+use Illuminate\Support\Facades\DB;
 use App\Livewire\Events\ReviewActions;
 
 it('requires authentication', function () {
@@ -36,14 +37,27 @@ it('loads notes only after clicking the button', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
     $event->notes()->create(['user_id' => $user->id, 'content' => 'Nota reservada']);
 
-    Livewire::actingAs($user)
+    $noteQueries = [];
+    DB::listen(function ($query) use (&$noteQueries): void {
+        if (str_contains($query->sql, 'event_notes')) {
+            $noteQueries[] = $query->sql;
+        }
+    });
+
+    $component = Livewire::actingAs($user)
         ->test(Show::class, ['event' => $event])
         ->assertSee('Notas')
         ->assertDontSee('Nota reservada')
-        ->assertDontSee('wire:name="events.notes"', false)
-        ->call('openNotes')
+        ->assertDontSee('wire:name="events.notes"', false);
+
+    expect($noteQueries)->toBe([]);
+
+    $component->call('openNotes')
         ->assertSet('showNotes', true)
-        ->assertSee('Nota reservada');
+        ->assertSee('Nota reservada')
+        ->assertSee('event-notes-slide', false);
+
+    expect($noteQueries)->not->toBe([]);
 });
 
 it('shows notes to a priest but denies the button and action to an unrelated member', function () {

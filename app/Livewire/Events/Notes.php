@@ -17,10 +17,19 @@ class Notes extends Component
 
     public string $content = '';
 
+    public bool $addingNote = false;
+
     public function mount(Event $event): void
     {
         $this->event = $event;
         $this->authorizeAccess();
+    }
+
+    public function startAddingNote(): void
+    {
+        $this->authorizeAccess();
+
+        $this->addingNote = true;
     }
 
     public function save(): void
@@ -36,7 +45,7 @@ class Notes extends Component
             'content' => $validated['content'],
         ]);
 
-        $this->reset('content');
+        $this->reset('content', 'addingNote');
     }
 
     public function render(): View

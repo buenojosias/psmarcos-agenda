@@ -1,4 +1,4 @@
-<x-card header="Notas" shadowless bordered>
+<div>
     <div class="space-y-4">
         @forelse ($notes as $note)
             <div wire:key="event-note-{{ $note->id }}" class="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 dark:border-gray-700">
@@ -13,10 +13,16 @@
         @endforelse
     </div>
 
-    <form wire:submit="save" class="mt-6 space-y-4">
-        <x-textarea wire:model="content" label="Nova nota" maxlength="2000" count />
-        <div class="flex justify-end">
-            <x-button submit text="Adicionar nota" loading="save" />
+    @if ($addingNote)
+        <form wire:submit="save" class="mt-6 space-y-4">
+            <x-textarea wire:model="content" label="Nova nota" maxlength="2000" count />
+            <div class="flex justify-end">
+                <x-button submit text="Salvar" loading="save" />
+            </div>
+        </form>
+    @else
+        <div class="mt-6 flex justify-end">
+            <x-button text="Adicionar nota" wire:click="startAddingNote" />
         </div>
-    </form>
-</x-card>
+    @endif
+</div>

@@ -174,6 +174,40 @@ it('shows friendly expandable changes while preserving the timeline', function (
         ->assertDontSee('Depois: '.$missingCommunityId);
 });
 
+it('shows persisted before and after values from every event change format', function () {
+    $viewer       = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $event        = Event::factory()->create();
+    $oldCommunity = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
+    $newCommunity = Community::create(['name' => 'Capela', 'alias' => 'capela', 'abbreviation' => 'CP']);
+    $oldPlace     = $oldCommunity->places()->create(['name' => 'Salão antigo']);
+    $newPlace     = $newCommunity->places()->create(['name' => 'Salão novo']);
+
+    EventLog::query()->forceCreate([
+        'event_id' => $event->id,
+        'user_id'  => $viewer->id,
+        'action'   => EventLogActionEnum::UPDATED,
+        'changes'  => [
+            'name'         => ['before' => 'Encontro antigo', 'after' => 'Encontro novo'],
+            'starts_at'    => ['from' => '2026-10-18 19:30:00', 'to' => '2026-10-19 20:00:00'],
+            'community_id' => ['from' => $oldCommunity->id, 'to' => $newCommunity->id],
+            'reservations' => [
+                'from' => [['place_id' => $oldPlace->id, 'reserved_from' => '2026-10-18 19:30:00', 'reserved_to' => '2026-10-18 21:00:00', 'is_primary' => true]],
+                'to'   => [['place_id' => $newPlace->id, 'reserved_from' => '2026-10-19 20:00:00', 'reserved_to' => '2026-10-19 21:30:00', 'is_primary' => true]],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($viewer)->get(route('events.audit', $event))
+        ->assertSee('Antes: Encontro antigo')
+        ->assertSee('Depois: Encontro novo')
+        ->assertSee('Antes: 18/10/2026 19:30')
+        ->assertSee('Depois: 19/10/2026 20:00')
+        ->assertSee('Antes: Matriz')
+        ->assertSee('Depois: Capela')
+        ->assertSee('Salão antigo · Removida')
+        ->assertSee('Salão novo · Adicionada');
+});
+
 it('escapes user-provided change values in the audit details', function () {
     $viewer = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $event  = Event::factory()->create();

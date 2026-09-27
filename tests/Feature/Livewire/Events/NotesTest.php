@@ -24,10 +24,32 @@ it('lists notes from oldest to newest with the sender and submission time', func
         ->assertSeeInOrder(['Ana', '10/10/2026 09:15', 'Primeira nota', 'Mim', '10/10/2026 10:30', 'Segunda nota']);
 });
 
-it('saves notes of up to 200 characters and rejects longer content', function () {
+it('reveals the note editor on request and hides it after saving', function () {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $event = Event::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(Notes::class, ['event' => $event])
+        ->assertSee('Adicionar nota')
+        ->assertDontSee('Nova nota')
+        ->call('startAddingNote')
+        ->assertSet('addingNote', true)
+        ->assertSee('Nova nota')
+        ->assertSee('Salvar')
+        ->set('content', 'Acompanhar preparação')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('addingNote', false)
+        ->assertDontSee('Nova nota')
+        ->assertSee('Acompanhar preparação');
+
+    expect($event->notes()->sole()->content)->toBe('Acompanhar preparação');
+});
+
+it('saves notes of up to 2000 characters and rejects longer content', function () {
     $user    = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $event   = Event::factory()->create();
-    $content = str_repeat('a', 200);
+    $content = str_repeat('a', 2000);
 
     $component = Livewire::actingAs($user)
         ->test(Notes::class, ['event' => $event])
@@ -37,7 +59,7 @@ it('saves notes of up to 200 characters and rejects longer content', function ()
         ->assertSet('content', '')
         ->assertSee($content);
 
-    $component->set('content', str_repeat('a', 201))
+    $component->set('content', str_repeat('a', 2001))
         ->call('save')
         ->assertHasErrors(['content' => 'max']);
 
