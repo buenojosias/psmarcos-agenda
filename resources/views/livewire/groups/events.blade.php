@@ -32,9 +32,17 @@
         @endinteract
 
         @interact('column_location', $row)
-            {{ $row->is_external ? ($row->detail?->external_location_name ?? 'Local externo') : ($row->primaryReservation?->place?->name ?? 'Local não informado') }}
-            @if (! $row->is_external && $row->primaryReservation?->place?->community)
-                <small class="block text-gray-500 dark:text-dark-400">{{ $row->primaryReservation->place->community->name }}</small>
+            @if (! $row->is_external)
+                @php($place = $row->primaryReservation?->place)
+                @if ($place?->community?->name)
+                    <div>{{ $place->community->name }}</div>
+                @endif
+                <div class="text text-gray-500 dark:text-dark-400 flex gap-1">
+                    <x-icon name="arrow-turn-down-right" sm />
+                    {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Local não informado' }}
+                </div>
+            @else
+                <div>{{ $row->detail?->external_location_name ?? 'Local externo' }}</div>
             @endif
         @endinteract
 

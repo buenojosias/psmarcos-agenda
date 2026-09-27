@@ -114,10 +114,11 @@ it('paginates events from newest to oldest and handles missing locations', funct
         ->assertSee('Evento anterior');
 });
 
-it('shows the community of the primary event location', function () {
+it('shows the community above the primary place and includes its parent when present', function (bool $hasParent) {
     $group     = Group::factory()->create();
     $community = Community::create(['name' => 'Comunidade São José', 'alias' => 'sao-jose', 'abbreviation' => 'CSJ']);
-    $place     = $community->places()->create(['name' => 'Salão paroquial']);
+    $parent    = $hasParent ? $community->places()->create(['name' => 'Centro catequético']) : null;
+    $place     = $community->places()->create(['name' => 'Salão paroquial', 'main_place_id' => $parent?->id]);
     $event     = Event::factory()->for($group)->create(['status' => EventStatusEnum::CONFIRMED]);
     $event->reservations()->create([
         'place_id'      => $place->id,
@@ -127,6 +128,5 @@ it('shows the community of the primary event location', function () {
     ]);
 
     Livewire::actingAs(User::factory()->create())->test(Events::class, ['group' => $group])
-        ->assertSee('Salão paroquial')
-        ->assertSee('Comunidade São José');
-});
+        ->assertSeeInOrder(['Comunidade São José', ($hasParent ? 'Centro catequético: ' : '').'Salão paroquial']);
+})->with([true, false]);

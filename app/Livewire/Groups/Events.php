@@ -40,7 +40,7 @@ class Events extends Component
         return view('livewire.groups.events', [
             'canViewStatus' => $canViewStatus,
             'events'        => $this->group->events()
-                ->with(['primaryReservation.place.community', 'detail'])
+                ->with(['primaryReservation.place.community', 'primaryReservation.place.main', 'detail'])
                 ->when(! $canViewStatus, fn (Builder $query): Builder => $query->where('status', EventStatusEnum::CONFIRMED->value))
                 ->orderByDesc('starts_at')
                 ->orderByDesc('id')
