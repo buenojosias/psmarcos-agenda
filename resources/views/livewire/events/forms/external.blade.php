@@ -13,7 +13,7 @@
             </x-select.native>
 
             <x-select.styled wire:model="group_id" label="Grupo organizador *" :options="$groups"
-                             select="label:label|value:value" required :searchable="$isMemberOnly" />
+                             select="label:label|value:value" required :searchable="$canSearchGroups" />
 
             <x-input type="datetime-local" wire:model="starts_at" label="Início *" required />
             <x-input type="datetime-local" wire:model="ends_at" label="Encerramento *" required />

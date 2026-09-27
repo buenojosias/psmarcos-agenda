@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\Group;
 use Livewire\Component;
+use App\Enums\UserRoleEnum;
 use App\Enums\EventTypeEnum;
 use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
@@ -136,8 +137,13 @@ class External extends Component
         return view('livewire.events.forms.external', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
             'groups'                => $this->groups($user),
-            'isMemberOnly'          => $user->isMemberOnly(),
-            'types'                 => EventTypeEnum::cases(),
+            'canSearchGroups'       => $user->hasAnyRole([
+                UserRoleEnum::CPP->value,
+                UserRoleEnum::SECRETARY->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::ADMIN->value,
+            ]),
+            'types' => EventTypeEnum::cases(),
         ]);
     }
 
@@ -186,19 +192,19 @@ class External extends Component
             ->with('community:id,name')
             ->when($user->isMemberOnly(), fn ($query) => $query->whereIn('id', $user->groups()->select('groups.id')))
             ->orderBy('name')
-            ->get(['id', 'community_id', 'name']);
+            ->get(['id', 'community_id', 'name', 'abbreviation']);
 
         $ungrouped = $groups->whereNull('community_id');
         $grouped   = $groups->whereNotNull('community_id')
-            ->groupBy(fn (Group $group): string => $group->community->name)
-            ->sortKeys()
-            ->map(fn (SupportCollection $groups, string $community): array => [
-                'label' => $community,
+            ->groupBy('community_id')
+            ->sortKeys(SORT_NUMERIC)
+            ->map(fn (SupportCollection $groups): array => [
+                'label' => $groups->first()->community->name,
                 'value' => $this->groupOptions($groups),
             ]);
 
         if ($ungrouped->isNotEmpty()) {
-            $grouped->prepend([
+            $grouped->push([
                 'label' => 'Sem comunidade',
                 'value' => $this->groupOptions($ungrouped),
             ]);
@@ -211,7 +217,7 @@ class External extends Component
     private function groupOptions(SupportCollection $groups): array
     {
         return $groups->map(fn (Group $group): array => [
-            'label' => $group->name,
+            'label' => $group->name.($group->abbreviation ? ' ('.$group->abbreviation.')' : ''),
             'value' => $group->id,
         ])->values()->all();
     }

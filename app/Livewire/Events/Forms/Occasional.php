@@ -10,6 +10,7 @@ use App\Models\Group;
 use App\Models\Place;
 use Livewire\Component;
 use App\Models\Community;
+use App\Enums\UserRoleEnum;
 use App\Enums\EventTypeEnum;
 use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
@@ -252,8 +253,13 @@ class Occasional extends Component
         return view('livewire.events.forms.occasional', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
             'groups'                => $this->groups($user),
-            'isMemberOnly'          => $user->isMemberOnly(),
-            'communities'           => Community::query()->orderBy('id')->get(['id', 'name'])
+            'canSearchGroups'       => $user->hasAnyRole([
+                UserRoleEnum::CPP->value,
+                UserRoleEnum::SECRETARY->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::ADMIN->value,
+            ]),
+            'communities' => Community::query()->orderBy('id')->get(['id', 'name'])
                 ->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id]),
             'places'             => $places,
             'conflictPlaceNames' => $places->pluck('label', 'value'),
@@ -337,19 +343,19 @@ class Occasional extends Component
             ->with('community:id,name')
             ->when($user->isMemberOnly(), fn ($query) => $query->whereIn('id', $user->groups()->select('groups.id')))
             ->orderBy('name')
-            ->get(['id', 'community_id', 'name']);
+            ->get(['id', 'community_id', 'name', 'abbreviation']);
 
         $ungrouped = $groups->whereNull('community_id');
         $grouped   = $groups->whereNotNull('community_id')
-            ->groupBy(fn (Group $group): string => $group->community->name)
-            ->sortKeys()
-            ->map(fn (SupportCollection $groups, string $community): array => [
-                'label' => $community,
+            ->groupBy('community_id')
+            ->sortKeys(SORT_NUMERIC)
+            ->map(fn (SupportCollection $groups): array => [
+                'label' => $groups->first()->community->name,
                 'value' => $this->groupOptions($groups),
             ]);
 
         if ($ungrouped->isNotEmpty()) {
-            $grouped->prepend([
+            $grouped->push([
                 'label' => 'Sem comunidade',
                 'value' => $this->groupOptions($ungrouped),
             ]);
@@ -362,7 +368,7 @@ class Occasional extends Component
     private function groupOptions(SupportCollection $groups): array
     {
         return $groups->map(fn (Group $group): array => [
-            'label' => $group->name,
+            'label' => $group->name.($group->abbreviation ? ' ('.$group->abbreviation.')' : ''),
             'value' => $group->id,
         ])->values()->all();
     }

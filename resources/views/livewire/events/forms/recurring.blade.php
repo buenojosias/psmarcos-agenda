@@ -13,7 +13,7 @@
             </x-select.native>
 
             <x-select.styled wire:model="group_id" label="Grupo organizador *" :options="$groups"
-                             select="label:label|value:value" required :searchable="$isMemberOnly" />
+                             select="label:label|value:value" required :searchable="$canSearchGroups" />
 
             <x-date wire:model="dates" label="Datas *" multiple format="DD/MM/YYYY" :min-date="today()" required />
             <div class="grid grid-cols-2 gap-4">

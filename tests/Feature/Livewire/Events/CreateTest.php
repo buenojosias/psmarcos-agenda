@@ -423,27 +423,49 @@ it('allows a member exclusive user to select only their groups', function () {
         ->assertHasNoErrors();
 });
 
-it('groups event organizers by community with ungrouped options first', function () {
-    $user           = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
-    $community      = eventCommunity();
-    $ungrouped      = Group::factory()->create(['community_id' => null, 'name' => 'Grupo sem comunidade']);
-    $communityGroup = Group::factory()->create(['community_id' => $community->id, 'name' => 'Grupo da comunidade']);
-    $user->groups()->attach([$ungrouped->id, $communityGroup->id]);
+it('groups event organizers by community id, shows abbreviations, and places ungrouped options last', function (string $form) {
+    $user            = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
+    $firstCommunity  = Community::create(['name' => 'Zeta', 'alias' => 'zeta', 'abbreviation' => 'ZT']);
+    $secondCommunity = Community::create(['name' => 'Alfa', 'alias' => 'alfa', 'abbreviation' => 'AL']);
+    $ungrouped       = Group::factory()->create(['community_id' => null, 'name' => 'Grupo sem comunidade', 'abbreviation' => null]);
+    $firstGroup      = Group::factory()->create(['community_id' => $firstCommunity->id, 'name' => 'Grupo Zeta', 'abbreviation' => 'GZ']);
+    $secondGroup     = Group::factory()->create(['community_id' => $secondCommunity->id, 'name' => 'Grupo Alfa', 'abbreviation' => null]);
+    $user->groups()->attach([$ungrouped->id, $firstGroup->id, $secondGroup->id]);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class);
+    $component = Livewire::actingAs($user)->test($form);
 
     expect($component->viewData('groups')->all())->toBe([
+        [
+            'label' => 'Zeta',
+            'value' => [['label' => 'Grupo Zeta (GZ)', 'value' => $firstGroup->id]],
+        ],
+        [
+            'label' => 'Alfa',
+            'value' => [['label' => 'Grupo Alfa', 'value' => $secondGroup->id]],
+        ],
         [
             'label' => 'Sem comunidade',
             'value' => [['label' => 'Grupo sem comunidade', 'value' => $ungrouped->id]],
         ],
-        [
-            'label' => $community->name,
-            'value' => [['label' => 'Grupo da comunidade', 'value' => $communityGroup->id]],
-        ],
     ]);
-    expect($component->viewData('isMemberOnly'))->toBeTrue();
-});
+})->with([Occasional::class, Recurring::class, External::class]);
+
+it('shows organizer search only to roles with broad group access', function (string $form, array $roles, bool $canSearch) {
+    $user = User::factory()->create(['roles' => $roles, 'is_active' => true]);
+
+    $component = Livewire::actingAs($user)->test($form);
+
+    expect($component->viewData('canSearchGroups'))->toBe($canSearch);
+})->with([Occasional::class, Recurring::class, External::class])->with([
+    'CPP'               => [['cpp'], true],
+    'secretary'         => [['secretary'], true],
+    'priest'            => [['priest'], true],
+    'admin'             => [['admin'], true],
+    'PASCOM'            => [['pascom'], false],
+    'member'            => [['member'], false],
+    'PASCOM and member' => [['pascom', 'member'], false],
+    'admin and member'  => [['admin', 'member'], true],
+]);
 
 it('allows a user with another role to select any group', function () {
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
@@ -451,7 +473,7 @@ it('allows a user with another role to select any group', function () {
 
     $component = Livewire::actingAs($user)->test(Occasional::class);
 
-    expect($component->viewData('isMemberOnly'))->toBeFalse();
+    expect($component->viewData('canSearchGroups'))->toBeTrue();
 
     $component
         ->set(occasionalEventData($group))
