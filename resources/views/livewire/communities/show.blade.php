@@ -21,10 +21,14 @@
                     </x-detail>
                 @endif
             </dl>
-            @can('update', $community)
-                <livewire:communities.edit :community="$community" @community-updated="refreshCommunity" />
-            @endcan
-
+            <div class="flex items-end gap-2">
+                @can('update', $community)
+                    <livewire:communities.edit :community="$community" :key="'community-edit-'.$community->id" @community-updated="refreshCommunity" />
+                @endcan
+                @can('delete', $community)
+                    <x-button text="Excluir" color="red" wire:click="delete" loading="delete" />
+                @endcan
+            </div>
         </x-tab.items>
 
         <x-tab.items tab="groups" title="Grupos">

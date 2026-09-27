@@ -24,14 +24,15 @@ it('shows community details and only its own groups', function () {
         ->assertOk()->assertSee('Comunidade São Marcos')->assertSee('Matriz')
         ->assertSee('MT')->assertSee('Praça central')->assertSee('Grupo da Matriz')
         ->assertSee(route('groups.show', $group))->assertDontSee('Grupo da Capela')
-        ->assertDontSee('Grupo Paroquial')->assertDontSee('Editar comunidade');
+        ->assertDontSee('Grupo Paroquial')->assertDontSee('Editar comunidade')->assertDontSee('Excluir');
 });
 
 it('shows an empty groups message and refreshes edited community details', function () {
     $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
     $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $component = Livewire::actingAs($user)->test(Show::class, ['community' => $community])
-        ->set('tab', 'groups')->assertSee('Nenhum grupo está vinculado a esta comunidade.')->assertSee('Editar comunidade');
+        ->set('tab', 'groups')->assertSee('Nenhum grupo está vinculado a esta comunidade.')
+        ->assertSee('Editar')->assertSee('Excluir');
     $community->update(['name' => 'Nome atualizado']);
 
     $component->call('refreshCommunity')->assertSee('Nome atualizado');
@@ -148,3 +149,66 @@ it('includes the space editor only for permitted users', function (bool $allowed
         $component->assertDontSeeLivewire(App\Livewire\Places\Edit::class);
     }
 })->with([true, false]);
+
+it('asks for confirmation before deleting an empty community', function (UserRoleEnum $role) {
+    $user      = User::factory()->create(['roles' => [$role->value], 'is_active' => true]);
+    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+
+    $component = Livewire::actingAs($user)->test(Show::class, ['community' => $community])
+        ->call('delete')->assertDispatched('ts-ui:dialog');
+    $this->assertModelExists($community);
+
+    $component->call('confirmDelete')->assertRedirect(route('communities.index'));
+    $this->assertModelMissing($community);
+})->with([UserRoleEnum::ADMIN, UserRoleEnum::CPP]);
+
+it('forbids crafted deletion actions from nonmanagers', function (UserRoleEnum $role) {
+    $user      = User::factory()->create(['roles' => [$role->value], 'is_active' => true]);
+    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+
+    Livewire::actingAs($user)->test(Show::class, ['community' => $community])->call('delete')->assertForbidden();
+    Livewire::actingAs($user)->test(Show::class, ['community' => $community])->call('confirmDelete')->assertForbidden();
+
+    $this->assertModelExists($community);
+})->with([UserRoleEnum::MEMBER, UserRoleEnum::SECRETARY, UserRoleEnum::PASCOM, UserRoleEnum::PRIEST]);
+
+it('preserves communities and dependent records when deletion is requested', function (string $relation) {
+    $user      = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => true]);
+    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+
+    if ($relation === 'users') {
+        $community->users()->attach($user);
+    } elseif ($relation === 'places') {
+        $community->places()->create(['name' => 'Salão']);
+    } else {
+        $group = Group::factory()->create(['community_id' => $community->id]);
+
+        if ($relation === 'archived groups') {
+            $group->delete();
+        }
+    }
+
+    Livewire::actingAs($user)->test(Show::class, ['community' => $community])->call('confirmDelete')
+        ->assertDispatched('ts-ui:dialog', fn (string $event, array $params): bool => str_contains(json_encode($params), 'registros vinculados'));
+
+    $this->assertModelExists($community);
+
+    if ($relation === 'users') {
+        $this->assertDatabaseHas('community_user', ['community_id' => $community->id, 'user_id' => $user->id]);
+    } elseif ($relation === 'places') {
+        $this->assertDatabaseHas('places', ['community_id' => $community->id, 'name' => 'Salão']);
+    } else {
+        $this->assertDatabaseHas('groups', ['id' => $group->id, 'community_id' => $community->id]);
+    }
+})->with(['users', 'places', 'groups', 'archived groups']);
+
+it('rechecks active status when confirming deletion', function (UserRoleEnum $role) {
+    $user      = User::factory()->create(['roles' => [$role->value], 'is_active' => true]);
+    $community = Community::create(['name' => 'Original', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
+    $component = Livewire::actingAs($user)->test(Show::class, ['community' => $community])->call('delete');
+    $user->update(['is_active' => false]);
+
+    $component->call('confirmDelete')->assertForbidden();
+
+    $this->assertModelExists($community);
+})->with([UserRoleEnum::ADMIN, UserRoleEnum::CPP]);

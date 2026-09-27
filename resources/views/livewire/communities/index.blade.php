@@ -21,15 +21,5 @@
             {{ $row->neighborhood }}
         @endinteract
 
-        @interact('column_action', $row)
-            <div class="flex flex-nowrap gap-2">
-                @can('update', $row)
-                    <livewire:communities.edit :community="$row" :key="'community-edit-'.$row->id" @community-updated="$refresh" />
-                @endcan
-                @can('delete', $row)
-                    <x-button icon="trash" flat color="red" tooltip="Excluir comunidade" wire:click="delete({{ $row->id }})" loading="delete" />
-                @endcan
-            </div>
-        @endinteract
     </x-table>
 </div>
