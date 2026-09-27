@@ -12,8 +12,8 @@
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-2 space-y-4">
+    <div class="grid min-w-0 gap-6 lg:grid-cols-3">
+        <div class="min-w-0 space-y-4 lg:col-span-2">
             <x-card shadowless bordered>
                 <x-slot:header>
                     <div class="text-md font-medium">Informações do evento</div>
@@ -84,7 +84,7 @@
             @endif
 
             @if (! $event->is_external)
-                <x-card header="Reservas de espaços" shadowless bordered>
+                <x-card header="Reservas de espaços" class="min-w-0" shadowless bordered>
                     <x-table :headers="[
                         ['index' => 'place', 'label' => 'Espaço', 'sortable' => false],
                         ['index' => 'reserved_from', 'label' => 'Início da reserva', 'sortable' => false],

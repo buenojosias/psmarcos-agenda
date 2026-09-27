@@ -309,7 +309,7 @@ it('loads the current event details', function () {
         ->assertSet('participation_cost', 'R$ 20,00')
         ->assertSet('contact_name', 'Maria')
         ->assertSet('contact_phone', '(11) 99999-9999')
-        ->assertSee('Detalhes do evento')
+        ->assertSee('Descrição')
         ->assertDontSee('Complemento');
 });
 
