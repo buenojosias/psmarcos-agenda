@@ -28,7 +28,7 @@ abstract class Listing extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'status', 'period', 'type', 'scope', 'group', 'community', 'externalOnly'], true)) {
+        if (in_array($property, ['search', 'status', 'period', 'type', 'onlyMyGroups', 'group', 'community', 'externalOnly'], true)) {
             $this->resetPage();
         }
     }

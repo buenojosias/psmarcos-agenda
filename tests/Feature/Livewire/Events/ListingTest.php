@@ -27,7 +27,7 @@ it('separates events and masses through the authenticated routes', function () {
     $this->get(route('masses.index'))->assertSee($mass->motivation)->assertDontSeeText($event->name);
 });
 
-it('applies member visibility before status and manually supplied review filters', function () {
+it('applies member visibility before status and ignores the removed review filter', function () {
     $user  = User::factory()->create(['is_active' => true, 'roles' => ['member']]);
     $group = Group::factory()->create();
     $group->users()->attach($user);
@@ -35,7 +35,8 @@ it('applies member visibility before status and manually supplied review filters
     $other = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::PENDING]);
 
     Livewire::actingAs($user)->withQueryParams(['status' => 'pending', 'scope' => 'review'])->test(Index::class)
-        ->assertSet('scope', 'all')->assertSee($own->name)->assertDontSee($other->name)
+        ->assertSee($own->name)->assertDontSee($other->name)
+        ->assertSee('Apenas de meus grupos')
         ->assertDontSee('Aguardando análise');
 });
 
@@ -47,16 +48,22 @@ it('restricts mine to user groups for all profiles', function (array $roles) {
     $other     = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED]);
     $ungrouped = Event::factory()->create(['group_id' => null, 'status' => EventStatusEnum::CONFIRMED]);
 
-    Livewire::actingAs($user)->withQueryParams(['scope' => 'mine'])->test(Index::class)
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertSee('Apenas de meus grupos')
+        ->call('setPage', 2)
+        ->set('onlyMyGroups', true)
+        ->assertSet('onlyMyGroups', true)
+        ->assertSet('paginators.page', 1)
         ->assertSee($own->name)->assertDontSee($other->name)->assertDontSee($ungrouped->name);
 })->with([[['member']], [['secretary']], [['member', 'pascom']]]);
 
-it('shows only pending and rescheduled events awaiting review', function () {
+it('ignores the removed review scope for privileged users', function () {
     $events = collect(EventStatusEnum::cases())->map(fn ($status) => Event::factory()->create(['status' => $status]));
 
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
         ->withQueryParams(['scope' => 'review'])->test(Index::class)
-        ->assertViewHas('events', fn ($rows) => $rows->pluck('id')->sort()->values()->all() === $events->whereIn('status', [EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED])->pluck('id')->all());
+        ->assertDontSee('Aguardando análise')
+        ->assertViewHas('events', fn ($rows) => $rows->total() === $events->count());
 });
 
 it('shows members only confirmed masses and elevated users all masses', function (array $roles, int $count) {
@@ -104,9 +111,9 @@ it('uses the end time for periods and orders each period correctly', function ()
 
 it('normalizes invalid URL filters including arrays', function (mixed $invalid) {
     Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
-        ->withQueryParams(array_fill_keys(['status', 'type', 'period', 'scope', 'group', 'community'], $invalid))
+        ->withQueryParams(array_fill_keys(['status', 'type', 'period', 'group', 'community'], $invalid))
         ->test(Index::class)->assertSet('status', '')->assertSet('type', '')->assertSet('period', 'upcoming')
-        ->assertSet('scope', 'all')->assertSet('group', '')->assertSet('community', '');
+        ->assertSet('group', '')->assertSet('community', '');
 })->with(['invalid', [['nested' => 'invalid']]]);
 
 it('filters events by their community including events without one', function () {
@@ -120,6 +127,7 @@ it('filters events by their community including events without one', function ()
         ->test(Index::class)
         ->assertSee('Comunidade/local')
         ->assertSee('Sem comunidade')
+        ->assertViewHas('communities', fn ($communities): bool => $communities->pluck('id')->all() === [$community->id, $otherCommunity->id])
         ->call('setPage', 2)
         ->set('community', (string) $community->id)
         ->assertSet('paginators.page', 1)
@@ -155,6 +163,18 @@ it('filters by name type and group and normalizes invalid type on the general li
         ->assertViewHas('events', fn ($rows) => $rows->modelKeys() === [$match->id])
         ->set('type', 'mass')->assertSet('type', '')
         ->set('search', str_repeat('x', 110))->assertSet('search', str_repeat('x', 100));
+});
+
+it('shows group abbreviations in the searchable organizer options', function () {
+    $pastoral = Group::factory()->create(['name' => 'Pastoral da Música', 'abbreviation' => 'PM']);
+    $other    = Group::factory()->create(['name' => 'Grupo sem sigla', 'abbreviation' => null]);
+
+    Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
+        ->test(Index::class)
+        ->assertViewHas('groups', fn ($groups): bool => $groups->all() === [
+            ['label' => 'Grupo sem sigla', 'value' => $other->id],
+            ['label' => 'Pastoral da Música (PM)', 'value' => $pastoral->id],
+        ]);
 });
 
 it('paginates and resets the page when a filter changes', function () {
@@ -221,7 +241,7 @@ it('rechecks group membership on subsequent requests', function () {
     $group->users()->detach($user);
 
     $component->call('$refresh')->assertDontSee($event->name)
-        ->set('scope', 'mine')->assertViewHas('events', fn ($rows) => $rows->isEmpty());
+        ->set('onlyMyGroups', true)->assertViewHas('events', fn ($rows) => $rows->isEmpty());
 });
 
 it('filters masses by motivation without exposing pending masses to members', function (array $roles, int $count) {

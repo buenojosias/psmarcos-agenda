@@ -21,14 +21,6 @@
          x-transition:leave-end="opacity-0 -translate-y-2">
         @include('livewire.events.filters')
 
-        <x-select.native wire:model.live="scope" label="Exibir">
-            <option value="all">Todos os eventos</option>
-            <option value="mine">De meus grupos</option>
-            @if (! $memberOnly)
-                <option value="review">Aguardando análise</option>
-            @endif
-        </x-select.native>
-
         <x-select.native wire:model.live="type" label="Tipo">
             <option value="">Todos os tipos</option>
             @foreach ($types as $eventType)
@@ -36,12 +28,8 @@
             @endforeach
         </x-select.native>
 
-        <x-select.native wire:model.live="group" label="Grupo organizador">
-            <option value="">Todos os grupos</option>
-            @foreach ($groups as $eventGroup)
-                <option wire:key="group-{{ $eventGroup->id }}" value="{{ $eventGroup->id }}">{{ $eventGroup->name }}</option>
-            @endforeach
-        </x-select.native>
+        <x-select.styled wire:model.live="group" label="Grupo organizador" placeholder="Todos os grupos"
+                         :options="$groups" select="label:label|value:value" searchable />
 
         <x-select.native wire:model.live="community" label="Comunidade/local">
             <option value="">Todas as comunidades</option>
@@ -53,6 +41,9 @@
 
         <div class="flex items-end md:pb-2">
             <x-toggle wire:model.live="externalOnly" label="Apenas eventos externos" />
+        </div>
+        <div class="flex items-end md:pb-2">
+            <x-toggle wire:model.live="onlyMyGroups" label="Apenas de meus grupos" />
         </div>
     </x-card>
 
