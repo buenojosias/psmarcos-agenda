@@ -106,6 +106,8 @@ it('rejects a conflicting reservation with a friendly interval message', functio
         'is_primary'    => true,
     ]);
 
+    $errorMessage = null;
+
     try {
         app(CreateEventReservationAction::class)->handle($event, [
             'place_id'      => $place->id,
@@ -113,12 +115,10 @@ it('rejects a conflicting reservation with a friendly interval message', functio
             'reserved_to'   => '2026-10-10 12:00:00',
         ], $user);
     } catch (ValidationException $exception) {
-        expect($exception->errors()['place_id'][0])
-            ->toContain('Salão paroquial')
-            ->toContain('2026-10-10 09:30:00')
-            ->toContain('2026-10-10 11:30:00');
+        $errorMessage = $exception->errors()['place_id'][0];
     }
 
+    expect($errorMessage)->toBe('O ambiente Salão paroquial está indisponível entre 10/10/2026 09:30 e 10/10/2026 11:30.');
     expect($event->reservations()->exists())->toBeFalse();
 });
 

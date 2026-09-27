@@ -82,13 +82,20 @@ it('still detects another reservation from the same event', function () {
     eventReservation($event, $place, '2026-10-10 09:00:00', '2026-10-10 12:00:00', true);
     $edited = eventReservation($event, $place, '2026-10-10 12:00:00', '2026-10-10 13:00:00');
 
-    expect(fn () => app(UpdateEventReservationAction::class)->handle($event, $edited, [
-        'place_id'      => $place->id,
-        'reserved_from' => '2026-10-10 11:30:00',
-        'reserved_to'   => '2026-10-10 13:00:00',
-    ], $user))->toThrow(ValidationException::class);
+    $errorMessage = null;
 
-    expect($edited->refresh()->reserved_from->format('Y-m-d H:i:s'))->toBe('2026-10-10 12:00:00');
+    try {
+        app(UpdateEventReservationAction::class)->handle($event, $edited, [
+            'place_id'      => $place->id,
+            'reserved_from' => '2026-10-10 11:30:00',
+            'reserved_to'   => '2026-10-10 13:00:00',
+        ], $user);
+    } catch (ValidationException $exception) {
+        $errorMessage = $exception->errors()['place_id'][0];
+    }
+
+    expect($errorMessage)->toBe('O ambiente Salão está indisponível entre 10/10/2026 09:00 e 10/10/2026 12:00.')
+        ->and($edited->refresh()->reserved_from->format('Y-m-d H:i:s'))->toBe('2026-10-10 12:00:00');
 });
 
 it('detects a parent place conflict when editing a child reservation', function () {

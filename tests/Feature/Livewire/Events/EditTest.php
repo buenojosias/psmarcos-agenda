@@ -564,7 +564,9 @@ it('shows a friendly availability error without persisting the reservation', fun
         ->call('saveReservation')
         ->assertHasErrors('place_id')
         ->assertSee('Auditório')
-        ->assertSee('2026-10-10 10:30:00');
+        ->assertSee('10/10/2026 10:30')
+        ->assertSee('10/10/2026 11:30')
+        ->assertDontSee('2026-10-10 10:30:00');
 
     expect($event->reservations()->count())->toBe(1);
 });

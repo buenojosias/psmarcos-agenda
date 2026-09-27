@@ -104,8 +104,8 @@ class UpdateEventReservationAction
             'place_id' => sprintf(
                 'O ambiente %s está indisponível entre %s e %s.',
                 $conflict['reserved_place']['name'],
-                $conflict['reserved_from'],
-                $conflict['reserved_to'],
+                CarbonImmutable::parse($conflict['reserved_from'])->format('d/m/Y H:i'),
+                CarbonImmutable::parse($conflict['reserved_to'])->format('d/m/Y H:i'),
             ),
         ]);
     }
