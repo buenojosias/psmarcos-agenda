@@ -51,6 +51,7 @@ class Event extends Model
         return $this->belongsTo(Community::class);
     }
 
+    /** @return BelongsTo<Group, $this> */
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);

@@ -20,6 +20,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/comunidades', App\Livewire\Communities\Index::class)->can('viewAny', Community::class)->name('communities.index');
     Route::get('/comunidades/{community}', App\Livewire\Communities\Show::class)->can('view', 'community')->name('communities.show');
 
+    Route::get('/disponibilidade', App\Livewire\Availability\Index::class)->can('viewAny', Community::class)->name('availability.index');
+
     Route::get('/espacos/{place}/reservas', App\Livewire\Places\Reservations::class)->name('places.reservations');
 
     Route::get('/grupos', App\Livewire\Groups\Index::class)->name('groups.index');

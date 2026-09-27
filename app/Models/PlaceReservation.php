@@ -28,11 +28,13 @@ class PlaceReservation extends Model
         'is_primary'    => 'boolean',
     ];
 
+    /** @return BelongsTo<Event, $this> */
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
+    /** @return BelongsTo<Mass, $this> */
     public function mass(): BelongsTo
     {
         return $this->belongsTo(Mass::class);

@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 class CheckPlaceAvailabilityAction
 {
+    public function __construct(private PlaceAvailabilityAction $availability) {}
+
     /**
      * @param  Collection<int, Place>  $places
      * @param  array<int, array{before_hours: float|int|string, after_hours: float|int|string}>  $placeHours
@@ -38,22 +40,19 @@ class CheckPlaceAvailabilityAction
             return [];
         }
 
-        $places->loadMissing(['main:id,name', 'subplaces:id,main_place_id,name']);
+        $tree = Place::query()->whereIn('community_id', $places->pluck('community_id'))->get();
 
         $startsAt = $this->toImmutable($startsAt);
         $endsAt   = $this->toImmutable($endsAt);
 
-        $requests = $places->map(function (Place $place) use ($startsAt, $endsAt, $placeHours): array {
+        $requests = $places->map(function (Place $place) use ($startsAt, $endsAt, $placeHours, $tree): array {
             $hours = $placeHours[$place->id] ?? ['before_hours' => 0, 'after_hours' => 0];
 
             return [
                 'place'          => $place,
-                'checked_places' => collect([$place])
-                    ->concat($place->subplaces)
-                    ->when($place->main !== null, fn ($checkedPlaces) => $checkedPlaces->push($place->main))
-                    ->keyBy('id'),
-                'reserved_from' => $startsAt->subMinutes((int) round((float) $hours['before_hours'] * 60)),
-                'reserved_to'   => $endsAt->addMinutes((int) round((float) $hours['after_hours'] * 60)),
+                'checked_places' => $tree->whereIn('id', $this->availability->relatedPlaceIds($place, $tree))->keyBy('id'),
+                'reserved_from'  => $startsAt->subMinutes((int) round((float) $hours['before_hours'] * 60)),
+                'reserved_to'    => $endsAt->addMinutes((int) round((float) $hours['after_hours'] * 60)),
             ];
         });
 
@@ -61,16 +60,12 @@ class CheckPlaceAvailabilityAction
         $checkedPlaceNames = $checkedPlaces
             ->mapWithKeys(fn (Place $place): array => [$place->id => $place->name])
             ->all();
-        $reservations = PlaceReservation::query()
-            ->whereIn('place_id', $checkedPlaces->keys())
-            ->when(
-                $ignoredReservationIds !== [],
-                fn ($query) => $query->whereNotIn('id', $ignoredReservationIds),
-            )
-            ->where('reserved_from', '<', $requests->max('reserved_to'))
-            ->where('reserved_to', '>', $requests->min('reserved_from'))
-            ->orderBy('reserved_from')
-            ->orderBy('id')
+        $reservations = $this->availability->reservations(
+            $checkedPlaces->keys()->all(),
+            $requests->min('reserved_from'),
+            $requests->max('reserved_to'),
+            $ignoredReservationIds,
+        )
             ->get(['id', 'place_id', 'reserved_from', 'reserved_to']);
 
         return $requests->map(function (array $request) use ($reservations, $checkedPlaceNames): array {

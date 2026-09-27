@@ -64,6 +64,7 @@
                 </x-slot:brand-collapsed>
                 <x-side-bar.item text="Dashboard" icon="home" :current="request()->routeIs('dashboard')" :route="route('dashboard')" />
                 @can('viewAny', \App\Models\Community::class)
+                    <x-side-bar.item text="Mapa de disponibilidade" icon="table-cells" :current="request()->routeIs('availability.*')" :route="route('availability.index')" />
                     <x-side-bar.item text="Comunidades" icon="building-library" :current="request()->routeIs('communities.*')" :route="route('communities.index')" />
                 @endcan
                 <x-side-bar.item text="Grupos" icon="user-group" :current="request()->routeIs('groups.*')" :route="route('groups.index')" />

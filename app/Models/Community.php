@@ -15,9 +15,10 @@ class Community extends Model
         'abbreviation',
         'alias',
         'address',
-        'neighborhood'
+        'neighborhood',
     ];
 
+    /** @return HasMany<Place, $this> */
     public function places(): HasMany
     {
         return $this->hasMany(Place::class);

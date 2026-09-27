@@ -31,3 +31,36 @@
 .header h1 {
     @apply text-xl font-bold text-primary-950 dark:text-gray-100;
 }
+
+.availability-scroll {
+    --availability-label-width: 9rem;
+    --availability-hour-width: 80px;
+    --availability-grid-width: 1440px;
+}
+
+@media (min-width: 640px) {
+    .availability-scroll {
+        --availability-label-width: 14rem;
+    }
+}
+
+.availability-label {
+    width: var(--availability-label-width);
+}
+
+.availability-header,
+.availability-row {
+    width: calc(var(--availability-label-width) + var(--availability-grid-width));
+}
+
+.availability-hours,
+.availability-timeline {
+    width: var(--availability-grid-width);
+    background-image:
+        repeating-linear-gradient(to right, color-mix(in srgb, currentColor 12%, transparent) 0 1px, transparent 1px var(--availability-hour-width)),
+        repeating-linear-gradient(to right, color-mix(in srgb, currentColor 5%, transparent) 0 1px, transparent 1px calc(var(--availability-hour-width) / 4));
+}
+
+.availability-restricted {
+    background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, currentColor 5%, transparent) 6px 8px);
+}
