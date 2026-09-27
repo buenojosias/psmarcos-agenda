@@ -38,7 +38,7 @@
         @endinteract
 
         @interact('column_action', $row)
-            <div class="flex flex-wrap justify-end gap-2">
+            <div class="flex flex-nowrap justify-end gap-2">
                 @if (! $row->is_primary)
                     <x-button icon="bolt" x-tooltip="Definir como principal" flat color="amber"
                               wire:click="setPrimary({{ $row->id }})"
