@@ -8,8 +8,8 @@
             {{ $mode === 'data' ? 'Ambiente' : 'Data' }}
         </div>
         <div class="availability-hours relative shrink-0 border-b border-gray-200 dark:border-dark-600" aria-label="Horários de 06:00 até 00:00">
-            @for ($hour = 6; $hour <= 24; $hour++)
-                <span class="absolute top-4 {{ $hour === 24 ? '-translate-x-full pr-1' : 'pl-1' }}" style="left: {{ ($hour - 6) / 18 * 100 }}%">{{ $hour === 24 ? '00:00' : sprintf('%02d:00', $hour) }}</span>
+            @for ($hour = 6; $hour < 24; $hour++)
+                <span class="absolute top-4 pl-1" style="left: {{ ($hour - 6) / 18 * 100 }}%">{{ sprintf('%02d:00', $hour) }}</span>
             @endfor
         </div>
     </div>

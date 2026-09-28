@@ -8,7 +8,7 @@
         <div><dt class="font-medium">Comunidade</dt><dd>{{ $detail['community'] }}</dd></div>
     </dl>
     @if (! $detail['visible'])
-        <p class="flex items-start gap-2"><x-icon name="lock-closed" sm class="shrink-0" />Os detalhes deste evento não estão disponíveis para você.</p>
+        <p class="flex items-start gap-2"><x-icon name="lock-closed" class="size-4 shrink-0" />Os detalhes deste evento não estão disponíveis para você.</p>
     @else
         @foreach ($detail['details'] as $source)
             <div class="space-y-2 border-t border-gray-200 pt-4 dark:border-dark-600">
