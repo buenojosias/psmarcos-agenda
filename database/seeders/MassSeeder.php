@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Mass;
-use RuntimeException;
 use App\Models\Community;
+use App\Models\Mass;
+use App\Models\MassSchedule;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use App\Models\MassSchedule;
 use Illuminate\Database\Seeder;
 
 class MassSeeder extends Seeder
@@ -17,75 +16,50 @@ class MassSeeder extends Seeder
     public function run(): void
     {
         $communities = Community::query()
-            ->whereIn('abbreviation', ['MSM', 'NSM'])
             ->get()
-            ->keyBy('abbreviation');
-
-        $matriz       = $communities->get('MSM');
-        $misericordia = $communities->get('NSM');
-
-        if (! $matriz || ! $misericordia) {
-            throw new RuntimeException(
-                'As comunidades Matriz e Misericórdia devem existir antes de executar o MassSeeder.'
-            );
-        }
+            ->keyBy(fn (Community $community): string => strtoupper($community->abbreviation));
 
         $schedules = [
-            [
-                'community'        => $matriz,
-                'weekday'          => CarbonInterface::SUNDAY,
-                'starts_at'        => '08:00',
-                'duration_minutes' => 60,
-                'motivation'       => 'Missa Dominical',
-            ],
-            [
-                'community'        => $misericordia,
-                'weekday'          => CarbonInterface::SUNDAY,
-                'starts_at'        => '09:30',
-                'duration_minutes' => 60,
-                'motivation'       => 'Missa Dominical',
-            ],
-            [
-                'community'        => $matriz,
-                'weekday'          => CarbonInterface::SUNDAY,
-                'starts_at'        => '10:00',
-                'duration_minutes' => 60,
-                'motivation'       => 'Missa Dominical',
-            ],
-            [
-                'community'        => $matriz,
-                'weekday'          => CarbonInterface::TUESDAY,
-                'starts_at'        => '19:30',
-                'duration_minutes' => 60,
-                'motivation'       => 'Missa Semanal',
-            ],
-            [
-                'community'        => $matriz,
-                'weekday'          => CarbonInterface::WEDNESDAY,
-                'starts_at'        => '15:00',
-                'duration_minutes' => 60,
-                'motivation'       => 'Missa com Novena',
-            ],
+            ['MSM', CarbonInterface::TUESDAY, '19:30', 60, 'Missa Semanal'],
+            ['MSM', CarbonInterface::WEDNESDAY, '15:00', 60, 'Missa com Novena'],
+            ['MSM', CarbonInterface::THURSDAY, '19:30', 60, 'Missa Semanal'],
+            ['MSM', CarbonInterface::FRIDAY, '07:30', 60, 'Missa Semanal'],
+            ['MSM', CarbonInterface::SATURDAY, '15:00', 60, 'Missa de Sábado'],
+            ['MSM', CarbonInterface::SATURDAY, '19:30', 60, 'Missa de Sábado'],
+            ['MSM', CarbonInterface::SUNDAY, '08:00', 60, 'Missa Dominical'],
+            ['MSM', CarbonInterface::SUNDAY, '10:00', 60, 'Missa Dominical'],
+
+            ['BGC', CarbonInterface::SUNDAY, '10:00', 60, 'Missa Dominical'],
+            ['NSM', CarbonInterface::SUNDAY, '09:30', 60, 'Missa Dominical'],
+            ['NSP', CarbonInterface::SATURDAY, '18:00', 60, 'Missa da Comunidade'],
+            ['PIL', CarbonInterface::FRIDAY, '15:00', 60, 'Missa Semanal'],
+            ['SJN', CarbonInterface::SUNDAY, '18:00', 60, 'Missa Dominical'],
         ];
 
         $baseDate = CarbonImmutable::today();
 
-        foreach ($schedules as $data) {
-            $firstOccurrence = $this->nextWeekday($baseDate, $data['weekday']);
-            $lastOccurrence  = $firstOccurrence->addWeeks(9);
+        foreach ($schedules as [$abbreviation, $weekday, $startsAt, $durationMinutes, $motivation]) {
+            $community = $communities->get($abbreviation);
+
+            if (! $community) {
+                continue;
+            }
+
+            $firstOccurrence = $this->nextWeekday($baseDate, $weekday);
+            $lastOccurrence = $firstOccurrence->addWeeks(9);
 
             $schedule = MassSchedule::updateOrCreate(
                 [
-                    'community_id' => $data['community']->id,
-                    'weekday'      => $data['weekday'],
-                    'starts_at'    => $data['starts_at'],
+                    'community_id' => $community->id,
+                    'weekday' => $weekday,
+                    'starts_at' => $startsAt,
                 ],
                 [
-                    'duration_minutes' => $data['duration_minutes'],
-                    'motivation'       => $data['motivation'],
-                    'valid_from'       => $firstOccurrence->toDateString(),
-                    'valid_until'      => $lastOccurrence->toDateString(),
-                    'is_active'        => true,
+                    'duration_minutes' => $durationMinutes,
+                    'motivation' => $motivation,
+                    'valid_from' => $firstOccurrence->toDateString(),
+                    'valid_until' => $lastOccurrence->toDateString(),
+                    'is_active' => true,
                 ]
             );
 
@@ -99,50 +73,31 @@ class MassSeeder extends Seeder
         }
 
         $extraordinaryMasses = [
-            [
-                'community'        => $matriz,
-                'motivation'       => 'Missa da Padroeira',
-                'starts_at'        => '2026-10-12 12:00:00',
-                'duration_minutes' => 90,
-            ],
-            [
-                'community'        => $misericordia,
-                'motivation'       => 'Crisma',
-                'starts_at'        => '2026-10-24 16:00:00',
-                'duration_minutes' => 120,
-            ],
-            [
-                'community'        => $matriz,
-                'motivation'       => 'Missa de Finados',
-                'starts_at'        => '2026-11-02 19:30:00',
-                'duration_minutes' => 75,
-            ],
-            [
-                'community'        => $matriz,
-                'motivation'       => 'Primeira Eucaristia',
-                'starts_at'        => '2026-11-14 10:00:00',
-                'duration_minutes' => 90,
-            ],
-            [
-                'community'        => $misericordia,
-                'motivation'       => 'Missa de Encerramento de Retiro',
-                'starts_at'        => '2026-11-27 19:30:00',
-                'duration_minutes' => 90,
-            ],
+            ['MSM', 'Missa da Padroeira', '2026-10-12 12:00:00', 90],
+            ['NSM', 'Crisma', '2026-10-24 16:00:00', 120],
+            ['MSM', 'Missa de Finados', '2026-11-02 19:30:00', 75],
+            ['MSM', 'Primeira Eucaristia', '2026-11-14 10:00:00', 90],
+            ['NSM', 'Missa de Encerramento de Retiro', '2026-11-27 19:30:00', 90],
         ];
 
-        foreach ($extraordinaryMasses as $data) {
-            $startsAt = CarbonImmutable::parse($data['starts_at']);
+        foreach ($extraordinaryMasses as [$abbreviation, $motivation, $startsAtValue, $durationMinutes]) {
+            $community = $communities->get($abbreviation);
+
+            if (! $community) {
+                continue;
+            }
+
+            $startsAt = CarbonImmutable::parse($startsAtValue);
 
             Mass::firstOrCreate(
                 [
                     'mass_schedule_id' => null,
-                    'community_id'     => $data['community']->id,
-                    'starts_at'        => $startsAt,
+                    'community_id' => $community->id,
+                    'starts_at' => $startsAt,
                 ],
                 [
-                    'motivation'  => $data['motivation'],
-                    'ends_at'     => $startsAt->addMinutes($data['duration_minutes']),
+                    'motivation' => $motivation,
+                    'ends_at' => $startsAt->addMinutes($durationMinutes),
                     'canceled_at' => null,
                 ]
             );
