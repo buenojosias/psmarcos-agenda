@@ -4,7 +4,7 @@
     <dl class="space-y-3">
         <div><dt class="font-medium">Data</dt><dd>{{ \Carbon\CarbonImmutable::parse($detail['date'])->format('d/m/Y') }}</dd></div>
         <div><dt class="font-medium">Período ocupado</dt><dd>{{ \Carbon\CarbonImmutable::parse($detail['start'])->format('H:i') }} – {{ \Carbon\CarbonImmutable::parse($detail['end'])->format('H:i') }}{{ \Carbon\CarbonImmutable::parse($detail['end'])->format('H:i') === '00:00' ? ' (dia seguinte)' : '' }}</dd></div>
-        <div><dt class="font-medium">Ambiente</dt><dd>{{ $detail['place'] }}</dd></div>
+        <div><dt class="font-medium">Espaço</dt><dd>{{ $detail['place'] }}</dd></div>
         <div><dt class="font-medium">Comunidade</dt><dd>{{ $detail['community'] }}</dd></div>
     </dl>
     @if (! $detail['visible'])

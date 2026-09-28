@@ -3,8 +3,8 @@
         <div class="mb-4"><livewire:users.create @created="$refresh" /></div>
         <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <x-input label="Buscar nome ou e-mail" wire:model.live.debounce.300ms="search" icon="tabler.search" />
-            <x-select.styled label="Status" wire:model.live="status" :options="[['label' => 'Todos', 'value' => ''], ['label' => 'Aguardando aprovação', 'value' => 'pending'], ['label' => 'Ativos', 'value' => 'active'], ['label' => 'Inativos', 'value' => 'inactive']]" select="label:label|value:value" />
-            <x-select.styled label="Comunidade" wire:model.live="community" :options="$this->communityOptions" select="label:label|value:value" searchable />
+            <x-select.styled label="Status" wire:model.live="status" :options="[['label' => 'Todos', 'value' => ''], ['label' => 'Aguardando aprovação', 'value' => 'pending'], ['label' => 'Ativos', 'value' => 'active'], ['label' => 'Inativos', 'value' => 'inactive']]" select="label:label|value:value" required />
+            <x-select.styled label="Comunidade" wire:model.live="community" :options="$this->communityOptions" select="label:label|value:value" />
             <x-select.styled label="Perfil" wire:model.live="role" :options="$this->roleOptions" select="label:label|value:value" />
         </div>
         <div class="space-y-3 md:hidden">

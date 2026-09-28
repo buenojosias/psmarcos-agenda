@@ -139,7 +139,7 @@ it('blocks masses including their preparation and cleanup without linking to eve
     $period = $this->availability->forPlace($place, '2026-09-30', 1, $this->member)[0]['periods'][0];
     expect($period['type'])->toBe('mass')->and($period['start'])->toBe('2026-09-30 18:35:00')->and($period['end'])->toBe('2026-09-30 20:40:00');
     expect(json_encode($period))->not->toContain('event_id');
-    mapComponent($this->community, $this->member, ['view' => 'ambiente', 'ambiente' => $place->id])->call('openPeriod', 0, 0)->assertSee($mass->motivation)->assertDontSee('Ver evento');
+    mapComponent($this->community, $this->member, ['view' => 'espaco', 'espaco' => $place->id])->call('openPeriod', 0, 0)->assertSee($mass->motivation)->assertDontSee('Ver evento');
 });
 
 it('does not create false conflicts for adjacent intervals', function () {
@@ -170,16 +170,32 @@ it('filters communities and resets places from another community', function () {
     $other      = Community::create(['name' => 'Santa Maria', 'alias' => 'santa-maria', 'abbreviation' => 'MA']);
     $otherPlace = $other->places()->create(['name' => 'Sala de outra comunidade']);
     mapReservation($otherPlace);
-    $component = mapComponent($this->community, $this->member, ['view' => 'ambiente', 'ambiente' => $otherPlace->id])
+    $component = mapComponent($this->community, $this->member, ['view' => 'espaco', 'espaco' => $otherPlace->id])
         ->assertSet('placeId', '')->assertSet('rows', []);
     $component->set('mode', 'data')->assertDontSee('Sala de outra comunidade');
     expect($component->get('rows'))->toHaveCount(1);
-    $component->set('mode', 'ambiente')->set('placeId', (string) $this->place->id)->assertCount('rows', 14)
+    $component->set('mode', 'espaco')->set('placeId', (string) $this->place->id)->assertCount('rows', 14)
         ->set('communityId', (string) $other->id)->assertSet('placeId', '')->assertSet('rows', []);
 });
 
+it('lists communities by ascending id in both views regardless of their names', function (string $mode) {
+    $this->community->update(['name' => 'Zeladora']);
+    Community::create(['name' => 'Alvorada', 'alias' => 'alvorada', 'abbreviation' => 'AL']);
+
+    mapComponent($this->community, $this->member, ['view' => $mode])
+        ->assertSeeInOrder(['Zeladora', 'Alvorada']);
+})->with(['by date' => 'data', 'by space' => 'espaco']);
+
+it('selects the community with the lowest id when no community is supplied', function () {
+    $this->community->update(['name' => 'Zeladora']);
+    Community::create(['name' => 'Alvorada', 'alias' => 'alvorada', 'abbreviation' => 'AL']);
+
+    Livewire::actingAs($this->member)->test(Index::class)
+        ->assertSet('communityId', (string) $this->community->id);
+});
+
 it('reconstructs url state and loads only the next fourteen days idempotently', function () {
-    $component = mapComponent($this->community, $this->member, ['view' => 'ambiente', 'ambiente' => $this->place->id])->assertCount('rows', 14);
+    $component = mapComponent($this->community, $this->member, ['view' => 'espaco', 'espaco' => $this->place->id])->assertCount('rows', 14);
     expect($component->get('rows')[13]['date'])->toBe('2026-10-13');
     $generation = $component->get('generation');
     DB::enableQueryLog();
@@ -195,7 +211,7 @@ it('reconstructs url state and loads only the next fourteen days idempotently', 
 
 it('resets the infinite scroll after changing date or place and ignores stale loads', function () {
     $second     = $this->community->places()->create(['name' => 'Outra sala']);
-    $component  = mapComponent($this->community, $this->member, ['view' => 'ambiente', 'ambiente' => $this->place->id]);
+    $component  = mapComponent($this->community, $this->member, ['view' => 'espaco', 'espaco' => $this->place->id]);
     $generation = $component->get('generation');
     $component->call('loadMore', 14, $generation)->set('placeId', (string) $second->id)->assertCount('rows', 14);
     expect($component->get('rows')[0]['place_id'])->toBe($second->id);
@@ -204,7 +220,7 @@ it('resets the infinite scroll after changing date or place and ignores stale lo
 });
 
 it('validates malformed url values and supports date navigation', function () {
-    mapComponent($this->community, $this->member, ['view' => 'invalid', 'comunidade' => ['bad'], 'ambiente' => ['bad'], 'data' => '2026-02-30'])
+    mapComponent($this->community, $this->member, ['view' => 'invalid', 'comunidade' => ['bad'], 'espaco' => ['bad'], 'data' => '2026-02-30'])
         ->assertSet('mode', 'data')->assertSet('communityId', (string) $this->community->id)->assertSet('placeId', '')
         ->assertSet('date', today()->toDateString())->set('date', '2026-09-30')
         ->call('previousDay')->assertSet('date', '2026-09-29')->call('nextDay')->assertSet('date', '2026-09-30')
@@ -221,7 +237,7 @@ it('requires authentication and active users at the route and domain boundaries'
 it('renders the authenticated route and empty community state', function () {
     $this->actingAs($this->member)->get(route('availability.index'))->assertOk()->assertSee('Mapa de disponibilidade');
     $this->place->delete();
-    mapComponent($this->community, $this->member)->assertSee('Esta comunidade ainda não possui ambientes cadastrados.');
+    mapComponent($this->community, $this->member)->assertSee('Esta comunidade ainda não possui espaços cadastrados.');
     $this->community->delete();
     Livewire::actingAs($this->member)->test(Index::class)->assertSee('Nenhuma comunidade acessível.');
 });
@@ -232,7 +248,7 @@ it('never serializes restricted event details in the full initial HTTP response'
     expect($response->getContent())->not->toContain($event->name, 'Grupo sigiloso', 'Complemento privado');
 });
 
-it('escapes environment names and visible event titles including tooltip content', function () {
+it('escapes space names and visible event titles including tooltip content', function () {
     $name = '<img src=x onerror=alert(1)>';
     $this->place->update(['name' => $name]);
     $event = mapReservation($this->place);
@@ -246,7 +262,7 @@ it('escapes environment names and visible event titles including tooltip content
 it('rechecks the existing mass visibility scope between requests', function () {
     $mass      = Mass::factory()->create(['community_id' => $this->community->id, 'starts_at' => '2026-09-30 19:00', 'ends_at' => '2026-09-30 20:00', 'motivation' => 'Motivação da missa']);
     $place     = $this->community->places()->where('name', 'Nave')->firstOrFail();
-    $component = mapComponent($this->community, $this->member, ['view' => 'ambiente', 'ambiente' => $place->id])->assertSee($mass->motivation);
+    $component = mapComponent($this->community, $this->member, ['view' => 'espaco', 'espaco' => $place->id])->assertSee($mass->motivation);
     $mass->update(['canceled_at' => now()]);
     $component->call('openPeriod', 0, 0)->assertSet('detail.visible', false)->assertDontSee($mass->motivation);
     expect(json_encode([$component->get('rows'), $component->get('detail')]))->not->toContain('mass_id', $mass->motivation);

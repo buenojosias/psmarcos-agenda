@@ -8,7 +8,7 @@
     <div class="availability-label sticky left-0 z-20 flex shrink-0 items-center gap-1 border-r border-b border-gray-200 bg-white px-2 py-2 text-sm dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200">
         @if ($mode === 'data')
             <div class="min-w-0 flex-1" style="padding-left: {{ min($row['depth'], 5) * 10 }}px">
-                <span class="line-clamp-2">@if ($row['depth'] > 0)<span aria-label="Subambiente">↳ </span>@endif{{ $row['name'] }}</span>
+                <span class="line-clamp-2">@if ($row['depth'] > 0)<span aria-label="Subespaço">↳ </span>@endif{{ $row['name'] }}</span>
             </div>
             <button type="button" class="shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-primary-500"
                     aria-label="Nome completo: {{ $row['name'] }}" x-tooltip="{{ e($row['name']) }}">

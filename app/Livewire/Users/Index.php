@@ -60,7 +60,10 @@ class Index extends Component
     #[Computed]
     public function communityOptions(): array
     {
-        return Community::query()->orderBy('name')->get(['id', 'name'])->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id])->all();
+        return Community::query()->orderBy('id')->get(['id', 'name'])
+            ->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id])
+            ->prepend(['label' => 'Sem comunidade', 'value' => 0])
+            ->all();
     }
 
     #[Computed]
@@ -91,6 +94,7 @@ class Index extends Component
             ->when($this->status === 'pending', fn (Builder $query) => $query->where('is_active', false)->whereNull('approved_at')->whereNull('deactivated_at'))
             ->when($this->status === 'active', fn (Builder $query) => $query->where('is_active', true))
             ->when($this->status === 'inactive', fn (Builder $query) => $query->where('is_active', false)->where(fn (Builder $status) => $status->whereNotNull('approved_at')->orWhereNotNull('deactivated_at')))
+            ->when($this->community === 0, fn (Builder $query) => $query->doesntHave('communities'))
             ->when($this->community, fn (Builder $query) => $query->whereHas('communities', fn (Builder $communities) => $communities->whereKey($this->community)))
             ->when($this->role, fn (Builder $query) => $query->whereJsonContains('roles', $this->role))
             ->orderBy($column, $direction)->orderBy('id', $direction)

@@ -2,12 +2,12 @@
     <div class="header">
         <div>
             <h1>Mapa de disponibilidade</h1>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Visualize os horários ocupados e disponíveis dos ambientes da paróquia.</p>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Visualize os horários ocupados e disponíveis dos espaços da paróquia.</p>
         </div>
     </div>
 
     <x-tab wire:model.live="mode" shadowless bordered scroll-on-mobile>
-        @foreach (['data' => 'Por data', 'ambiente' => 'Por ambiente'] as $tabMode => $tabTitle)
+        @foreach (['data' => 'Por data', 'espaco' => 'Por espaço'] as $tabMode => $tabTitle)
             <x-tab.items :tab="$tabMode" :title="$tabTitle">
                 @if ($mode === $tabMode)
                     <div class="flex flex-wrap items-end gap-4">
@@ -21,10 +21,10 @@
                                 @endforeach
                             </x-select.native>
                         </div>
-                        @if ($mode === 'ambiente')
+                        @if ($mode === 'espaco')
                             <div class="w-full sm:w-72">
-                                <x-select.native wire:model.live="placeId" label="Ambiente" :disabled="$this->places->isEmpty()">
-                                    <option value="">Selecione um ambiente</option>
+                                <x-select.native wire:model.live="placeId" label="Espaço" :disabled="$this->places->isEmpty()">
+                                    <option value="">Selecione um espaço</option>
                                     @foreach ($this->places as $place)
                                         <option value="{{ $place->id }}">{{ $place->name }}</option>
                                     @endforeach
@@ -59,9 +59,9 @@
         @if ($this->communities->isEmpty())
             <p class="py-10 text-center text-gray-500">Nenhuma comunidade acessível.</p>
         @elseif ($this->places->isEmpty())
-            <p class="py-10 text-center text-gray-500">Esta comunidade ainda não possui ambientes cadastrados.</p>
-        @elseif ($mode === 'ambiente' && $placeId === '')
-            <p class="py-10 text-center text-gray-500">Selecione um ambiente válido desta comunidade para consultar a disponibilidade.</p>
+            <p class="py-10 text-center text-gray-500">Esta comunidade ainda não possui espaços cadastrados.</p>
+        @elseif ($mode === 'espaco' && $placeId === '')
+            <p class="py-10 text-center text-gray-500">Selecione um espaço válido desta comunidade para consultar a disponibilidade.</p>
         @else
             <x-availability.grid :rows="$rows" :mode="$mode" :generation="$generation" />
         @endif
@@ -72,7 +72,7 @@
         <span class="flex items-center gap-2"><x-icon name="tabler.calendar" sm />Horário ocupado</span>
         <span class="flex items-center gap-2"><x-icon name="tabler.lock" sm />Horário ocupado — detalhes restritos</span>
     </div>
-    <p class="text-xs text-gray-500 dark:text-gray-400">A régua de 15 minutos é apenas visual. As reservas incluem os períodos de preparação e liberação do ambiente.</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">A régua de 15 minutos é apenas visual. As reservas incluem os períodos de preparação e liberação do espaço.</p>
 
     <x-slide wire="showDetail" title="Detalhes do horário" size="md">
         @if ($detail)

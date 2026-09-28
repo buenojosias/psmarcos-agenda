@@ -31,7 +31,7 @@ class Index extends Component
     #[Url(as: 'comunidade', except: '')]
     public mixed $communityId = '';
 
-    #[Url(as: 'ambiente', except: '')]
+    #[Url(as: 'espaco', except: '')]
     public mixed $placeId = '';
 
     #[Url(as: 'data', except: '')]
@@ -94,7 +94,7 @@ class Index extends Component
     #[Computed]
     public function communities(): Collection
     {
-        return Community::query()->orderBy('name')->orderBy('id')->get()
+        return Community::query()->orderBy('id')->get()
             ->filter(fn (Community $community): bool => auth()->user()->can('view', $community));
     }
 
@@ -139,7 +139,7 @@ class Index extends Component
     {
         $this->normalizeState();
 
-        if ($this->mode !== 'ambiente' || $this->placeId === ''
+        if ($this->mode !== 'espaco' || $this->placeId === ''
             || $expectedCount !== count($this->rows) || $generation !== $this->generation) {
             return;
         }
@@ -159,7 +159,7 @@ class Index extends Component
         }
         $place = $this->places->firstWhere('id', $row['place_id']);
 
-        if ($place === null || ($this->mode === 'ambiente' && (int) $this->placeId !== $place->id)) {
+        if ($place === null || ($this->mode === 'espaco' && (int) $this->placeId !== $place->id)) {
             return;
         }
         $fresh  = $this->availability->forPlace($place, $row['date'], 1, auth()->user())[0];
@@ -181,7 +181,7 @@ class Index extends Component
 
     private function normalizeState(): void
     {
-        $this->mode = in_array($this->mode, ['data', 'ambiente'], true) ? $this->mode : 'data';
+        $this->mode = in_array($this->mode, ['data', 'espaco'], true) ? $this->mode : 'data';
 
         if (! is_string($this->date) || Validator::make(['date' => $this->date], ['date' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before:9998-01-01']])->fails()) {
             $this->date = today()->toDateString();

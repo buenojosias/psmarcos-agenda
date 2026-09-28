@@ -5,7 +5,7 @@
      wire:loading.class="opacity-60" wire:target="mode,communityId,placeId,date,previousDay,nextDay,today">
     <div class="availability-header sticky top-0 z-30 flex h-12 bg-white text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
         <div class="availability-label sticky left-0 z-40 flex shrink-0 items-center border-r border-b border-gray-200 bg-white px-3 font-semibold dark:border-dark-600 dark:bg-dark-800">
-            {{ $mode === 'data' ? 'Ambiente' : 'Data' }}
+            {{ $mode === 'data' ? 'Espaço' : 'Data' }}
         </div>
         <div class="availability-hours relative shrink-0 border-b border-gray-200 dark:border-dark-600" aria-label="Horários de 06:00 até 00:00">
             @for ($hour = 6; $hour < 24; $hour++)
@@ -16,7 +16,7 @@
     @foreach ($rows as $rowIndex => $row)
         <x-availability.row :row="$row" :row-index="$rowIndex" :mode="$mode" :generation="$generation" />
     @endforeach
-    @if ($mode === 'ambiente')
+    @if ($mode === 'espaco')
         <div wire:key="availability-more-{{ $generation }}-{{ count($rows) }}"
              wire:intersect.once.parent.margin.300px="loadMore({{ count($rows) }}, {{ $generation }})"
              class="sticky left-0 flex h-14 w-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
