@@ -4,34 +4,67 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Group;
-use App\Models\Community;
-use Illuminate\Support\Str;
 use App\Enums\GroupTypeEnum;
+use App\Models\Community;
+use App\Models\Group;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class GroupSeeder extends Seeder
 {
     public function run(): void
     {
-        $matrizId = Community::query()->where('name', 'Matriz São Marcos')->firstOrFail()->id;
-        $beatoId  = Community::query()->where('name', 'Capela Beato Giacomo Cusmano')->firstOrFail()->id;
+        $communities = Community::query()->get()->keyBy(fn (Community $community): string => strtoupper($community->abbreviation));
 
-        $groups = [
-            ['name' => 'Pastoral Familiar', 'abbreviation' => null, 'type' => GroupTypeEnum::PASTORAL],
-            ['name' => 'Pastoral da Liturgia', 'abbreviation' => null, 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
-            ['name' => 'Pastoral da Comunicação', 'abbreviation' => 'Pascom', 'type' => GroupTypeEnum::PASTORAL, 'community_id' => $matrizId],
-            ['name' => 'Legião de Maria', 'abbreviation' => 'L.M.', 'type' => GroupTypeEnum::MOVEMENT],
-            ['name' => 'Ministros Extraordinários da Comunhão', 'abbreviation' => 'MESCs', 'type' => GroupTypeEnum::MINISTRY],
-            ['name' => 'Conselho Pastoral Paroquial', 'abbreviation' => 'CPP', 'type' => GroupTypeEnum::COUNCIL, 'community_id' => $matrizId],
-            ['name' => 'Grupo de Jovens do Beato', 'abbreviation' => 'GJB', 'type' => GroupTypeEnum::GROUP, 'community_id' => $beatoId],
-            ['name' => 'Movimento de Irmãos', 'abbreviation' => 'MI', 'type' => GroupTypeEnum::MOVEMENT],
-            ['name' => 'Coral Doce Canto', 'abbreviation' => 'Coral', 'type' => GroupTypeEnum::GROUP, 'community_id' => $matrizId],
+        $groupsByCommunity = [
+            'MSM' => [
+                ['Pastoral da Liturgia', null, GroupTypeEnum::PASTORAL],
+                ['Pastoral da Comunicação', 'Pascom', GroupTypeEnum::PASTORAL],
+                ['Pastoral Familiar', null, GroupTypeEnum::PASTORAL],
+                ['Pastoral da Catequese', null, GroupTypeEnum::PASTORAL],
+                ['Pastoral do Dízimo', null, GroupTypeEnum::PASTORAL],
+                ['Pastoral da Acolhida', null, GroupTypeEnum::PASTORAL],
+                ['Legião de Maria', 'L.M.', GroupTypeEnum::MOVEMENT],
+                ['Movimento de Irmãos', 'MI', GroupTypeEnum::MOVEMENT],
+                ['Ministros Extraordinários da Comunhão', 'MESCs', GroupTypeEnum::MINISTRY],
+                ['Conselho Pastoral Paroquial', 'CPP', GroupTypeEnum::COUNCIL],
+                ['Coral Doce Canto', 'Coral', GroupTypeEnum::GROUP],
+                ['Grupo de Jovens São Marcos', 'JSM', GroupTypeEnum::GROUP],
+                ['Equipe de Festas e Eventos', null, GroupTypeEnum::SERVICE],
+                ['Escola da Fé', null, GroupTypeEnum::COURSE],
+            ],
+            'BGC' => [
+                ['Grupo de Jovens do Beato', 'GJB', GroupTypeEnum::GROUP],
+                ['Catequese do Beato', null, GroupTypeEnum::PASTORAL],
+                ['Legião de Maria - Beato', null, GroupTypeEnum::MOVEMENT],
+                ['Equipe de Liturgia - Beato', null, GroupTypeEnum::PASTORAL],
+                ['Equipe de Festas - Beato', null, GroupTypeEnum::SERVICE],
+            ],
+            'NSM' => [
+                ['Catequese da Misericórdia', null, GroupTypeEnum::PASTORAL],
+                ['Legião de Maria - Misericórdia', null, GroupTypeEnum::MOVEMENT],
+                ['Equipe de Liturgia - Misericórdia', null, GroupTypeEnum::PASTORAL],
+                ['Grupo de Oração da Misericórdia', null, GroupTypeEnum::GROUP],
+                ['Equipe de Festas - Misericórdia', null, GroupTypeEnum::SERVICE],
+            ],
+            'NSP' => [
+                ['Catequese da Perseverança', null, GroupTypeEnum::PASTORAL],
+                ['Equipe de Liturgia - Perseverança', null, GroupTypeEnum::PASTORAL],
+                ['Grupo de Oração da Perseverança', null, GroupTypeEnum::GROUP],
+                ['Equipe de Festas - Perseverança', null, GroupTypeEnum::SERVICE],
+                ['Grupo de Famílias - Perseverança', null, GroupTypeEnum::GROUP],
+            ],
+            'SJN' => [
+                ['Catequese São João Neumann', null, GroupTypeEnum::PASTORAL],
+                ['Equipe de Liturgia - São João Neumann', null, GroupTypeEnum::PASTORAL],
+                ['Grupo de Oração São João Neumann', null, GroupTypeEnum::GROUP],
+                ['Equipe de Festas - São João Neumann', null, GroupTypeEnum::SERVICE],
+                ['Grupo de Famílias São João Neumann', null, GroupTypeEnum::GROUP],
+            ],
         ];
 
-        $communityIds = Community::query()->pluck('id');
-        $memberships  = [
+        $memberships = [
             'Pastoral da Comunicação' => [
                 'josias@email.com' => false,
                 'pascom@email.com' => true,
@@ -44,22 +77,50 @@ class GroupSeeder extends Seeder
             ],
         ];
 
-        foreach ($groups as $data) {
-            $group = Group::factory()->create([
-                'name'         => $data['name'],
-                'abbreviation' => $data['abbreviation'],
-                'type'         => $data['type'],
-                'community_id' => $data['community_id'] ?? (fake()->boolean(70) && $communityIds->isNotEmpty()
-                    ? $communityIds->random()
-                    : null),
-                'slug'        => Str::slug($data['name']),
-                'description' => fake()->sentence(12),
-            ]);
+        foreach ($groupsByCommunity as $abbreviation => $groups) {
+            $community = $communities->get($abbreviation);
 
-            foreach ($memberships[$data['name']] ?? [] as $email => $isCoordinator) {
-                $user = User::query()->where('email', $email)->firstOrFail();
-                $group->users()->attach($user, ['is_coordinator' => $isCoordinator]);
+            if (! $community) {
+                continue;
+            }
+
+            foreach ($groups as [$name, $abbreviationValue, $type]) {
+                $group = Group::updateOrCreate(
+                    [
+                        'community_id' => $community->id,
+                        'slug'         => Str::slug($name),
+                    ],
+                    [
+                        'name'         => $name,
+                        'abbreviation' => $abbreviationValue,
+                        'type'         => $type,
+                        'description'  => $this->descriptionFor($name),
+                    ]
+                );
+
+                foreach ($memberships[$name] ?? [] as $email => $isCoordinator) {
+                    $user = User::query()->where('email', $email)->first();
+
+                    if ($user) {
+                        $group->users()->syncWithoutDetaching([
+                            $user->id => ['is_coordinator' => $isCoordinator],
+                        ]);
+                    }
+                }
             }
         }
+    }
+
+    private function descriptionFor(string $name): string
+    {
+        return match (true) {
+            str_contains($name, 'Catequese') => 'Organiza encontros catequéticos, formações e celebrações da comunidade.',
+            str_contains($name, 'Liturgia') => 'Prepara e organiza as celebrações litúrgicas da comunidade.',
+            str_contains($name, 'Festas') => 'Apoia a organização de festas, confraternizações e eventos comunitários.',
+            str_contains($name, 'Oração') => 'Promove encontros de oração, partilha e espiritualidade.',
+            str_contains($name, 'Famílias') || str_contains($name, 'Familiar') => 'Promove encontros, formações e ações voltadas às famílias.',
+            str_contains($name, 'Coral') => 'Realiza ensaios, formações musicais e participação em celebrações.',
+            default => 'Grupo pastoral com atividades regulares de formação, organização e serviço comunitário.',
+        };
     }
 }
