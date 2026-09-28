@@ -145,3 +145,28 @@ it('denies a coordinator without a global role when the event has no organizing 
 
     expect(Gate::forUser($user)->allows('audit', $event))->toBeFalse();
 });
+
+it('authorizes review capabilities by combined roles and active status', function (array $roles, bool $isActive, bool $canReview) {
+    $user = User::factory()->make(['roles' => $roles, 'is_active' => $isActive]);
+
+    expect(Gate::forUser($user)->allows('reviewAny', Event::class))->toBe($canReview);
+
+    foreach (EventStatusEnum::cases() as $status) {
+        $event    = new Event(['status' => $status]);
+        $expected = $canReview && in_array($status, [EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED], true);
+
+        expect(Gate::forUser($user)->allows('review', $event))->toBe($expected);
+    }
+})->with([
+    'member'                     => [['member'], true, false],
+    'secretary'                  => [['secretary'], true, false],
+    'pascom'                     => [['pascom'], true, false],
+    'cpp'                        => [['cpp'], true, true],
+    'admin'                      => [['admin'], true, true],
+    'priest'                     => [['priest'], true, true],
+    'cpp and pascom'             => [['cpp', 'pascom'], true, true],
+    'admin and pascom'           => [['admin', 'pascom'], true, true],
+    'priest and pascom'          => [['priest', 'pascom'], true, true],
+    'inactive cpp'               => [['cpp'], false, false],
+    'inactive priest and pascom' => [['priest', 'pascom'], false, false],
+]);

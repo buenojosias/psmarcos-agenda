@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/cadastro/aguardando-aprovacao', App\Livewire\Auth\Pending::class)->name('registration.pending');
-    Route::view('/', 'dashboard')->name('dashboard');
+    Route::get('/', App\Livewire\Dashboard\Index::class)->name('dashboard');
 
     Route::get('/usuarios/{user}/editar', App\Livewire\Users\Update::class)->can('update', 'user')->name('users.edit');
     Route::get('/usuarios/{user}', App\Livewire\Users\Show::class)->can('view', 'user')->name('users.show');

@@ -9,12 +9,12 @@ use App\Enums\EventLogActionEnum;
 use App\Actions\ApproveEventAction;
 use Illuminate\Auth\Access\AuthorizationException;
 
-it('confirms a reviewable event and records its approval', function () {
+it('confirms a reviewable event and records its approval', function (array $roles) {
     $event = Event::factory()->create([
         'status'                 => EventStatusEnum::RESCHEDULED,
         'reservation_hold_until' => now()->addDay(),
     ]);
-    $user = User::factory()->create(['roles' => ['admin']]);
+    $user = User::factory()->create(['roles' => $roles]);
 
     $approvedEvent = app(ApproveEventAction::class)->handle($event, $user);
 
@@ -27,7 +27,10 @@ it('confirms a reviewable event and records its approval', function () {
         'from_status' => EventStatusEnum::RESCHEDULED->value,
         'to_status'   => EventStatusEnum::CONFIRMED->value,
     ]);
-});
+})->with([
+    'admin'          => [['admin']],
+    'cpp and pascom' => [['cpp', 'pascom']],
+]);
 
 it('does not approve an event when the user cannot review it', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);

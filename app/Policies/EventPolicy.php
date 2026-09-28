@@ -90,10 +90,15 @@ class EventPolicy
         return ! $user->hasRole(UserRoleEnum::PASCOM->value) && $this->isCreator($user, $event);
     }
 
+    public function reviewAny(User $user): bool
+    {
+        return $user->is_active
+            && $user->hasAnyRole([UserRoleEnum::CPP->value, UserRoleEnum::PRIEST->value, UserRoleEnum::ADMIN->value]);
+    }
+
     public function review(User $user, Event $event): bool
     {
-        return ! $user->hasRole(UserRoleEnum::PASCOM->value)
-            && $user->hasAnyRole([UserRoleEnum::CPP->value, UserRoleEnum::PRIEST->value, UserRoleEnum::ADMIN->value])
+        return $this->reviewAny($user)
             && in_array($event->status, [EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED], true);
     }
 

@@ -239,14 +239,14 @@ it('hides review buttons for other statuses', function (EventStatusEnum $status)
         ->assertDontSee('Aprovar')->assertDontSee('Recusar');
 })->with([EventStatusEnum::CONFIRMED, EventStatusEnum::CANCELED, EventStatusEnum::REFUSED]);
 
-it('allows pascom without action buttons even when also creator and admin', function () {
+it('allows pascom with admin to review while preserving existing edit restrictions', function () {
     $user  = User::factory()->create(['roles' => ['pascom', 'admin']]);
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);
     $event->logs()->create(['user_id' => $user->id, 'action' => EventLogActionEnum::CREATED]);
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
         ->assertSee($event->name)->assertDontSee('Editar')->assertDontSee('Remarcar')
-        ->assertDontSee('Cancelar')->assertDontSee('Aprovar')->assertDontSee('Recusar');
+        ->assertDontSee('Cancelar')->assertSee('Aprovar')->assertSee('Recusar');
 });
 
 it('shows an edit link to a linked member viewing a nonconfirmed event', function () {
