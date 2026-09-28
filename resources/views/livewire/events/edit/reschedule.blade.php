@@ -4,7 +4,7 @@
             title="Evento remarcado"
             text="A nova configuração foi salva com sucesso."
             color="green"
-            icon="check-circle"
+            icon="tabler.circle-check"
             light
         />
     @endif
@@ -53,7 +53,7 @@
                 <x-alert
                     text="As reservas atuais não serão transferidas automaticamente. Escolha os ambientes da nova comunidade; as reservas atuais permanecerão intactas até a confirmação final."
                     color="yellow"
-                    icon="exclamation-triangle"
+                    icon="tabler.alert-triangle"
                     light
                 />
 
@@ -89,14 +89,14 @@
         <x-button
             wire:click="preview"
             text="Verificar remarcação"
-            icon="magnifying-glass"
+            icon="tabler.search"
             loading="preview"
             outline
         />
     </div>
 
     @error('reschedule')
-        <x-alert :text="$message" color="red" icon="exclamation-circle" light />
+        <x-alert :text="$message" color="red" icon="tabler.alert-circle" light />
     @enderror
 
     <x-slide :title="$conflicts !== [] ? 'Conflitos de ambientes' : 'Resumo da remarcação'" size="lg" wire="previewSlide" persistent>
@@ -275,9 +275,9 @@
             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <x-button wire:click="$set('previewSlide', false)" text="Voltar e ajustar" color="gray" outline />
                 @if ($conflicts !== [])
-                    <x-button wire:click="preview" text="Verificar novamente" icon="arrow-path" loading="preview" />
+                    <x-button wire:click="preview" text="Verificar novamente" icon="tabler.refresh" loading="preview" />
                 @elseif ($canConfirm)
-                    <x-button wire:click="confirm" text="Confirmar remarcação" icon="check" loading="confirm" />
+                    <x-button wire:click="confirm" text="Confirmar remarcação" icon="tabler.check" loading="confirm" />
                 @endif
             </div>
         </x-slot:footer>

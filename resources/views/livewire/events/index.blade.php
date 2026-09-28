@@ -7,7 +7,7 @@
     </div>
 
     <div class="md:hidden">
-        <x-button text="Filtros" icon="funnel" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"
+        <x-button text="Filtros" icon="tabler.filter" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"
                   x-bind:aria-expanded="filtersOpen" aria-controls="event-filters" />
     </div>
 

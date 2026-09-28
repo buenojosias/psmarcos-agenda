@@ -12,7 +12,7 @@
             </div>
             <button type="button" class="shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-primary-500"
                     aria-label="Nome completo: {{ $row['name'] }}" x-tooltip="{{ e($row['name']) }}">
-                <x-icon name="information-circle" sm />
+                <x-icon name="tabler.info-circle" sm />
             </button>
         @else
             <div>
@@ -23,7 +23,7 @@
         @foreach ($row['periods'] as $periodIndex => $period)
             @if ($period['end'] <= $gridStart->format('Y-m-d H:i:s'))
                 <button type="button" wire:click="openPeriod({{ $rowIndex }}, {{ $periodIndex }})" class="rounded p-1 text-rose-700 focus-visible:outline-2 dark:text-rose-300" aria-label="Ocupação antes das 06:00">
-                    <x-icon name="moon" sm />
+                    <x-icon name="tabler.moon" sm />
                 </button>
             @endif
         @endforeach
@@ -44,7 +44,7 @@
                             'availability-restricted border-dashed border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950' => ! $period['visible']])
                         style="left: {{ $left }}%; width: {{ $width }}%"
                         aria-label="{{ $period['label'] }}, {{ $row['name'] }}, {{ $date->format('d/m/Y') }}, {{ \Carbon\CarbonImmutable::parse($period['start'])->format('H:i') }} – {{ \Carbon\CarbonImmutable::parse($period['end'])->format('H:i') }}">
-                    <x-icon :name="$period['visible'] ? 'calendar-days' : 'lock-closed'" class="size-3 shrink-0" />
+                    <x-icon :name="$period['visible'] ? 'tabler.calendar' : 'tabler.lock'" class="size-3 shrink-0" />
                     <span class="truncate">{{ $period['visible'] ? $period['label'] : 'Indisponível' }}</span>
                 </button>
             @endif

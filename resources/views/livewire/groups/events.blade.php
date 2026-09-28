@@ -38,7 +38,7 @@
                     <div>{{ $place->community->name }}</div>
                 @endif
                 <div class="text text-gray-500 dark:text-dark-400 flex gap-1">
-                    <x-icon name="arrow-turn-down-right" sm />
+                    <x-icon name="tabler.corner-down-right" sm />
                     {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Local não informado' }}
                 </div>
             @else

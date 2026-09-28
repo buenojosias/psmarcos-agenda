@@ -33,13 +33,13 @@
                         @endif
                         <div class="flex items-end gap-2">
                             @if ($mode === 'data')
-                                <x-button.circle icon="chevron-left" color="gray" outline wire:click="previousDay" aria-label="Dia anterior" />
+                                <x-button.circle icon="tabler.chevron-left" color="gray" outline wire:click="previousDay" aria-label="Dia anterior" />
                             @endif
                             <div class="w-44">
                                 <x-date wire:model.live="date" :label="$mode === 'data' ? 'Data' : 'Ir para data'" format="DD/MM/YYYY" />
                             </div>
                             @if ($mode === 'data')
-                                <x-button.circle icon="chevron-right" color="gray" outline wire:click="nextDay" aria-label="Próximo dia" />
+                                <x-button.circle icon="tabler.chevron-right" color="gray" outline wire:click="nextDay" aria-label="Próximo dia" />
                             @endif
                         </div>
                         <x-button text="Hoje" color="gray" outline wire:click="today" />
@@ -69,8 +69,8 @@
 
     <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-600 dark:text-gray-300" aria-label="Legenda">
         <span class="flex items-center gap-2"><span class="size-3 rounded border border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950"></span>Disponível</span>
-        <span class="flex items-center gap-2"><x-icon name="calendar-days" sm />Horário ocupado</span>
-        <span class="flex items-center gap-2"><x-icon name="lock-closed" sm />Horário ocupado — detalhes restritos</span>
+        <span class="flex items-center gap-2"><x-icon name="tabler.calendar" sm />Horário ocupado</span>
+        <span class="flex items-center gap-2"><x-icon name="tabler.lock" sm />Horário ocupado — detalhes restritos</span>
     </div>
     <p class="text-xs text-gray-500 dark:text-gray-400">A régua de 15 minutos é apenas visual. As reservas incluem os períodos de preparação e liberação do ambiente.</p>
 

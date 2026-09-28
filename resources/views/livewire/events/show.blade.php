@@ -32,7 +32,7 @@
                             @endif
                             @php($place = $primaryReservation?->place)
                             <span class="flex items-center gap-1 font-normal text-gray-500 dark:text-dark-400">
-                                <x-icon name="arrow-turn-down-right" sm />
+                                <x-icon name="tabler.corner-down-right" sm />
                                 {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Não informado' }}
                             </span>
                         @endif
@@ -123,17 +123,17 @@
             @endif
             <x-button.group vertical class="w-full">
                 @if ($canUpdate)
-                    <x-button text="Editar" icon="pencil-square" :href="route('events.edit', $event)" outline />
-                    <x-button text="Remarcar" icon="arrow-path-rounded-square" :href="route('events.edit', ['event' => $event, 'tab' => 'reschedule'])" outline />
+                    <x-button text="Editar" icon="tabler.edit" :href="route('events.edit', $event)" outline />
+                    <x-button text="Remarcar" icon="tabler.calendar-repeat" :href="route('events.edit', ['event' => $event, 'tab' => 'reschedule'])" outline />
                 @endif
                 @if ($canViewNotes)
-                    <x-button text="Notas" icon="chat-bubble-bottom-center-text" wire:click="openNotes" outline />
+                    <x-button text="Notas" icon="tabler.message" wire:click="openNotes" outline />
                 @endif
                 @if ($canAudit)
-                    <x-button text="Auditoria" icon="eye" :href="route('events.audit', $event)" outline />
+                    <x-button text="Auditoria" icon="tabler.eye" :href="route('events.audit', $event)" outline />
                 @endif
                 @if ($canManage)
-                    <x-button text="Cancelar" color="red" icon="x-circle" disabled />
+                    <x-button text="Cancelar" color="red" icon="tabler.circle-x" disabled />
                 @endif
             </x-button.group>
         </div>

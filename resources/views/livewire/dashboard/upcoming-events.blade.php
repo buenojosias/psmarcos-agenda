@@ -37,7 +37,7 @@
             @endforelse
         </ul>
         <x-slot:footer>
-            <x-button text="Ver agenda completa" icon="arrow-right" position="right" :href="route('events.index')" sm flat />
+            <x-button text="Ver agenda completa" icon="tabler.arrow-right" position="right" :href="route('events.index')" sm flat />
         </x-slot:footer>
     </x-card>
 </section>

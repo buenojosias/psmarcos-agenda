@@ -13,7 +13,7 @@
             @endforeach
 
             @if ($refusedEvents->isNotEmpty())
-                <x-alert title="Eventos precisam de ajustes" text="Estes eventos foram recusados. Consulte o motivo e faça os ajustes necessários." icon="exclamation-circle" color="red" light>
+                <x-alert title="Eventos precisam de ajustes" text="Estes eventos foram recusados. Consulte o motivo e faça os ajustes necessários." icon="tabler.alert-circle" color="red" light>
                     <x-slot:footer>
                         <ul class="flex flex-col gap-3">
                             @foreach ($refusedEvents as $event)
@@ -29,7 +29,7 @@
             @endif
 
             @if ($decisions === [] && $refusedEvents->isEmpty())
-                <x-alert title="Tudo em dia" text="Você não possui nenhuma pendência no momento." icon="check-circle" color="green" light />
+                <x-alert title="Tudo em dia" text="Você não possui nenhuma pendência no momento." icon="tabler.circle-check" color="green" light />
             @endif
         </div>
     </x-card>

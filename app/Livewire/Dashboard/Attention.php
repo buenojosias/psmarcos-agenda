@@ -35,7 +35,7 @@ class Attention extends Component
                             : trans_choice(':count evento aguarda aprovação|:count eventos aguardam aprovação', $count),
                         'url'    => route('events.index', ['status' => $status->value, 'period' => 'all']),
                         'action' => 'Revisar eventos',
-                        'icon'   => $status === EventStatusEnum::RESCHEDULED ? 'arrow-path' : 'clipboard-document-check',
+                        'icon'   => $status === EventStatusEnum::RESCHEDULED ? 'tabler.refresh' : 'tabler.calendar-check',
                         'color'  => $status->color(),
                     ];
                 }
@@ -50,7 +50,7 @@ class Attention extends Component
                     'title'  => trans_choice(':count cadastro aguarda aprovação|:count cadastros aguardam aprovação', $count),
                     'url'    => route('users.index', ['status' => 'pending']),
                     'action' => 'Aprovar usuários',
-                    'icon'   => 'user-plus',
+                    'icon'   => 'tabler.user-plus',
                     'color'  => 'yellow',
                 ];
             }

@@ -1,6 +1,6 @@
 <div class="space-y-6">
     @if ($this->enabled)
-        <x-alert :text="__('Two-factor authentication is enabled on your account.')" color="green" icon="shield-check" />
+        <x-alert :text="__('Two-factor authentication is enabled on your account.')" color="green" icon="tabler.shield-check" />
 
         <form id="disable-two-factor" wire:submit="disable" class="space-y-2">
             <x-password label="{{ __('Current Password') }} *"
@@ -21,7 +21,7 @@
     @elseif ($this->pending)
         <x-alert text=""
                  color="primary"
-                 icon="qr-code" />
+                 icon="tabler.qrcode" />
 
         <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
             <x-qr-code :link="$this->qrCodeUrl" size="lg" />

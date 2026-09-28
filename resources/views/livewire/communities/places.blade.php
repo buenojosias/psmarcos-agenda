@@ -13,10 +13,10 @@
 
                     <div class="flex items-center gap-x-2">
                         @if ($place->subplaces->isNotEmpty())
-                            <x-button @click="expanded = !expanded" icon="chevron-down" flat />
+                            <x-button @click="expanded = !expanded" icon="tabler.chevron-down" flat />
                         @endif
 
-                        <x-dropdown icon="ellipsis-vertical" flat>
+                        <x-dropdown icon="tabler.dots-vertical" flat>
                             <x-dropdown.items text="Ver reservas" href="{{ route('places.reservations', $place) }}" />
 
                             @can('create', \App\Models\Place::class)
@@ -53,7 +53,7 @@
                                             {{ $subplace->name }}
                                         </button>
 
-                                        <x-dropdown icon="ellipsis-vertical" flat>
+                                        <x-dropdown icon="tabler.dots-vertical" flat>
                                             <x-dropdown.items text="Ver reservas" href="{{ route('places.reservations', $subplace) }}" />
 
                                             @can('update', $subplace)

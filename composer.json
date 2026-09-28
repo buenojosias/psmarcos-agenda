@@ -21,6 +21,7 @@
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.0.0",
+        "secondnetwork/blade-tabler-icons": "^3.47",
         "tallstackui/tallstackui": "^4.0"
     },
     "require-dev": {

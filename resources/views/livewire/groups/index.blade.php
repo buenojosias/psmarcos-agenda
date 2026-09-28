@@ -9,7 +9,7 @@
     </div>
 
     <div class="md:hidden">
-        <x-button text="Filtros" icon="funnel" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"
+        <x-button text="Filtros" icon="tabler.filter" outline block color="gray" x-on:click="filtersOpen = !filtersOpen"
                   x-bind:aria-expanded="filtersOpen" aria-controls="group-filters" />
     </div>
 
@@ -21,7 +21,7 @@
             x-transition:leave="transition duration-200 ease-in motion-reduce:transition-none"
             x-transition:leave-start="opacity-100 translate-y-0"
             x-transition:leave-end="opacity-0 -translate-y-2">
-        <x-input wire:model.live.debounce.300ms="search" label="Buscar pelo nome" icon="magnifying-glass" clearable />
+        <x-input wire:model.live.debounce.300ms="search" label="Buscar pelo nome" icon="tabler.search" clearable />
 
         <x-select.native wire:model.live="community" label="Comunidade">
             <option value="">Todas as comunidades</option>
@@ -55,7 +55,7 @@
         @endinteract
 
         @interact('column_actions', $row)
-            <x-link :href="route('groups.events.index', $row)" text="Eventos" icon="calendar-days" />
+            <x-link :href="route('groups.events.index', $row)" text="Eventos" icon="tabler.calendar" />
         @endinteract
     </x-table>
 </div>

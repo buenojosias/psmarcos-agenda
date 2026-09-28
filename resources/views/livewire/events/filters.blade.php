@@ -1,4 +1,4 @@
-<x-input wire:model.live.debounce.300ms="search" label="Buscar pelo nome" icon="magnifying-glass" maxlength="100" />
+<x-input wire:model.live.debounce.300ms="search" label="Buscar pelo nome" icon="tabler.search" maxlength="100" />
 
 <x-select.native wire:model.live="period" label="Período">
     <option value="upcoming">Próximos e em andamento</option>

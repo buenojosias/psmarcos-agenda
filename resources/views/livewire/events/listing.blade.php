@@ -23,7 +23,7 @@
     @interact('column_starts_at', $row)
         {{ $row->starts_at->format('d/m/Y') }}
         <div class="flex items-center gap-1">
-            <x-icon name="clock" outline sm />
+            <x-icon name="tabler.clock" sm />
             {{ $row->starts_at->format('H:i') }}
         </div>
     @endinteract
@@ -31,7 +31,7 @@
     @interact('column_ends_at', $row)
         {{ $row->ends_at->format('d/m/Y') }}
         <div class="flex items-center gap-1">
-            <x-icon name="clock" outline sm />
+            <x-icon name="tabler.clock" sm />
             {{ $row->ends_at->format('H:i') }}
         </div>
     @endinteract
@@ -43,7 +43,7 @@
                 <div>{{ $row->community?->name }}</div>
             @endif
             <div class="text text-gray-500 dark:text-dark-400 flex gap-1">
-                <x-icon name="arrow-turn-down-right" sm />
+                <x-icon name="tabler.corner-down-right" sm />
                 {{ $place?->main ? $place->main->name.': ' : '' }}{{ $place?->name ?? 'Local não informado' }}
             </div>
         @else

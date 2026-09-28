@@ -5,7 +5,7 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Gerencie os ambientes que serão usados para o evento.</p>
         </div>
 
-        <x-button text="Adicionar reserva" icon="plus" wire:click="openCreate" />
+        <x-button text="Adicionar reserva" icon="tabler.plus" wire:click="openCreate" />
     </div>
 
     @error('reservation')
@@ -40,13 +40,13 @@
         @interact('column_action', $row)
             <div class="flex flex-nowrap justify-end gap-2">
                 @if (! $row->is_primary)
-                    <x-button icon="bolt" x-tooltip="Definir como principal" flat color="amber"
+                    <x-button icon="tabler.bolt" x-tooltip="Definir como principal" flat color="amber"
                               wire:click="setPrimary({{ $row->id }})"
                               loading="setPrimary({{ $row->id }})" />
                 @endif
 
-                <x-button icon="pencil-square" x-tooltip="Editar" flat wire:click="openEdit({{ $row->id }})" />
-                <x-button icon="trash" x-tooltip="Remover" flat color="red"
+                <x-button icon="tabler.edit" x-tooltip="Editar" flat wire:click="openEdit({{ $row->id }})" />
+                <x-button icon="tabler.trash" x-tooltip="Remover" flat color="red"
                           wire:click="confirmDeleteReservation({{ $row->id }})"
                           loading="confirmDeleteReservation({{ $row->id }})" />
             </div>

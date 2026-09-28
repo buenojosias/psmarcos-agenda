@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+use TallStackUi\Components\Icon\Component;
+
+return [
+    'components' => [
+        'icon' => [
+            Component::class,
+            [
+                'type'   => env('TALLSTACKUI_ICON_TYPE', 'secondnetwork/blade-tabler-icons'),
+                'custom' => [
+                    'guide' => [
+                        'arrow-uturn-left'     => 'tabler.arrow-back-up',
+                        'arrow-uturn-right'    => 'tabler.arrow-forward-up',
+                        'arrow-path'           => 'tabler.refresh',
+                        'arrow-trending-up'    => 'tabler.trending-up',
+                        'arrow-trending-down'  => 'tabler.trending-down',
+                        'arrow-down-tray'      => 'tabler.download',
+                        'arrow-up-tray'        => 'tabler.upload',
+                        'arrows-pointing-in'   => 'tabler.arrows-minimize',
+                        'arrows-pointing-out'  => 'tabler.arrows-maximize',
+                        'backspace'            => 'tabler.backspace',
+                        'bars-3-bottom-left'   => 'tabler.align-left',
+                        'bars-4'               => 'tabler.menu',
+                        'calendar'             => 'tabler.calendar',
+                        'check'                => 'tabler.check',
+                        'check-circle'         => 'tabler.circle-check',
+                        'chevron-double-left'  => 'tabler.chevrons-left',
+                        'chevron-double-right' => 'tabler.chevrons-right',
+                        'chevron-down'         => 'tabler.chevron-down',
+                        'chevron-left'         => 'tabler.chevron-left',
+                        'chevron-right'        => 'tabler.chevron-right',
+                        'chevron-up'           => 'tabler.chevron-up',
+                        'chevron-up-down'      => 'tabler.selector',
+                        'clipboard'            => 'tabler.clipboard',
+                        'clipboard-document'   => 'tabler.clipboard-text',
+                        'cloud-arrow-up'       => 'tabler.cloud-upload',
+                        'clock'                => 'tabler.clock',
+                        'computer-desktop'     => 'tabler.device-desktop',
+                        'code-bracket'         => 'tabler.code',
+                        'code-bracket-square'  => 'tabler.code-dots',
+                        'document-check'       => 'tabler.file-check',
+                        'document-text'        => 'tabler.file-text',
+                        'document-arrow-down'  => 'tabler.file-download',
+                        'exclamation-circle'   => 'tabler.alert-circle',
+                        'eye'                  => 'tabler.eye',
+                        'eye-slash'            => 'tabler.eye-off',
+                        'information-circle'   => 'tabler.info-circle',
+                        'link'                 => 'tabler.link',
+                        'list-bullet'          => 'tabler.list',
+                        'magnifying-glass'     => 'tabler.search',
+                        'minus'                => 'tabler.minus',
+                        'moon'                 => 'tabler.moon',
+                        'numbered-list'        => 'tabler.list-numbers',
+                        'photo'                => 'tabler.photo',
+                        'plus'                 => 'tabler.plus',
+                        'question-mark-circle' => 'tabler.help-circle',
+                        'swatch'               => 'tabler.palette',
+                        'sun'                  => 'tabler.sun',
+                        'trash'                => 'tabler.trash',
+                        'x-circle'             => 'tabler.circle-x',
+                        'x-mark'               => 'tabler.x',
+                    ],
+                ],
+            ],
+        ],
+    ],
+];

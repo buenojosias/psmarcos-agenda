@@ -10,7 +10,7 @@
 
                 @if ($canManageUsers)
                     <x-slot:menu>
-                        <x-dropdown.items text="Desvincular" icon="user-minus" wire:click="removeUser({{ $user->id }})" wire:confirm="Desvincular este usuário do grupo?" />
+                        <x-dropdown.items text="Desvincular" icon="tabler.user-minus" wire:click="removeUser({{ $user->id }})" wire:confirm="Desvincular este usuário do grupo?" />
                     </x-slot:menu>
                 @endif
             </x-list.items>

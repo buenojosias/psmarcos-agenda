@@ -1,6 +1,6 @@
 <div class="space-y-6">
     @if ($event->status === \App\Enums\EventStatusEnum::REFUSED)
-        <x-alert title="Status: Recusado" color="red" icon="x-circle" light>
+        <x-alert title="Status: Recusado" color="red" icon="tabler.circle-x" light>
             <div class="space-y-2 text-sm">
                 <p>
                     <span class="font-semibold">Motivo da recusa:</span>

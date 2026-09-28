@@ -65,18 +65,18 @@
                         <img src="{{ asset('/assets/images/psm.png') }}" class="dark:invert" width="20" height="20" />
                     </div>
                 </x-slot:brand-collapsed>
-                <x-side-bar.item text="Dashboard" icon="home" :current="request()->routeIs('dashboard')" :route="route('dashboard')" />
+                <x-side-bar.item text="Dashboard" icon="tabler.home" :current="request()->routeIs('dashboard')" :route="route('dashboard')" />
                 @can('viewAny', \App\Models\Community::class)
-                    <x-side-bar.item text="Comunidades" icon="building-library" :current="request()->routeIs('communities.*')" :route="route('communities.index')" />
-                    <x-side-bar.item text="Mapa de disponibilidade" icon="table-cells" :current="request()->routeIs('availability.*')" :route="route('availability.index')" />
+                    <x-side-bar.item text="Comunidades" icon="tabler.building-church" :current="request()->routeIs('communities.*')" :route="route('communities.index')" />
+                    <x-side-bar.item text="Mapa de disponibilidade" icon="tabler.table" :current="request()->routeIs('availability.*')" :route="route('availability.index')" />
                 @endcan
-                <x-side-bar.item text="Grupos" icon="user-group" :current="request()->routeIs('groups.*')" :route="route('groups.index')" />
+                <x-side-bar.item text="Grupos" icon="tabler.users-group" :current="request()->routeIs('groups.*')" :route="route('groups.index')" />
                 @can('viewAny', \App\Models\Event::class)
-                    <x-side-bar.item text="Eventos" icon="calendar-days" :current="request()->routeIs('events.*')" :route="route('events.index')" />
-                    <x-side-bar.item text="Missas" icon="building-library" :current="request()->routeIs('masses.*')" :route="route('masses.index')" />
+                    <x-side-bar.item text="Eventos" icon="tabler.calendar" :current="request()->routeIs('events.*')" :route="route('events.index')" />
+                    <x-side-bar.item text="Missas" icon="tabler.pray" :current="request()->routeIs('masses.*')" :route="route('masses.index')" />
                 @endcan
                 @can('viewAny', \App\Models\User::class)
-                    <x-side-bar.item text="Usuários" icon="users" :current="request()->routeIs('users.*')" :route="route('users.index')" />
+                    <x-side-bar.item text="Usuários" icon="tabler.users" :current="request()->routeIs('users.*')" :route="route('users.index')" />
                 @endcan
             </x-side-bar>
         </x-slot:menu>

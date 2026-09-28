@@ -21,30 +21,30 @@ class QuickActions extends Component
         $actions = [];
 
         if (Gate::allows('reviewAny', Event::class)) {
-            $actions[] = $this->action('Revisar eventos', 'clipboard-document-check', 'events.index', ['status' => 'pending', 'period' => 'all']);
+            $actions[] = $this->action('Revisar eventos', 'tabler.calendar-check', 'events.index', ['status' => 'pending', 'period' => 'all']);
         }
 
         if (Gate::allows('viewAny', User::class)) {
-            $actions[] = $this->action('Usuários', 'users', 'users.index');
+            $actions[] = $this->action('Usuários', 'tabler.users', 'users.index');
         }
 
         if (Gate::allows('create', Event::class)) {
-            $actions[] = $this->action('Novo evento', 'plus', 'events.create');
+            $actions[] = $this->action('Novo evento', 'tabler.plus', 'events.create');
         }
-        $actions[] = $this->action('Agenda', 'calendar-days', 'events.index');
+        $actions[] = $this->action('Agenda', 'tabler.calendar', 'events.index');
 
         if (Gate::allows('viewAny', Community::class)) {
-            $actions[] = $this->action('Disponibilidade', 'table-cells', 'availability.index');
+            $actions[] = $this->action('Disponibilidade', 'tabler.table', 'availability.index');
         }
 
         if (user()->hasRole(UserRoleEnum::PRIEST->value) && Gate::allows('create', Mass::class)) {
-            $actions[] = $this->action('Missas', 'building-library', 'masses.index');
+            $actions[] = $this->action('Missas', 'tabler.building-church', 'masses.index');
         } else {
-            $actions[] = $this->action('Grupos', 'user-group', 'groups.index');
+            $actions[] = $this->action('Grupos', 'tabler.users-group', 'groups.index');
         }
 
         if (user()->hasAnyRole([UserRoleEnum::PASCOM->value, UserRoleEnum::ADMIN->value]) && Gate::allows('viewAny', Community::class)) {
-            $actions[] = $this->action('Comunidades', 'building-library', 'communities.index');
+            $actions[] = $this->action('Comunidades', 'tabler.building-church', 'communities.index');
         }
 
         return view('livewire.dashboard.quick-actions', compact('actions'));

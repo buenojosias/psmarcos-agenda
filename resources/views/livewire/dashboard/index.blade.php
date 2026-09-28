@@ -5,7 +5,7 @@
             <p class="mt-1 text-sm text-gray-500 first-letter:uppercase dark:text-dark-400">{{ $date }}</p>
         </div>
         @if ($canCreateEvent)
-            <div class="shrink-0"><x-button text="Novo evento" icon="plus" :href="route('events.create')" /></div>
+            <div class="shrink-0"><x-button text="Novo evento" icon="tabler.plus" :href="route('events.create')" /></div>
         @endif
     </header>
 

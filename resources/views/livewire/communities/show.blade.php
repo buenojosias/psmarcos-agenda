@@ -50,7 +50,7 @@
                         {{ $row->type->label() }}
                     @endinteract
                     @interact('column_actions', $row)
-                        <x-link :href="route('groups.events.index', $row)" x-tooltip="Eventos" icon="calendar-days" />
+                        <x-link :href="route('groups.events.index', $row)" x-tooltip="Eventos" icon="tabler.calendar" />
                     @endinteract
                 </x-table>
             @endif
