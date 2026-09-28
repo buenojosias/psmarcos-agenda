@@ -6,75 +6,97 @@ namespace App\Livewire\Users;
 
 use App\Models\User;
 use Livewire\Component;
+use App\Models\Community;
+use App\Enums\UserRoleEnum;
 use Livewire\Attributes\On;
 use App\Livewire\Traits\Alert;
-use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Computed;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use App\Actions\Users\UpdateUserAction;
 
 class Update extends Component
 {
     use Alert;
 
-    public ?User $user;
+    public ?User $user = null;
+
+    public string $name = '';
+
+    public string $email = '';
 
     public ?string $password = null;
 
     public ?string $password_confirmation = null;
 
+    public array $roles = ['member'];
+
+    public array $communities = [];
+
     public bool $modal = false;
 
-    public function render(): View
+    #[Locked]
+    public bool $page = false;
+
+    public function mount(?User $user = null, bool $page = false): void
     {
-        return view('livewire.users.update');
+        $this->page = $page || request()->routeIs('users.edit');
+
+        if ($user?->exists) {
+            $this->fillUser($user);
+        }
     }
 
     #[On('load::user')]
     public function load(User $user): void
     {
         Gate::authorize('update', $user);
-
-        $this->user  = $user;
+        $this->resetValidation();
+        $this->fillUser($user);
         $this->modal = true;
     }
 
-    public function rules(): array
+    #[Computed]
+    public function roleOptions(): array
     {
-        return [
-            'user.name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-            'user.email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($this->user->id),
-            ],
-            'password' => [
-                'nullable',
-                'string',
-                'min:8',
-                'confirmed',
-            ],
-        ];
+        return UserRoleEnum::optionsFor(auth()->user());
     }
 
-    public function save(): void
+    #[Computed]
+    public function communityOptions(): array
+    {
+        return Community::query()->orderBy('name')->get(['id', 'name'])->map(fn (Community $community): array => ['label' => $community->name, 'value' => $community->id])->all();
+    }
+
+    public function save(UpdateUserAction $update): void
     {
         Gate::authorize('update', $this->user);
-
-        $this->validate();
-
-        $this->user->password = when($this->password !== null, bcrypt($this->password), $this->user->password);
-        $this->user->save();
-
+        $update->handle($this->user, auth()->user(), [
+            'name'     => $this->name, 'email' => $this->email,
+            'password' => $this->password, 'password_confirmation' => $this->password_confirmation,
+            'roles'    => $this->roles, 'communities' => $this->communities,
+        ]);
+        $this->password              = null;
+        $this->password_confirmation = null;
+        $this->modal                 = false;
         $this->dispatch('updated');
+        $this->success('Usuário atualizado com sucesso.', 'Concluído');
+    }
 
-        $this->reset();
+    public function render(): View
+    {
+        return view('livewire.users.update');
+    }
 
-        $this->success();
+    private function fillUser(User $user): void
+    {
+        $this->user                  = $user;
+        $this->name                  = $user->name;
+        $this->email                 = $user->email;
+        $this->roles                 = $user->getRolesArray();
+        $this->communities           = $user->communities()->pluck('communities.id')->all();
+        $this->password              = null;
+        $this->password_confirmation = null;
     }
 }

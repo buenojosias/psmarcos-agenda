@@ -9,7 +9,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 it('renders the forgot password page', function () {
     $this->get(route('password.request'))
         ->assertOk()
-        ->assertSee('Forgot your password?');
+        ->assertSee('Recuperar senha');
 });
 
 it('sends a password reset link', function () {
@@ -61,7 +61,7 @@ it('resets the password', function () {
         $this->post(route('login.store'), [
             'email'    => $user->email,
             'password' => 'new-password',
-        ])->assertRedirect('/dashboard');
+        ])->assertRedirect(route('dashboard'));
 
         return true;
     });

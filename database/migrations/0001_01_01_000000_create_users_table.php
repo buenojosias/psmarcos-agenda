@@ -17,9 +17,10 @@ return new class() extends Migration
             $table->string('whatsapp', 20)->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->boolean('is_active')->default(false);
+            $table->boolean('is_active')->default(false)->index();
             $table->json('roles')->nullable();
-            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('approved_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('approved_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

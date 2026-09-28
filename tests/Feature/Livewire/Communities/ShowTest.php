@@ -43,7 +43,7 @@ it('requires authentication and activity to view a community', function () {
     $this->get(route('communities.show', $community))->assertRedirect(route('login'));
     $user = User::factory()->create(['roles' => [UserRoleEnum::ADMIN->value], 'is_active' => false]);
 
-    $this->actingAs($user)->get(route('communities.show', $community))->assertForbidden();
+    $this->actingAs($user)->get(route('communities.show', $community))->assertRedirect(route('registration.pending'));
     Livewire::actingAs($user)->test(Show::class, ['community' => $community])->assertForbidden();
 });
 

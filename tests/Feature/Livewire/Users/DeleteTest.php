@@ -6,67 +6,15 @@ use App\Models\User;
 use Livewire\Livewire;
 use App\Livewire\Users\Delete;
 
-use function Pest\Laravel\assertModelExists;
-use function Pest\Laravel\assertModelMissing;
-use function Pest\Laravel\assertDatabaseMissing;
-
-beforeEach(function () {
-    $this->actingAs(User::factory()->create(['roles' => ['admin'], 'is_active' => true]));
-    $this->user = User::factory()->create();
+it('renders the retired delete component without a delete button', function () {
+    $this->actingAs(User::factory()->active()->create(['roles' => ['admin']]));
+    $target = User::factory()->create();
+    Livewire::test(Delete::class, ['user' => $target])->assertOk()->assertDontSee('trash');
 });
 
-it('renders the delete component', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])
-        ->assertOk()
-        ->assertSee('svg')
-        ->assertSeeHtml('wire:click="confirm"');
-});
-
-it('calls confirm method', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])
-        ->call('confirm')
-        ->assertDispatched('ts-ui:dialog');
-});
-
-it('deletes user successfully', function () {
-    $component = Livewire::test(Delete::class, ['user' => $this->user]);
-
-    $component->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $this->user->id]);
-
-    $component->assertDispatched('deleted');
-});
-
-it('handles deleting non-existent user', function () {
-    $user = User::factory()->create();
-    $user->delete();
-
-    $component = Livewire::test(Delete::class, ['user' => $user]);
-
-    $component->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $user->id]);
-});
-
-it('dispatches success after deletion', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])
-        ->call('delete')
-        ->assertDispatched('ts-ui:dialog');
-
-    assertModelMissing($this->user);
-});
-
-it('confirms before deletion via question method', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])
-        ->call('confirm')
-        ->assertDispatched('ts-ui:dialog');
-
-    assertModelExists($this->user);
-});
-
-it('passes correct user to delete method', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $this->user->id]);
-});
+it('refuses legacy physical deletion calls', function (string $method) {
+    $this->actingAs(User::factory()->active()->create(['roles' => ['admin']]));
+    $target = User::factory()->create();
+    Livewire::test(Delete::class, ['user' => $target])->call($method)->assertForbidden();
+    $this->assertModelExists($target);
+})->with(['confirm', 'delete']);

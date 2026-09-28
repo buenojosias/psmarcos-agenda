@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 use App\Models\User;
 use Livewire\Livewire;
+use App\Models\Community;
 use App\Livewire\Users\Update;
 
 beforeEach(function () {
     $this->actingAs(User::factory()->create(['roles' => ['admin'], 'is_active' => true]));
 
+    $community      = Community::create(['name' => 'São Marcos', 'abbreviation' => 'SM', 'alias' => 'sao-marcos']);
     $this->original = User::factory()->create([
         'name'  => 'Original Name',
         'email' => 'original@example.com',
     ]);
+    $this->original->communities()->attach($community);
 });
 
 it('renders the update user component', function () {
@@ -23,8 +26,8 @@ it('renders the update user component', function () {
 
 it('initializes with existing user data', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->assertSet('user.name', 'Original Name')
-        ->assertSet('user.email', 'original@example.com')
+        ->assertSet('name', 'Original Name')
+        ->assertSet('email', 'original@example.com')
         ->assertSet('password', null)
         ->assertSet('password_confirmation', null);
 });
@@ -32,16 +35,16 @@ it('initializes with existing user data', function () {
 it('load the correct use', function () {
     Livewire::test(Update::class)
         ->call('load', $this->original)
-        ->assertSet('user.name', 'Original Name')
-        ->assertSet('user.email', 'original@example.com')
+        ->assertSet('name', 'Original Name')
+        ->assertSet('email', 'original@example.com')
         ->assertSet('password', null)
         ->assertSet('password_confirmation', null);
 });
 
 it('updates user name and email', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.name', 'Updated Name')
-        ->set('user.email', 'updated@example.com')
+        ->set('name', 'Updated Name')
+        ->set('email', 'updated@example.com')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -55,10 +58,10 @@ it('updates user name and email', function () {
 
 it('requires name', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.name', '')
-        ->set('user.email', 'updated@example.com')
+        ->set('name', '')
+        ->set('email', 'updated@example.com')
         ->call('save')
-        ->assertHasErrors(['user.name' => 'required']);
+        ->assertHasErrors(['name' => 'required']);
 });
 
 it('validates unique email with ignore', function () {
@@ -67,9 +70,9 @@ it('validates unique email with ignore', function () {
     ]);
 
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.email', 'existing@example.com')
+        ->set('email', 'existing@example.com')
         ->call('save')
-        ->assertHasErrors(['user.email' => 'unique']);
+        ->assertHasErrors(['email' => 'unique']);
 });
 
 it('updates password when provided', function () {
@@ -90,7 +93,7 @@ it('does not update password when not provided', function () {
     $old = $this->original->password;
 
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.name', 'Updated Name')
+        ->set('name', 'Updated Name')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -117,14 +120,14 @@ it('requires minimum password length', function () {
 
 it('dispatches updated event', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.name', 'Updated Name')
+        ->set('name', 'Updated Name')
         ->call('save')
         ->assertDispatched('updated');
 });
 
 it('resets form after successful update', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.name', 'Updated Name')
+        ->set('name', 'Updated Name')
         ->set('password', 'new-password-123')
         ->set('password_confirmation', 'new-password-123')
         ->call('save')
@@ -134,7 +137,7 @@ it('resets form after successful update', function () {
 
 it('validates email format', function () {
     Livewire::test(Update::class, ['user' => $this->original])
-        ->set('user.email', 'invalid-email')
+        ->set('email', 'invalid-email')
         ->call('save')
-        ->assertHasErrors(['user.email' => 'email']);
+        ->assertHasErrors(['email' => 'email']);
 });

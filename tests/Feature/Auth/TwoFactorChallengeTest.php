@@ -33,7 +33,7 @@ it('authenticates with a valid authentication code', function () {
 
     $this->post(route('two-factor.login.store'), [
         'code' => $code,
-    ])->assertRedirect('/dashboard');
+    ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
 });
@@ -48,7 +48,7 @@ it('authenticates with a recovery code', function () {
 
     $this->post(route('two-factor.login.store'), [
         'recovery_code' => $user->recoveryCodes()[0],
-    ])->assertRedirect('/dashboard');
+    ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
 });

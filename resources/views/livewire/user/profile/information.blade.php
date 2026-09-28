@@ -8,7 +8,7 @@
     </form>
 
     <div class="mt-6 flex items-center justify-between">
-        <livewire:user.profile.delete />
+        <p class="text-sm text-gray-600 dark:text-gray-300">Para desativar sua conta, procure a secretaria.</p>
 
         <x-button submit form="update-profile" :text="__('Save')" loading="save" round />
     </div>

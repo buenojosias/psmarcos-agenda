@@ -32,14 +32,12 @@ it('refuses an invalid password', function () {
         ->assertHasErrors(['password']);
 });
 
-it('deletes the profile and logs the user out', function () {
+it('keeps the profile when physical deletion is requested', function () {
     Livewire::test(Delete::class)
         ->set('password', 'Test123!')
         ->call('delete')
-        ->assertHasNoErrors()
-        ->assertRedirect(route('welcome'));
+        ->assertForbidden();
 
-    $this->assertGuest();
-
-    expect(User::query()->whereKey($this->user->id)->exists())->toBeFalse();
+    $this->assertAuthenticatedAs($this->user);
+    $this->assertModelExists($this->user);
 });

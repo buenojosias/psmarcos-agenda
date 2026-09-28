@@ -27,7 +27,9 @@ class User extends Authenticatable
         'password',
         'roles',
         'is_active',
-        'created_by_user_id',
+        'approved_by_user_id',
+        'approved_at',
+        'deactivated_at',
     ];
 
     protected $hidden = [
@@ -42,6 +44,8 @@ class User extends Authenticatable
         'password'          => 'hashed',
         'roles'             => 'array',
         'is_active'         => 'boolean',
+        'approved_at'       => 'datetime',
+        'deactivated_at'    => 'datetime',
     ];
 
     // Retorna array (sempre) — facilita uso nas views
@@ -70,14 +74,24 @@ class User extends Authenticatable
         return count(array_intersect($roles, $this->getRolesArray())) > 0;
     }
 
-    public function parent(): BelongsTo
+    public function isPending(): bool
     {
-        return $this->belongsTo(self::class, 'created_by_user_id');
+        return ! $this->is_active && $this->approved_at === null && $this->deactivated_at === null;
     }
 
-    public function children(): HasMany
+    public function statusLabel(): string
     {
-        return $this->hasMany(self::class, 'created_by_user_id');
+        return $this->is_active ? 'Ativo' : ($this->isPending() ? 'Aguardando aprovação' : 'Inativo');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'approved_by_user_id');
+    }
+
+    public function approvedUsers(): HasMany
+    {
+        return $this->hasMany(self::class, 'approved_by_user_id');
     }
 
     public function communities(): BelongsToMany

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\User\Profile;
 
-use Exception;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Livewire\Traits\Alert;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Auth;
 
 class Delete extends Component
 {
@@ -48,6 +46,8 @@ class Delete extends Component
     {
         $this->validate();
 
+        \Illuminate\Support\Facades\Gate::authorize('delete', $this->user);
+
         $this->modal = false;
 
         $this->question()
@@ -60,21 +60,6 @@ class Delete extends Component
     {
         $this->validate();
 
-        try {
-            Auth::logout();
-
-            $this->user->delete();
-
-            session()->invalidate();
-            session()->regenerateToken();
-
-            $this->redirect(route('welcome'));
-
-            return;
-        } catch (Exception $e) {
-            report($e);
-        }
-
-        $this->error();
+        \Illuminate\Support\Facades\Gate::authorize('delete', $this->user);
     }
 }

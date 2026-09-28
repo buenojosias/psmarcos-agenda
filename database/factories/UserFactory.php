@@ -20,8 +20,21 @@ class UserFactory extends Factory
             'email'             => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password'          => '$2y$04$pH3Ri/itPyiEbheC3kPj/eMf2AYCvroUo5ZZ1HmAksGA6W2HCw9B2', // Test123!
+            'is_active'         => true,
+            'roles'             => ['member'],
+            'approved_at'       => now(),
             'remember_token'    => Str::random(10),
         ];
+    }
+
+    public function active(): static
+    {
+        return $this->state(fn (array $attributes): array => ['is_active' => true, 'approved_at' => now(), 'deactivated_at' => null]);
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes): array => ['is_active' => false, 'approved_at' => null, 'approved_by_user_id' => null, 'deactivated_at' => null, 'roles' => ['member']]);
     }
 
     public function unverified(): static

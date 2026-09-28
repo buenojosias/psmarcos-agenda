@@ -214,7 +214,7 @@ it('validates malformed url values and supports date navigation', function () {
 it('requires authentication and active users at the route and domain boundaries', function () {
     $this->get(route('availability.index'))->assertRedirect(route('login'));
     $inactive = User::factory()->create(['is_active' => false, 'roles' => ['member']]);
-    $this->actingAs($inactive)->get(route('availability.index'))->assertForbidden();
+    $this->actingAs($inactive)->get(route('availability.index'))->assertRedirect(route('registration.pending'));
     expect(fn () => $this->availability->forDate($this->community, '2026-09-30', $inactive))->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
 });
 

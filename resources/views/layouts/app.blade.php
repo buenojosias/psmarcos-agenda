@@ -43,13 +43,16 @@
                         </x-slot:header>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <x-dropdown.items :text="__('Profile')" :href="route('user.profile')" separator />
+                            @if(auth()->user()->is_active)
+                                <x-dropdown.items :text="__('Profile')" :href="route('user.profile')" separator />
+                            @endif
                             <x-dropdown.items :text="__('Logout')" onclick="event.preventDefault(); this.closest('form').submit();" separator />
                         </form>
                     </x-dropdown>
                 </x-slot:right>
             </x-layout.header>
         </x-slot:header>
+        @if(auth()->user()->is_active)
         <x-slot:menu>
             <x-side-bar smart collapsible>
                 <x-slot:brand>
@@ -77,6 +80,7 @@
                 @endcan
             </x-side-bar>
         </x-slot:menu>
+        @endif
         {{ $slot }}
     </x-layout>
     @livewireScripts

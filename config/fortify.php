@@ -75,7 +75,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/',
 
     /*
     |--------------------------------------------------------------------------
@@ -87,6 +87,8 @@ return [
     | subdomain under which all of the Fortify routes will be available.
     |
     */
+
+    'paths' => ['register' => '/cadastro'],
 
     'prefix' => '',
 

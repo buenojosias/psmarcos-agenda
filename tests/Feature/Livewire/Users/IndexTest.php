@@ -38,9 +38,12 @@ it('verifies component headers', function () {
 
     $headers = [
         ['index' => 'id', 'label' => '#'],
-        ['index' => 'name', 'label' => 'Name'],
+        ['index' => 'name', 'label' => 'Nome'],
         ['index' => 'email', 'label' => 'E-mail'],
-        ['index' => 'created_at', 'label' => 'Created'],
+        ['index' => 'communities', 'label' => 'Comunidades', 'sortable' => false],
+        ['index' => 'roles', 'label' => 'Perfis', 'sortable' => false],
+        ['index' => 'status', 'label' => 'Status', 'sortable' => false],
+        ['index' => 'created_at', 'label' => 'Cadastro'],
         ['index' => 'action', 'sortable' => false],
     ];
 

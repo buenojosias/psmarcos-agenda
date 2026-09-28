@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -12,66 +14,73 @@ class UserSeeder extends Seeder
         $password = '$2y$12$oPub6RbUin.ZKwm2xxVi1.QVSiNbJ51TflzhNlmwhLMWq5QM1wG52';
 
         User::create([
-            'name' => 'Admin',
-            'email' => 'admin@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['admin'],
+            'name'        => 'Admin',
+            'email'       => 'admin@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['admin'],
         ]);
 
         User::create([
-            'name' => 'Member',
-            'email' => 'member@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['member'],
+            'name'        => 'Member',
+            'email'       => 'member@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['member'],
         ]);
 
         User::create([
-            'name' => 'Secretary',
-            'email' => 'secretary@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['secretary'],
+            'name'        => 'Secretary',
+            'email'       => 'secretary@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['secretary'],
         ]);
 
         User::create([
-            'name' => 'Pascom',
-            'email' => 'pascom@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['pascom'],
+            'name'        => 'Pascom',
+            'email'       => 'pascom@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['pascom'],
         ]);
 
         User::create([
-            'name' => 'CPP',
-            'email' => 'cpp@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['cpp'],
+            'name'        => 'CPP',
+            'email'       => 'cpp@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['cpp'],
         ]);
 
         User::create([
-            'name' => 'Priest',
-            'email' => 'priest@email.com',
-            'whatsapp' => null,
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['priest'],
+            'name'        => 'Priest',
+            'email'       => 'priest@email.com',
+            'whatsapp'    => null,
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['priest'],
         ]);
 
         User::create([
-            'name' => 'Josias Bueno',
-            'email' => 'josias@email.com',
-            'whatsapp' => '41996881818',
-            'password' => $password,
-            'is_active' => true,
-            'roles' => ['member'],
+            'name'        => 'Josias Bueno',
+            'email'       => 'josias@email.com',
+            'whatsapp'    => '41996881818',
+            'password'    => $password,
+            'is_active'   => true,
+            'approved_at' => now(),
+            'roles'       => ['member'],
         ]);
 
         User::factory()->count(3)->create();

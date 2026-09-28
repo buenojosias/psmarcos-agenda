@@ -170,12 +170,18 @@ it('hides the audit button from a user without audit permission', function () {
         ->assertDontSee(route('events.audit', $event));
 });
 
-it('shows review buttons to reviewers for pending and rescheduled events', function (string $role, EventStatusEnum $status) {
+it('shows review buttons and existing editing permissions to active reviewers', function (string $role, bool $canEdit, EventStatusEnum $status) {
     $event = Event::factory()->create(['status' => $status]);
 
-    Livewire::actingAs(User::factory()->create(['roles' => [$role]]))->test(Show::class, ['event' => $event])
-        ->assertSee('Aprovar')->assertSee('Recusar')->assertDontSee('Editar')->assertDontSee('Remarcar');
-})->with(['cpp', 'priest', 'admin'])->with([EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED]);
+    $component = Livewire::actingAs(User::factory()->active()->create(['roles' => [$role]]))->test(Show::class, ['event' => $event])
+        ->assertSee('Aprovar')->assertSee('Recusar');
+
+    if ($canEdit) {
+        $component->assertSee('Editar')->assertSee('Remarcar');
+    } else {
+        $component->assertDontSee('Editar')->assertDontSee('Remarcar');
+    }
+})->with([['cpp', true], ['priest', false], ['admin', true]])->with([EventStatusEnum::PENDING, EventStatusEnum::RESCHEDULED]);
 
 it('requires a reason before refuseing an event', function () {
     $event = Event::factory()->create(['status' => EventStatusEnum::PENDING]);

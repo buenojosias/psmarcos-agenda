@@ -426,7 +426,7 @@ it('reopens recurring conflicts without partial persistence when availability ch
 it('forbids inactive users from accessing or creating events', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => false]);
 
-    $this->actingAs($user)->get(route('events.create'))->assertForbidden();
+    $this->actingAs($user)->get(route('events.create'))->assertRedirect(route('registration.pending'));
     expect(Gate::forUser($user)->denies('create', Event::class))->toBeTrue();
 });
 
@@ -750,7 +750,8 @@ it('reopens the conflict slide without persisting when final availability change
         ->assertSet('conflictsSlide', true)
         ->assertSet('draftValidated', false)
         ->assertSee('Centro Catequético: Sala 2')
-        ->assertSee('Ambiente reservado: Centro Catequético: Sala 2');
+        ->assertSee('Reservado de 10/10/2026 09:00')
+        ->assertSee('a 10/10/2026 11:00');
 
     expect($component->get('placeConflicts'))->toHaveCount(1)
         ->and(Event::count())->toBe($eventCount);

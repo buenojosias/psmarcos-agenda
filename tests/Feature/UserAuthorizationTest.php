@@ -16,7 +16,7 @@ it('allows active administrators, secretaries and CPP coordinators to manage use
     expect(Gate::forUser($actor)->allows('viewAny', User::class))->toBe($allowed)
         ->and(Gate::forUser($actor)->allows('create', User::class))->toBe($allowed)
         ->and(Gate::forUser($actor)->allows('update', $target))->toBe($allowed)
-        ->and(Gate::forUser($actor)->allows('delete', $target))->toBe($allowed);
+        ->and(Gate::forUser($actor)->allows('delete', $target))->toBeFalse();
 })->with([
     'administrator'          => [['admin'], true, true],
     'inactive administrator' => [['admin'], false, false],
@@ -29,10 +29,10 @@ it('allows active administrators, secretaries and CPP coordinators to manage use
     'no role'                => [[], true, false],
 ]);
 
-it('prevents an administrator from editing or deleting their own account through user management', function () {
+it('allows administrators to edit themselves while refusing physical deletion', function () {
     $actor = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
-    expect(Gate::forUser($actor)->denies('update', $actor))->toBeTrue()
+    expect(Gate::forUser($actor)->allows('update', $actor))->toBeTrue()
         ->and(Gate::forUser($actor)->denies('delete', $actor))->toBeTrue();
 });
 

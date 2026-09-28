@@ -29,7 +29,7 @@ it('requires authentication and activity to list communities', function () {
     $this->get(route('communities.index'))->assertRedirect(route('login'));
     $user = User::factory()->create(['is_active' => false]);
 
-    $this->actingAs($user)->get(route('communities.index'))->assertForbidden();
+    $this->actingAs($user)->get(route('communities.index'))->assertRedirect(route('registration.pending'));
     Livewire::actingAs($user)->test(Index::class)->assertForbidden();
 });
 

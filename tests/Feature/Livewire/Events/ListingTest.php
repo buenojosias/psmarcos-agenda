@@ -15,7 +15,7 @@ use App\Livewire\Masses\Index as Masses;
 
 it('requires authentication and active accounts', function (string $route) {
     $this->get(route($route))->assertRedirect(route('login'));
-    $this->actingAs(User::factory()->create(['is_active' => false]))->get(route($route))->assertForbidden();
+    $this->actingAs(User::factory()->create(['is_active' => false]))->get(route($route))->assertRedirect(route('registration.pending'));
 })->with(['events.index', 'masses.index']);
 
 it('separates events and masses through the authenticated routes', function () {
@@ -125,7 +125,7 @@ it('filters events by their community including events without one', function ()
 
     $component = Livewire::actingAs(User::factory()->create(['is_active' => true, 'roles' => ['admin']]))
         ->test(Index::class)
-        ->assertSee('Comunidade/local')
+        ->assertSee('Local (comunidade)')
         ->assertSee('Sem comunidade')
         ->assertViewHas('communities', fn ($communities): bool => $communities->pluck('id')->all() === [$community->id, $otherCommunity->id])
         ->call('setPage', 2)

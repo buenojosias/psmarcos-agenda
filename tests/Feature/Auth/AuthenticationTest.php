@@ -7,7 +7,7 @@ use App\Models\User;
 it('renders the login page', function () {
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('Log in');
+        ->assertSee('Entrar');
 });
 
 it('authenticates a user', function () {
@@ -16,7 +16,7 @@ it('authenticates a user', function () {
     $this->post(route('login.store'), [
         'email'    => $user->email,
         'password' => 'Test123!',
-    ])->assertRedirect('/dashboard');
+    ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
 });
