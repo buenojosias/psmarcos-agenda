@@ -14,16 +14,27 @@ class GroupFactory extends Factory
 
     public function definition(): array
     {
-        $name = ucfirst(fake()->unique()->words(3, true));
+        $templates = [
+            ['Pastoral da Acolhida', GroupTypeEnum::PASTORAL],
+            ['Pastoral do Dízimo', GroupTypeEnum::PASTORAL],
+            ['Equipe de Liturgia', GroupTypeEnum::PASTORAL],
+            ['Grupo de Oração', GroupTypeEnum::GROUP],
+            ['Grupo de Famílias', GroupTypeEnum::GROUP],
+            ['Equipe de Festas', GroupTypeEnum::SERVICE],
+            ['Ministros da Comunhão', GroupTypeEnum::MINISTRY],
+            ['Curso de Formação', GroupTypeEnum::COURSE],
+        ];
+
+        [$baseName, $type] = fake()->randomElement($templates);
+        $suffix = fake()->unique()->numberBetween(1, 9999);
+        $name = $baseName.' '.$suffix;
 
         return [
-            'community_id' => fake()->boolean(70)
-                ? Community::query()->inRandomOrder()->value('id')
-                : null,
+            'community_id' => Community::query()->inRandomOrder()->value('id'),
             'name' => $name,
-            'type' => fake()->randomElement(GroupTypeEnum::cases()),
-            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1, 9999),
-            'description' => fake()->optional(0.7)->sentence(12),
+            'type' => $type,
+            'slug' => Str::slug($name),
+            'description' => 'Grupo pastoral com atividades regulares de formação, organização e serviço comunitário.',
             'logo' => null,
         ];
     }
