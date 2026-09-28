@@ -4,143 +4,161 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Enums\EventStatusEnum;
+use App\Enums\EventTypeEnum;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\Place;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
-use App\Enums\EventTypeEnum;
-use App\Enums\EventStatusEnum;
-use Illuminate\Database\Seeder;
 use App\Models\PlaceReservation;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class EventSeeder extends Seeder
 {
     public function run(): void
     {
-        $groups = Group::query()->get();
-        $places = Place::query()->get();
-        $users  = User::query()->get();
+        $groups = Group::query()
+            ->whereNotNull('community_id')
+            ->orderBy('community_id')
+            ->orderBy('id')
+            ->get();
 
-        if ($groups->isEmpty() || $places->isEmpty()) {
+        $users = User::query()->orderBy('id')->get();
+
+        if ($groups->isEmpty() || $users->isEmpty()) {
             return;
         }
 
-        $primaryPlaces = $places->shuffle()->values();
-        $eventIndex    = 0;
+        $placesByCommunity = Place::query()
+            ->orderBy('id')
+            ->get()
+            ->groupBy('community_id');
 
-        // Duas séries mensais, com quatro ocorrências cada = 8 eventos recorrentes.
-        for ($series = 1; $series <= 2; $series++) {
-            $group           = $groups->random();
-            $seriesPlace     = $primaryPlaces[$eventIndex % $primaryPlaces->count()];
-            $communityPlaces = $places->where('community_id', $seriesPlace->community_id)->values();
-            $recurrenceCode  = (string) Str::ulid();
-            $baseDate        = CarbonImmutable::now()
-                ->addMonth($series)
-                ->startOfMonth()
-                ->addDays($series * 3)
-                ->setTime($series === 1 ? 19 : 20, 0);
-
-            for ($occurrence = 0; $occurrence < 4; $occurrence++) {
-                $startsAt     = $baseDate->addMonthsNoOverflow($occurrence);
-                $endsAt       = $startsAt->addHours(2);
-                $primaryPlace = $communityPlaces[$occurrence % $communityPlaces->count()];
-
-                $event = Event::factory()->create([
-                    'community_id'       => $seriesPlace->community_id,
-                    'group_id'           => $group->id,
-                    'created_by_user_id' => $users->random()->id,
-                    'name'               => $series === 1
-                        ? 'Encontro mensal - '.$group->name
-                        : 'Reunião mensal - '.$group->name,
-                    'complement' => $occurrence % 2 === 0
-                        ? ($series === 1 ? 'Partilha e formação' : 'Planejamento das atividades')
-                        : null,
-                    'type'            => EventTypeEnum::MEETING,
-                    'recurrence_code' => $recurrenceCode,
-                    'starts_at'       => $startsAt,
-                    'ends_at'         => $endsAt,
-                    'status'          => EventStatusEnum::CONFIRMED,
-                    'is_external'     => false,
-                    'is_public'       => true,
-                    'advertisable'    => false,
-                ]);
-
-                $this->createReservations($event, $communityPlaces, $primaryPlace);
-                $eventIndex++;
-            }
-        }
-
-        // Oito eventos únicos, em datas distintas.
-        $uniqueEvents = [
-            ['name' => 'Jantar dançante', 'type' => EventTypeEnum::FOOD, 'complement' => 'Noite de confraternização'],
-            ['name' => 'Formação de lideranças', 'type' => EventTypeEnum::COURSE, 'complement' => null],
-            ['name' => 'Ensaio geral do coral', 'type' => EventTypeEnum::REHEARSAL, 'complement' => 'Preparação para a celebração'],
-            ['name' => 'Café comunitário', 'type' => EventTypeEnum::FOOD, 'complement' => null],
-            ['name' => 'Festa da comunidade', 'type' => EventTypeEnum::PARTY, 'complement' => 'Confraternização paroquial'],
-            ['name' => 'Treinamento de informática', 'type' => EventTypeEnum::COURSE, 'complement' => null],
-            ['name' => 'Encontro de coordenadores', 'type' => EventTypeEnum::MEETING, 'complement' => 'Planejamento das atividades'],
-            ['name' => 'Oficina de música', 'type' => EventTypeEnum::COURSE, 'complement' => null],
+        $windowStart = CarbonImmutable::today()->addDays(3)->startOfDay();
+        $statuses = [
+            EventStatusEnum::CONFIRMED,
+            EventStatusEnum::PENDING,
+            EventStatusEnum::CONFIRMED,
+            EventStatusEnum::RESCHEDULED,
+            EventStatusEnum::CONFIRMED,
+            EventStatusEnum::REFUSED,
+            EventStatusEnum::CANCELED,
         ];
 
-        $baseUniqueDate = CarbonImmutable::now()->addWeeks(3)->startOfDay();
+        foreach ($groups as $groupIndex => $group) {
+            $communityPlaces = $placesByCommunity->get($group->community_id, collect())->values();
 
-        foreach ($uniqueEvents as $index => $uniqueEvent) {
-            $startsAt = $baseUniqueDate
-                ->addDays(($index + 1) * 3)
-                ->setTime(14 + ($index % 6), 0);
-            $endsAt          = $startsAt->addHours(random_int(2, 4));
-            $primaryPlace    = $primaryPlaces[$eventIndex % $primaryPlaces->count()];
-            $communityPlaces = $places->where('community_id', $primaryPlace->community_id)->values();
+            if ($communityPlaces->isEmpty()) {
+                continue;
+            }
 
-            $event = Event::factory()->create([
-                'community_id'       => $primaryPlace->community_id,
-                'group_id'           => $groups->random()->id,
-                'created_by_user_id' => $users->random()->id,
-                'name'               => $uniqueEvent['name'],
-                'complement'         => $uniqueEvent['complement'],
-                'type'               => $uniqueEvent['type'],
-                'recurrence_code'    => null,
-                'starts_at'          => $startsAt,
-                'ends_at'            => $endsAt,
-                'status'             => fake()->randomElement([
-                    EventStatusEnum::PENDING,
-                    EventStatusEnum::CONFIRMED,
-                ]),
-                'is_external'  => false,
-                'is_public'    => true,
-                'advertisable' => fake()->boolean(50),
-            ]);
+            $recurrenceCode = (string) Str::ulid();
+            $recurringOffsets = [1, 8, 15];
 
-            $this->createReservations($event, $communityPlaces, $primaryPlace);
-            $eventIndex++;
+            foreach ($recurringOffsets as $occurrence => $dayOffset) {
+                $startsAt = $windowStart
+                    ->addDays($dayOffset)
+                    ->setTime(19 + (($groupIndex + $occurrence) % 2), ($groupIndex % 3) * 10);
+                $endsAt = $startsAt->addMinutes(90 + (($groupIndex + $occurrence) % 2) * 30);
+
+                $event = Event::factory()->create([
+                    'community_id' => $group->community_id,
+                    'group_id' => $group->id,
+                    'created_by_user_id' => $users[($groupIndex + $occurrence) % $users->count()]->id,
+                    'name' => $this->recurringName($group),
+                    'complement' => $occurrence === 0 ? 'Encontro regular do grupo' : null,
+                    'type' => $this->recurringType($group),
+                    'recurrence_code' => $recurrenceCode,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'status' => $statuses[($groupIndex + $occurrence) % count($statuses)],
+                    'is_external' => false,
+                    'is_public' => ($groupIndex + $occurrence) % 4 !== 0,
+                    'advertisable' => false,
+                ]);
+
+                $this->createReservations($event, $communityPlaces, 1 + (($groupIndex + $occurrence) % 3));
+            }
+
+            $sporadicEvents = [
+                ['offset' => 3, 'name' => 'Formação de lideranças', 'type' => EventTypeEnum::COURSE, 'complement' => 'Momento de formação e planejamento'],
+                ['offset' => 6, 'name' => 'Encontro de confraternização', 'type' => EventTypeEnum::FELLOWSHIP, 'complement' => 'Integração entre participantes e famílias'],
+                ['offset' => 11, 'name' => 'Reunião de planejamento', 'type' => EventTypeEnum::MEETING, 'complement' => 'Organização das próximas atividades'],
+                ['offset' => 18, 'name' => 'Café comunitário', 'type' => EventTypeEnum::FOOD, 'complement' => 'Convivência e partilha após as atividades'],
+            ];
+
+            foreach ($sporadicEvents as $sporadicIndex => $data) {
+                $isExternal = $sporadicIndex === 3 && $groupIndex % 12 === 0;
+                $startsAt = $windowStart
+                    ->addDays($data['offset'])
+                    ->setTime(14 + (($groupIndex + $sporadicIndex) % 6), (($groupIndex + $sporadicIndex) % 4) * 10);
+                $endsAt = $startsAt->addMinutes(120 + (($groupIndex + $sporadicIndex) % 3) * 30);
+
+                $event = Event::factory()->create([
+                    'community_id' => $isExternal ? null : $group->community_id,
+                    'group_id' => $group->id,
+                    'created_by_user_id' => $users[($groupIndex + $sporadicIndex + 2) % $users->count()]->id,
+                    'name' => $isExternal ? 'Visita pastoral externa' : $data['name'].' - '.$group->name,
+                    'complement' => $isExternal ? 'Atividade realizada fora das dependências da paróquia' : $data['complement'],
+                    'type' => $data['type'],
+                    'recurrence_code' => null,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'status' => $statuses[($groupIndex + $sporadicIndex + 3) % count($statuses)],
+                    'is_external' => $isExternal,
+                    'is_public' => ($groupIndex + $sporadicIndex) % 3 !== 0,
+                    'advertisable' => ($groupIndex + $sporadicIndex) % 2 === 0,
+                ]);
+
+                if (! $isExternal) {
+                    $this->createReservations($event, $communityPlaces, 1 + (($groupIndex + $sporadicIndex + 1) % 3));
+                }
+            }
         }
     }
 
-    private function createReservations(Event $event, Collection $communityPlaces, Place $primaryPlace): void
+    private function recurringName(Group $group): string
     {
-        PlaceReservation::factory()->create([
-            'event_id'      => $event->id,
-            'place_id'      => $primaryPlace->id,
-            'reserved_from' => $event->starts_at->copy()->floorMinutes(15)->subMinutes(random_int(2, 8) * 15),
-            'reserved_to'   => $event->ends_at->copy()->ceilMinutes(15)->addMinutes(random_int(2, 6) * 15),
-            'is_primary'    => true,
-        ]);
+        $name = $group->name;
 
-        $additionalPlaces = $communityPlaces
-            ->where('id', '!=', $primaryPlace->id)
-            ->shuffle()
-            ->take(random_int(0, min(2, max(0, $communityPlaces->count() - 1))));
+        return match (true) {
+            str_contains($name, 'Coral') => 'Ensaio semanal - '.$name,
+            str_contains($name, 'Catequese') => 'Encontro de catequese - '.$name,
+            str_contains($name, 'Legião de Maria') => 'Reunião semanal - '.$name,
+            str_contains($name, 'Liturgia') => 'Preparação litúrgica - '.$name,
+            str_contains($name, 'Oração') => 'Encontro de oração - '.$name,
+            default => 'Encontro regular - '.$name,
+        };
+    }
 
-        foreach ($additionalPlaces as $place) {
+    private function recurringType(Group $group): EventTypeEnum
+    {
+        return match (true) {
+            str_contains($group->name, 'Coral') => EventTypeEnum::REHEARSAL,
+            str_contains($group->name, 'Catequese') || str_contains($group->name, 'Escola da Fé') => EventTypeEnum::COURSE,
+            default => EventTypeEnum::MEETING,
+        };
+    }
+
+    private function createReservations(Event $event, Collection $communityPlaces, int $quantity): void
+    {
+        $selectedPlaces = $communityPlaces
+            ->values()
+            ->take(min($quantity, $communityPlaces->count()));
+
+        foreach ($selectedPlaces as $index => $place) {
+            $beforeMinutes = [20, 35, 50][$index % 3];
+            $afterMinutes = [15, 40, 65][$index % 3];
+
             PlaceReservation::factory()->create([
-                'event_id'      => $event->id,
-                'place_id'      => $place->id,
-                'reserved_from' => $event->starts_at->copy()->floorMinutes(15)->subMinutes(random_int(2, 12) * 15),
-                'reserved_to'   => $event->ends_at->copy()->ceilMinutes(15)->addMinutes(random_int(2, 8) * 15),
-                'is_primary'    => false,
+                'event_id' => $event->id,
+                'place_id' => $place->id,
+                'reserved_from' => $event->starts_at->copy()->subMinutes($beforeMinutes),
+                'reserved_to' => $event->ends_at->copy()->addMinutes($afterMinutes),
+                'is_primary' => $index === 0,
             ]);
         }
     }
