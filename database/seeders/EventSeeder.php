@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
 
 class EventSeeder extends Seeder
 {
+    private const array MASS_PLACE_NAMES = ['Nave', 'Sacristia', 'Estacionamento'];
+
     public function run(): void
     {
         $groups = Group::query()
@@ -59,10 +61,19 @@ class EventSeeder extends Seeder
             $recurringOffsets = [1, 8, 15];
 
             foreach ($recurringOffsets as $occurrence => $dayOffset) {
-                $startsAt = $windowStart
+                $desiredStartsAt = $windowStart
                     ->addDays($dayOffset)
                     ->setTime(19 + (($groupIndex + $occurrence) % 2), ($groupIndex % 3) * 10);
-                $endsAt = $startsAt->addMinutes(90 + (($groupIndex + $occurrence) % 2) * 30);
+                $durationMinutes = 90 + (($groupIndex + $occurrence) % 2) * 30;
+                $reservationQuantity = 1 + (($groupIndex + $occurrence) % 3);
+
+                [$startsAt, $endsAt, $selectedPlaces] = $this->findAvailableSchedule(
+                    $desiredStartsAt,
+                    $durationMinutes,
+                    $communityPlaces,
+                    $reservationQuantity,
+                    $groupIndex + $occurrence,
+                );
 
                 $event = Event::factory()->create([
                     'community_id' => $group->community_id,
@@ -80,7 +91,7 @@ class EventSeeder extends Seeder
                     'advertisable' => false,
                 ]);
 
-                $this->createReservations($event, $communityPlaces, 1 + (($groupIndex + $occurrence) % 3));
+                $this->createReservations($event, $selectedPlaces);
             }
 
             $sporadicEvents = [
@@ -92,10 +103,25 @@ class EventSeeder extends Seeder
 
             foreach ($sporadicEvents as $sporadicIndex => $data) {
                 $isExternal = $sporadicIndex === 3 && $groupIndex % 12 === 0;
-                $startsAt = $windowStart
+                $desiredStartsAt = $windowStart
                     ->addDays($data['offset'])
                     ->setTime(14 + (($groupIndex + $sporadicIndex) % 6), (($groupIndex + $sporadicIndex) % 4) * 10);
-                $endsAt = $startsAt->addMinutes(120 + (($groupIndex + $sporadicIndex) % 3) * 30);
+                $durationMinutes = 120 + (($groupIndex + $sporadicIndex) % 3) * 30;
+                $reservationQuantity = 1 + (($groupIndex + $sporadicIndex + 1) % 3);
+
+                if ($isExternal) {
+                    $startsAt = $desiredStartsAt;
+                    $endsAt = $startsAt->addMinutes($durationMinutes);
+                    $selectedPlaces = collect();
+                } else {
+                    [$startsAt, $endsAt, $selectedPlaces] = $this->findAvailableSchedule(
+                        $desiredStartsAt,
+                        $durationMinutes,
+                        $communityPlaces,
+                        $reservationQuantity,
+                        $groupIndex + $sporadicIndex + 4,
+                    );
+                }
 
                 $event = Event::factory()->create([
                     'community_id' => $isExternal ? null : $group->community_id,
@@ -114,7 +140,7 @@ class EventSeeder extends Seeder
                 ]);
 
                 if (! $isExternal) {
-                    $this->createReservations($event, $communityPlaces, 1 + (($groupIndex + $sporadicIndex + 1) % 3));
+                    $this->createReservations($event, $selectedPlaces);
                 }
             }
         }
@@ -143,12 +169,81 @@ class EventSeeder extends Seeder
         };
     }
 
-    private function createReservations(Event $event, Collection $communityPlaces, int $quantity): void
-    {
-        $selectedPlaces = $communityPlaces
-            ->values()
-            ->take(min($quantity, $communityPlaces->count()));
+    /**
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable, 2: Collection<int, Place>}
+     */
+    private function findAvailableSchedule(
+        CarbonImmutable $desiredStartsAt,
+        int $durationMinutes,
+        Collection $communityPlaces,
+        int $quantity,
+        int $rotationOffset,
+    ): array {
+        $quantity = min($quantity, $communityPlaces->count());
 
+        for ($attempt = 0; $attempt < 24; $attempt++) {
+            $startsAt = $desiredStartsAt->addMinutes($attempt * 30);
+            $endsAt = $startsAt->addMinutes($durationMinutes);
+
+            $reservedFrom = $startsAt->subMinutes(50);
+            $reservedTo = $endsAt->addMinutes(65);
+
+            $availablePlaces = $this->orderedPlaces($communityPlaces, $rotationOffset + $attempt)
+                ->reject(fn (Place $place): bool => $this->hasReservationConflict($place, $reservedFrom, $reservedTo))
+                ->take($quantity)
+                ->values();
+
+            if ($availablePlaces->count() === $quantity) {
+                return [$startsAt, $endsAt, $availablePlaces];
+            }
+        }
+
+        throw new \RuntimeException(sprintf(
+            'Não foi possível encontrar %d ambiente(s) livre(s) para um evento a partir de %s.',
+            $quantity,
+            $desiredStartsAt->toDateTimeString(),
+        ));
+    }
+
+    /** @return Collection<int, Place> */
+    private function orderedPlaces(Collection $communityPlaces, int $rotationOffset): Collection
+    {
+        $generalPlaces = $communityPlaces
+            ->reject(fn (Place $place): bool => in_array($place->name, self::MASS_PLACE_NAMES, true))
+            ->values();
+
+        $massPlaces = $communityPlaces
+            ->filter(fn (Place $place): bool => in_array($place->name, self::MASS_PLACE_NAMES, true))
+            ->values();
+
+        $ordered = $generalPlaces->concat($massPlaces)->values();
+
+        if ($ordered->isEmpty()) {
+            return $ordered;
+        }
+
+        $offset = $rotationOffset % $ordered->count();
+
+        return $ordered->slice($offset)
+            ->concat($ordered->slice(0, $offset))
+            ->values();
+    }
+
+    private function hasReservationConflict(
+        Place $place,
+        CarbonImmutable $reservedFrom,
+        CarbonImmutable $reservedTo,
+    ): bool {
+        return PlaceReservation::query()
+            ->where('place_id', $place->id)
+            ->where('reserved_from', '<', $reservedTo)
+            ->where('reserved_to', '>', $reservedFrom)
+            ->exists();
+    }
+
+    /** @param Collection<int, Place> $selectedPlaces */
+    private function createReservations(Event $event, Collection $selectedPlaces): void
+    {
         foreach ($selectedPlaces as $index => $place) {
             $beforeMinutes = [20, 35, 50][$index % 3];
             $afterMinutes = [15, 40, 65][$index % 3];
