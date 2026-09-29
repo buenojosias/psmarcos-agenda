@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class EventSeeder extends Seeder
 {
@@ -144,6 +145,8 @@ class EventSeeder extends Seeder
                 }
             }
         }
+
+        $this->assertReservationIntegrity();
     }
 
     private function recurringName(Group $group): string
@@ -185,6 +188,7 @@ class EventSeeder extends Seeder
             $startsAt = $desiredStartsAt->addMinutes($attempt * 30);
             $endsAt = $startsAt->addMinutes($durationMinutes);
 
+            // Usa a maior margem possível das reservas que serão criadas abaixo.
             $reservedFrom = $startsAt->subMinutes(50);
             $reservedTo = $endsAt->addMinutes(65);
 
@@ -198,7 +202,7 @@ class EventSeeder extends Seeder
             }
         }
 
-        throw new \RuntimeException(sprintf(
+        throw new RuntimeException(sprintf(
             'Não foi possível encontrar %d ambiente(s) livre(s) para um evento a partir de %s.',
             $quantity,
             $desiredStartsAt->toDateTimeString(),
@@ -248,13 +252,55 @@ class EventSeeder extends Seeder
             $beforeMinutes = [20, 35, 50][$index % 3];
             $afterMinutes = [15, 40, 65][$index % 3];
 
-            PlaceReservation::factory()->create([
+            PlaceReservation::query()->create([
                 'event_id' => $event->id,
+                'mass_id' => null,
                 'place_id' => $place->id,
                 'reserved_from' => $event->starts_at->copy()->subMinutes($beforeMinutes),
                 'reserved_to' => $event->ends_at->copy()->addMinutes($afterMinutes),
                 'is_primary' => $index === 0,
             ]);
         }
+    }
+
+    private function assertReservationIntegrity(): void
+    {
+        PlaceReservation::query()
+            ->with('place:id,name')
+            ->orderBy('place_id')
+            ->orderBy('reserved_from')
+            ->get()
+            ->groupBy('place_id')
+            ->each(function (Collection $reservations): void {
+                $previous = null;
+
+                foreach ($reservations as $reservation) {
+                    $duration = $reservation->reserved_from->diffInMinutes($reservation->reserved_to);
+
+                    if ($duration < 30) {
+                        throw new RuntimeException(sprintf(
+                            'Reserva %d do ambiente %s possui apenas %d minutos.',
+                            $reservation->id,
+                            $reservation->place?->name ?? '#'.$reservation->place_id,
+                            $duration,
+                        ));
+                    }
+
+                    if ($previous !== null && $previous->reserved_to->gt($reservation->reserved_from)) {
+                        throw new RuntimeException(sprintf(
+                            'Sobreposição detectada no ambiente %s entre as reservas %d (%s–%s) e %d (%s–%s).',
+                            $reservation->place?->name ?? '#'.$reservation->place_id,
+                            $previous->id,
+                            $previous->reserved_from->format('d/m/Y H:i'),
+                            $previous->reserved_to->format('d/m/Y H:i'),
+                            $reservation->id,
+                            $reservation->reserved_from->format('d/m/Y H:i'),
+                            $reservation->reserved_to->format('d/m/Y H:i'),
+                        ));
+                    }
+
+                    $previous = $reservation;
+                }
+            });
     }
 }
