@@ -7,7 +7,9 @@
         <div><dt class="font-medium">Ambiente</dt><dd>{{ $detail['place'] }}</dd></div>
         <div><dt class="font-medium">Comunidade</dt><dd>{{ $detail['community'] }}</dd></div>
     </dl>
-    @if (! $detail['visible'])
+    @if ($detail['type'] === 'inherited')
+        <p class="flex items-start gap-2"><x-icon name="tabler.lock" class="size-4 shrink-0" />Este ambiente está indisponível porque um ou mais subambientes estão ocupados.</p>
+    @elseif (! $detail['visible'])
         <p class="flex items-start gap-2"><x-icon name="tabler.lock" class="size-4 shrink-0" />Os detalhes deste evento não estão disponíveis para você.</p>
     @else
         @foreach ($detail['details'] as $source)

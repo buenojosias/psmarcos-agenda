@@ -39,13 +39,14 @@
             @if ($width > 0)
                 <button type="button" wire:click="openPeriod({{ $rowIndex }}, {{ $periodIndex }})"
                         wire:key="availability-period-{{ $generation }}-{{ $rowIndex }}-{{ $periodIndex }}"
-                        @class(['absolute inset-y-2 flex items-center gap-1 overflow-hidden rounded border px-1 text-left text-xs text-rose-900 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary-500 dark:text-rose-100',
-                            'border-rose-300 bg-rose-100 dark:border-rose-800 dark:bg-rose-950' => $period['visible'],
-                            'availability-restricted border-dashed border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950' => ! $period['visible']])
+                        @class(['absolute inset-y-2 flex items-center gap-1 overflow-hidden rounded border px-1 text-left text-xs focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary-500',
+                            'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100' => $period['type'] === 'inherited',
+                            'border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100' => $period['type'] !== 'inherited' && $period['visible'],
+                            'availability-restricted border-dashed border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100' => $period['type'] !== 'inherited' && ! $period['visible']])
                         style="left: {{ $left }}%; width: {{ $width }}%"
                         aria-label="{{ $period['label'] }}, {{ $row['name'] }}, {{ $date->format('d/m/Y') }}, {{ \Carbon\CarbonImmutable::parse($period['start'])->format('H:i') }} – {{ \Carbon\CarbonImmutable::parse($period['end'])->format('H:i') }}">
-                    <x-icon :name="$period['visible'] ? 'tabler.calendar' : 'tabler.lock'" class="size-3 shrink-0" />
-                    <span class="truncate">{{ $period['visible'] ? $period['label'] : 'Indisponível' }}</span>
+                    <x-icon :name="$period['type'] === 'inherited' ? 'tabler.lock' : ($period['visible'] ? 'tabler.calendar' : 'tabler.lock')" class="size-3 shrink-0" />
+                    <span class="truncate">{{ $period['type'] === 'inherited' ? $period['label'] : ($period['visible'] ? $period['label'] : 'Indisponível') }}</span>
                 </button>
             @endif
         @endforeach

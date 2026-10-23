@@ -12,6 +12,7 @@ use App\Models\Community;
 use Carbon\CarbonImmutable;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Locked;
+use App\Models\PlaceReservation;
 use Livewire\Attributes\Computed;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -162,7 +163,9 @@ class Index extends Component
         if ($place === null || ($this->mode === 'ambiente' && (int) $this->placeId !== $place->id)) {
             return;
         }
-        $fresh  = $this->availability->forPlace($place, $row['date'], 1, auth()->user())[0];
+        $fresh = $this->mode === 'data'
+            ? collect($this->dateRows())->firstWhere('place_id', $place->id)
+            : $this->availability->forPlace($place, $row['date'], 1, auth()->user())[0];
         $period = collect($fresh['periods'])->first(fn (array $candidate): bool => $candidate['start'] <= $period['start'] && $candidate['end'] > $period['start']);
 
         if ($period === null) {
@@ -205,11 +208,82 @@ class Index extends Component
 
         if ($community !== null) {
             if ($this->mode === 'data') {
-                $this->rows = $this->availability->forDate($community, $this->date, auth()->user());
+                $this->rows = $this->dateRows();
             } elseif ($this->placeId !== '') {
                 $this->rows = $this->availability->forPlace($this->places->firstWhere('id', $this->placeId), $this->date, 14, auth()->user());
             }
         }
         $this->dispatch('availability-reset');
+    }
+
+    /** @return list<array{place_id: int, name: string, depth: int, date: string, periods: array}> */
+    private function dateRows(): array
+    {
+        $community = $this->communities->firstWhere('id', $this->communityId);
+        $rows      = $this->availability->forDate($community, $this->date, auth()->user());
+        $parentIds = $this->places->pluck('main_place_id')->filter()->unique()->all();
+
+        if ($parentIds === []) {
+            return $rows;
+        }
+
+        $start        = CarbonImmutable::parse($this->date)->startOfDay();
+        $reservations = $this->availability->reservations($parentIds, $start, $start->addDay())
+            ->get(['place_id', 'reserved_from', 'reserved_to'])->groupBy('place_id');
+
+        foreach ($rows as &$row) {
+            if (in_array($row['place_id'], $parentIds, true)) {
+                $row['periods'] = $this->compactParentPeriods($row['periods'], $reservations->get($row['place_id'], new Collection));
+            }
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $periods
+     * @param  Collection<int, PlaceReservation>  $ownReservations
+     * @return list<array<string, mixed>>
+     */
+    private function compactParentPeriods(array $periods, Collection $ownReservations): array
+    {
+        $result = [];
+
+        foreach ($periods as $period) {
+            $boundaries = [$period['start'], $period['end']];
+
+            foreach ($ownReservations as $reservation) {
+                $start = $reservation->reserved_from->format('Y-m-d H:i:s');
+                $end   = $reservation->reserved_to->format('Y-m-d H:i:s');
+
+                if ($start < $period['end'] && $end > $period['start']) {
+                    $boundaries[] = max($start, $period['start']);
+                    $boundaries[] = min($end, $period['end']);
+                }
+            }
+
+            $boundaries = array_values(array_unique($boundaries));
+            sort($boundaries);
+
+            for ($index = 0; $index < count($boundaries) - 1; $index++) {
+                $start = $boundaries[$index];
+                $end   = $boundaries[$index + 1];
+                $own   = $ownReservations->contains(fn (PlaceReservation $reservation): bool => $reservation->reserved_from->format('Y-m-d H:i:s') < $end
+                    && $reservation->reserved_to->format('Y-m-d H:i:s') > $start);
+                $segment = $own
+                    ? array_replace($period, ['start' => $start, 'end' => $end])
+                    : ['start' => $start, 'end' => $end, 'visible' => false, 'label' => 'Subambientes ocupados', 'type' => 'inherited'];
+                $last = array_key_last($result);
+
+                if (! $own && $last !== null && $result[$last]['type'] === 'inherited' && $result[$last]['end'] === $start) {
+                    $result[$last]['end'] = $end;
+                } else {
+                    $result[] = $segment;
+                }
+            }
+        }
+
+        return $result;
     }
 }

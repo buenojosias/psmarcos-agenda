@@ -69,6 +69,7 @@
 
     <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-600 dark:text-gray-300" aria-label="Legenda">
         <span class="flex items-center gap-2"><span class="size-3 rounded border border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950"></span>Disponível</span>
+        <span class="flex items-center gap-2"><span class="size-3 rounded border border-amber-300 bg-amber-100 dark:border-amber-700 dark:bg-amber-950"></span>Subambientes ocupados</span>
         <span class="flex items-center gap-2"><x-icon name="tabler.calendar" sm />Horário ocupado</span>
         <span class="flex items-center gap-2"><x-icon name="tabler.lock" sm />Horário ocupado — detalhes restritos</span>
     </div>
