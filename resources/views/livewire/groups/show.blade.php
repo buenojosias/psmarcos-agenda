@@ -35,34 +35,36 @@
                         <x-badge :text="(string) $group->confirmed_events_count" color="green" light />
                     </x-slot:action>
                 </x-list.items>
-                <x-list.items name="Pendentes">
-                    <x-slot:action>
-                        <x-badge :text="(string) $group->pending_events_count" color="yellow" light />
-                    </x-slot:action>
-                </x-list.items>
-                <x-list.items name="Não aprovados">
-                    <x-slot:action>
-                        <x-badge :text="(string) $group->refused_events_count" color="red" light />
-                    </x-slot:action>
-                </x-list.items>
-                <x-list.items name="Remarcados">
-                    <x-slot:action>
-                        <x-badge :text="(string) $group->rescheduled_events_count" color="blue" light />
-                    </x-slot:action>
-                </x-list.items>
-                <x-list.items name="Cancelados">
-                    <x-slot:action>
-                        <x-badge :text="(string) $group->canceled_events_count" color="gray" light />
-                    </x-slot:action>
-                </x-list.items>
-                <x-list.items name="Total">
-                    <x-slot:action>
-                        <x-badge :text="(string) $group->events_count" color="primary" light />
-                    </x-slot:action>
-                </x-list.items>
-                <div class="p-2 border-t border-gray-200 dark:border-dark-700 text-center">
-                    <x-link text="Ver eventos" :href="route('groups.events.index', $group)" />    
-                </div>
+                @if ($showAllEventCounts)
+                    <x-list.items name="Pendentes">
+                        <x-slot:action>
+                            <x-badge :text="(string) $group->pending_events_count" color="yellow" light />
+                        </x-slot:action>
+                    </x-list.items>
+                    <x-list.items name="Não aprovados">
+                        <x-slot:action>
+                            <x-badge :text="(string) $group->refused_events_count" color="red" light />
+                        </x-slot:action>
+                    </x-list.items>
+                    <x-list.items name="Remarcados">
+                        <x-slot:action>
+                            <x-badge :text="(string) $group->rescheduled_events_count" color="blue" light />
+                        </x-slot:action>
+                    </x-list.items>
+                    <x-list.items name="Cancelados">
+                        <x-slot:action>
+                            <x-badge :text="(string) $group->canceled_events_count" color="gray" light />
+                        </x-slot:action>
+                    </x-list.items>
+                    <x-list.items name="Total">
+                        <x-slot:action>
+                            <x-badge :text="(string) $group->events_count" color="primary" light />
+                        </x-slot:action>
+                    </x-list.items>
+                    <div class="p-2 border-t border-gray-200 dark:border-dark-700 text-center">
+                        <x-link text="Ver eventos" :href="route('groups.events.index', $group)" />
+                    </div>
+                @endif
             </x-list>
 
             <livewire:groups.users :group="$group" />

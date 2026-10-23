@@ -20,10 +20,10 @@ it('shows group details and linked users with a leader badge', function () {
     $group->users()->attach($member);
 
     $this->actingAs(User::factory()->create())->get(route('groups.show', $group))
-        ->assertOk()->assertSee(['Grupo Esperança', 'Encontros semanais', 'Maria Líder', 'João Membro', 'Líder']);
+        ->assertOk()->assertSee(['Grupo Esperança', 'Encontros semanais', 'Maria Líder', 'João Membro', 'Coord.']);
 });
 
-it('counts each requested event status and includes canceled events in the total', function () {
+it('counts each requested event status and includes canceled events in the total', function (array $roles) {
     $group      = Group::create(['name' => 'Grupo Esperança', 'slug' => 'grupo-esperanca', 'type' => GroupTypeEnum::GROUP]);
     $otherGroup = Group::create(['name' => 'Outro Grupo', 'slug' => 'outro-grupo', 'type' => GroupTypeEnum::GROUP]);
 
@@ -53,14 +53,46 @@ it('counts each requested event status and includes canceled events in the total
         'ends_at'   => now()->addHour(),
     ]);
 
-    $component = Livewire::actingAs(User::factory()->create())->test(Show::class, ['group' => $group]);
+    $component = Livewire::actingAs(User::factory()->create(['roles' => $roles]))->test(Show::class, ['group' => $group]);
 
-    $component->assertSee(['Status dos eventos', 'Aprovados', 'Recusados', 'Pendentes', 'Remarcados', 'Total']);
+    $component->assertSee(['Status dos eventos', 'Aprovados', 'Não aprovados', 'Pendentes', 'Remarcados', 'Cancelados', 'Total', 'Ver eventos']);
     expect($component->get('group')->confirmed_events_count)->toBe(1)
         ->and($component->get('group')->refused_events_count)->toBe(1)
         ->and($component->get('group')->pending_events_count)->toBe(1)
         ->and($component->get('group')->rescheduled_events_count)->toBe(1)
+        ->and($component->get('group')->canceled_events_count)->toBe(1)
         ->and($component->get('group')->events_count)->toBe(5);
+})->with([
+    'admin'                    => [['admin']],
+    'member with another role' => [['member', 'admin']],
+]);
+
+it('shows only approved event count to a member outside the group', function () {
+    $group      = Group::factory()->create();
+    $otherGroup = Group::factory()->create();
+    $member     = User::factory()->create(['roles' => ['member']]);
+    $otherGroup->users()->attach($member);
+
+    Event::factory()->for($group)->confirmed()->count(2)->create();
+    Event::factory()->for($group)->create(['status' => EventStatusEnum::PENDING]);
+    Event::factory()->for($group)->create(['status' => EventStatusEnum::REFUSED]);
+
+    $component = Livewire::actingAs($member)->test(Show::class, ['group' => $group]);
+
+    $component->assertSeeInOrder(['Status dos eventos', 'Aprovados', '2'])
+        ->assertDontSee(['Pendentes', 'Não aprovados', 'Remarcados', 'Cancelados', 'Total', 'Ver eventos']);
+    expect($component->get('group')->confirmed_events_count)->toBe(2);
+});
+
+it('shows all event counts to a member of the group', function () {
+    $group  = Group::factory()->create();
+    $member = User::factory()->create(['roles' => ['member']]);
+    $group->users()->attach($member);
+    Event::factory()->for($group)->confirmed()->create();
+    Event::factory()->for($group)->create(['status' => EventStatusEnum::PENDING]);
+
+    Livewire::actingAs($member)->test(Show::class, ['group' => $group])
+        ->assertSee(['Aprovados', 'Pendentes', 'Não aprovados', 'Remarcados', 'Cancelados', 'Total', 'Ver eventos']);
 });
 
 it('links and unlinks users and refreshes the component list', function (string $role) {

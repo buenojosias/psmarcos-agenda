@@ -25,15 +25,25 @@ class Show extends Component
 
     public function render(): View
     {
-        $this->group->loadCount([
-            'events',
-            'events as confirmed_events_count'   => fn ($query) => $query->where('status', EventStatusEnum::CONFIRMED->value),
-            'events as refused_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::REFUSED->value),
-            'events as pending_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::PENDING->value),
-            'events as rescheduled_events_count' => fn ($query) => $query->where('status', EventStatusEnum::RESCHEDULED->value),
-            'events as canceled_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::CANCELED->value),
-        ]);
+        $user               = auth()->user();
+        $showAllEventCounts = $user !== null && (! $user->isMemberOnly()
+            || $this->group->users()->whereKey($user->id)->exists());
 
-        return view('livewire.groups.show');
+        $counts = [
+            'events as confirmed_events_count' => fn ($query) => $query->where('status', EventStatusEnum::CONFIRMED->value),
+        ];
+
+        if ($showAllEventCounts) {
+            $counts = array_merge(['events'], $counts, [
+                'events as refused_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::REFUSED->value),
+                'events as pending_events_count'     => fn ($query) => $query->where('status', EventStatusEnum::PENDING->value),
+                'events as rescheduled_events_count' => fn ($query) => $query->where('status', EventStatusEnum::RESCHEDULED->value),
+                'events as canceled_events_count'    => fn ($query) => $query->where('status', EventStatusEnum::CANCELED->value),
+            ]);
+        }
+
+        $this->group->loadCount($counts);
+
+        return view('livewire.groups.show', ['showAllEventCounts' => $showAllEventCounts]);
     }
 }
