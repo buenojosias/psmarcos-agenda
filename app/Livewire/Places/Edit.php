@@ -55,7 +55,7 @@ class Edit extends Component
 
         $this->reset('name', 'placeId', 'modal');
         $this->dispatch('place-updated');
-        $this->success('Espaço atualizado com sucesso.', 'Concluído');
+        $this->success('Ambiente atualizado com sucesso.', 'Concluído');
     }
 
     public function render(): View

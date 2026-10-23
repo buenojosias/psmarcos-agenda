@@ -53,10 +53,10 @@ it('defaults to information and synchronizes tab changes with Livewire', functio
 
     Livewire::actingAs($user)->test(Show::class, ['community' => $community])
         ->assertSet('tab', 'information')
-        ->assertSee(['Informações', 'Grupos', 'Espaços', 'Calendário'])
+        ->assertSee(['Informações', 'Grupos', 'Ambientes', 'Calendário'])
         ->set('tab', 'groups')->assertSet('tab', 'groups')
-        ->set('tab', 'spaces')->assertSet('tab', 'spaces')
-        ->assertSee('Carregando espaços...')
+        ->set('tab', 'ambientes')->assertSet('tab', 'ambientes')
+        ->assertSee('Carregando ambientes...')
         ->set('tab', 'calendar')->assertSet('tab', 'calendar')
         ->assertSee('O calendário da comunidade será disponibilizado em breve.')
         ->set('tab', 'invalid')->assertSet('tab', 'information');
@@ -72,7 +72,7 @@ it('restores valid tabs from the URL and falls back for invalid values', functio
 })->with([
     ['information', 'information'],
     ['groups', 'groups'],
-    ['spaces', 'spaces'],
+    ['ambientes', 'ambientes'],
     ['calendar', 'calendar'],
     ['invalid', 'information'],
     ['', 'information'],
@@ -92,14 +92,14 @@ it('queries groups only while their tab is active', function () {
 
     $component = Livewire::actingAs($user)->test(Show::class, ['community' => $community])
         ->assertDontSee('Grupo carregado sob demanda')
-        ->set('tab', 'spaces')->set('tab', 'calendar');
+        ->set('tab', 'ambientes')->set('tab', 'calendar');
     expect($groupQueries)->toBe(0);
 
     $component->set('tab', 'groups')->assertSee('Grupo carregado sob demanda');
     expect($groupQueries)->toBe(1);
 
     $component->set('tab', 'information')->assertDontSee('Grupo carregado sob demanda')
-        ->set('tab', 'spaces')->set('tab', 'calendar');
+        ->set('tab', 'ambientes')->set('tab', 'calendar');
     expect($groupQueries)->toBe(1);
 
     $component->set('tab', 'groups')->assertSee('Grupo carregado sob demanda');
@@ -123,16 +123,16 @@ it('defers places queries until the spaces component loads', function (string $t
 
     expect($queries)->toBe(0);
 
-    $component->set('tab', 'information')->set('tab', 'spaces')->assertSee('Carregando espaços...');
+    $component->set('tab', 'information')->set('tab', 'ambientes')->assertSee('Carregando ambientes...');
     expect($queries)->toBe(0);
-})->with(['information', 'groups', 'calendar', 'spaces']);
+})->with(['information', 'groups', 'calendar', 'ambientes']);
 
 it('loads the spaces listing when opening its URL with lazy loading resolved', function () {
     $user      = User::factory()->create(['is_active' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
     $community->places()->create(['name' => 'Salão sob demanda']);
 
-    Livewire::actingAs($user)->withoutLazyLoading()->withQueryParams(['tab' => 'spaces'])
+    Livewire::actingAs($user)->withoutLazyLoading()->withQueryParams(['tab' => 'ambientes'])
         ->test(Show::class, ['community' => $community])
         ->assertSee('Salão sob demanda');
 });

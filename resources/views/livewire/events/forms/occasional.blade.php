@@ -113,7 +113,7 @@
         <x-slot:footer>
             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <x-button text="Voltar e ajustar" color="gray" outline wire:click="adjustConflicts" />
-                <x-button text="Continuar sem os espaços conflitantes" wire:click="continueWithoutConflictingPlaces"
+                <x-button text="Continuar sem os ambientes conflitantes" wire:click="continueWithoutConflictingPlaces"
                           loading="continueWithoutConflictingPlaces" />
             </div>
         </x-slot:footer>

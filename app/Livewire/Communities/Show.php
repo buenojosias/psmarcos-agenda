@@ -99,7 +99,7 @@ class Show extends Component
 
     private function normalizeTab(): void
     {
-        if (! in_array($this->tab, ['information', 'groups', 'spaces', 'calendar'], true)) {
+        if (! in_array($this->tab, ['information', 'groups', 'ambientes', 'calendar'], true)) {
             $this->tab = 'information';
         }
     }

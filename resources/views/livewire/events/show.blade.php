@@ -84,18 +84,18 @@
             @endif
 
             @if (! $event->is_external)
-                <x-card header="Reservas de espaços" class="min-w-0" shadowless bordered>
+                <x-card header="Reservas de ambientes" class="min-w-0" shadowless bordered>
                     <x-table :headers="[
-                        ['index' => 'place', 'label' => 'Espaço', 'sortable' => false],
+                        ['index' => 'place', 'label' => 'Ambiente', 'sortable' => false],
                         ['index' => 'reserved_from', 'label' => 'Início da reserva', 'sortable' => false],
                         ['index' => 'reserved_to', 'label' => 'Fim da reserva', 'sortable' => false],
-                    ]" :rows="$reservations" highlight compact empty="Nenhuma reserva de espaço para este evento.">
+                    ]" :rows="$reservations" highlight compact empty="Nenhuma reserva de ambiente para este evento.">
                         @interact('column_place', $row)
                             <p class="font-medium">
                                 @if ($row->place?->main)
                                     {{ $row->place->main->name }}: {{ $row->place->name }}
                                 @else
-                                    {{ $row->place?->name ?? 'Espaço não informado' }}
+                                    {{ $row->place?->name ?? 'Ambiente não informado' }}
                                 @endif
                             </p>
                         @endinteract

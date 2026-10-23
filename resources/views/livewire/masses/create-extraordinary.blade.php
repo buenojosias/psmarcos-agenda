@@ -4,7 +4,7 @@
     <x-modal id="mass-extraordinary-modal" title="Cadastrar missa extraordinária" size="lg" persistent wire>
         @if ($pending !== null)
             <div class="space-y-4" role="alert">
-                <p class="font-semibold">Existem conflitos de reserva de espaço. Deseja cadastrar mesmo assim?</p>
+                <p class="font-semibold">Existem conflitos de reserva de ambiente. Deseja cadastrar mesmo assim?</p>
                 <p>As missas serão cadastradas em todas as datas, inclusive nas datas com conflito:</p>
                 <ul class="space-y-2">
                     @foreach ($conflicts as $conflict)

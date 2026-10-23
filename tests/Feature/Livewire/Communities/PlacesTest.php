@@ -42,7 +42,7 @@ it('shows a friendly empty state', function () {
     $community = Community::create(['name' => 'Matriz', 'alias' => 'Matriz', 'abbreviation' => 'MT']);
 
     Livewire::actingAs($user)->withoutLazyLoading()->test(Places::class, ['community' => $community])
-        ->assertSee('Nenhum espaço está cadastrado para esta comunidade.');
+        ->assertSee('Nenhum ambiente está cadastrado para esta comunidade.');
 });
 
 it('authorizes the lazy request using the existing community policy', function () {
@@ -86,10 +86,10 @@ it('shows creation controls only to permitted users', function (bool $allowed) {
         ->test(Places::class, ['community' => $community]);
 
     if ($allowed) {
-        $component->assertSee('Adicionar espaço')->assertSee('Adicionar subespaço')
+        $component->assertSee('Adicionar ambiente')->assertSee('Adicionar subambiente')
             ->assertSeeLivewire(App\Livewire\Places\Create::class);
     } else {
-        $component->assertDontSee('Adicionar espaço')->assertDontSee('Adicionar subespaço')
+        $component->assertDontSee('Adicionar ambiente')->assertDontSee('Adicionar subambiente')
             ->assertDontSeeLivewire(App\Livewire\Places\Create::class);
     }
 })->with([true, false]);

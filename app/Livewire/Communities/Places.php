@@ -19,7 +19,7 @@ class Places extends Component
 
     public function placeholder(): string
     {
-        return '<div role="status" class="text-sm text-gray-500 dark:text-dark-400">Carregando espaços...</div>';
+        return '<div role="status" class="text-sm text-gray-500 dark:text-dark-400">Carregando ambientes...</div>';
     }
 
     #[On('place-updated')]

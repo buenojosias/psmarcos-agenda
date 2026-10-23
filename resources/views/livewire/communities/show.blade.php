@@ -56,8 +56,8 @@
             @endif
         </x-tab.items>
 
-        <x-tab.items tab="spaces" title="Espaços">
-            @if ($tab === 'spaces')
+        <x-tab.items tab="ambientes" title="Ambientes">
+            @if ($tab === 'ambientes')
                 <livewire:communities.places :community="$community" :key="'community-places-'.$community->id" />
             @endif
         </x-tab.items>

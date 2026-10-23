@@ -91,7 +91,7 @@
                         <div class="flex items-center gap-2">
                             {{ $row->starts_at->format('H:i') }}
                             @if ($row->has_reservation_conflict)
-                                <x-tooltip icon="tabler.alert-triangle" color="amber" text="Existe conflito de reserva de espaço neste horário." />
+                                <x-tooltip icon="tabler.alert-triangle" color="amber" text="Existe conflito de reserva de ambiente neste horário." />
                             @endif
                         </div>
                     @endinteract

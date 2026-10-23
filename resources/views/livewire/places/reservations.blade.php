@@ -2,7 +2,7 @@
     <div class="header">
         <div>
             <h1>Reservas de {{ $place->main ? $place->main->name.': ' : '' }}{{ $place->name }}</h1>
-            <a href="{{ route('communities.show', ['community' => $place->community_id, 'tab' => 'spaces']) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar aos espaços</a>
+            <a href="{{ route('communities.show', ['community' => $place->community_id, 'tab' => 'ambientes']) }}" class="text-sm text-primary-600 hover:underline dark:text-primary-400">← Voltar aos ambientes</a>
         </div>
     </div>
 
@@ -15,7 +15,7 @@
         ['index' => 'ends_at', 'label' => 'Encerramento', 'sortable' => false],
         ['index' => 'event', 'label' => 'Evento', 'sortable' => false],
         ['index' => 'group', 'label' => 'Grupo organizador', 'sortable' => false],
-    ]" :rows="$reservations" paginate empty="Nenhuma reserva atual ou futura para este espaço.">
+    ]" :rows="$reservations" paginate empty="Nenhuma reserva atual ou futura para este ambiente.">
         @interact('column_starts_at', $row)
             {{ $row->reserved_from->format('d/m/Y H:i') }}
         @endinteract

@@ -63,7 +63,7 @@ class Create extends Component
 
         $this->reset('name', 'mainPlaceId', 'modal');
         $this->dispatch('created');
-        $this->success('Espaço criado com sucesso.', 'Concluído');
+        $this->success('Ambiente criado com sucesso.', 'Concluído');
     }
 
     public function render(): View

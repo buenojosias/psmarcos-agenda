@@ -20,7 +20,7 @@
                             <x-dropdown.items text="Ver reservas" href="{{ route('places.reservations', $place) }}" />
 
                             @can('create', \App\Models\Place::class)
-                                <x-dropdown.items text="Adicionar subespaço"
+                                <x-dropdown.items text="Adicionar subambiente"
                                     wire:click="$dispatchTo('places.create', 'create-place', { mainPlaceId: {{ $place->id }} })" />
                             @endcan
 
@@ -39,7 +39,7 @@
 
                 @if ($place->subplaces->isNotEmpty())
                     <div class="m-4 space-y-2" x-show="expanded" x-collapse>
-                        <x-label label="Sub espaços" />
+                        <x-label label="Subambientes" />
 
                         @foreach ($place->subplaces as $subplace)
                             <div wire:key="subplace-{{ $subplace->id }}">
@@ -75,12 +75,12 @@
             </x-card>
         </div>
     @empty
-        <p class="text-sm text-gray-500 dark:text-dark-400">Nenhum espaço está cadastrado para esta comunidade.</p>
+        <p class="text-sm text-gray-500 dark:text-dark-400">Nenhum ambiente está cadastrado para esta comunidade.</p>
     @endforelse
 
     @can('create', \App\Models\Place::class)
         <div class="mt-4">
-            <x-button text="Adicionar espaço" wire:click="$dispatchTo('places.create', 'create-place')" />
+            <x-button text="Adicionar ambiente" wire:click="$dispatchTo('places.create', 'create-place')" />
         </div>
 
         <livewire:places.create :community="$community" @created="$refresh" />

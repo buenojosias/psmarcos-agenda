@@ -346,12 +346,12 @@ it('shows a live conflict indicator without per mass queries', function (string 
     DB::enableQueryLog();
 
     try {
-        $test = Livewire::actingAs($user)->test(Index::class)->assertSee('Existe conflito de reserva de espaço neste horário.')
+        $test = Livewire::actingAs($user)->test(Index::class)->assertSee('Existe conflito de reserva de ambiente neste horário.')
             ->assertDontSee('Compromisso privado')->assertViewHas('masses', fn ($rows): bool => $rows->firstWhere('id', $mass->id)->has_reservation_conflict);
         $initialQueries = count(DB::getQueryLog());
         Mass::factory()->count(5)->create(['community_id' => $community->id, 'starts_at' => '2026-10-01 12:00', 'ends_at' => '2026-10-01 13:00']);
         DB::flushQueryLog();
-        Livewire::actingAs($user)->test(Index::class)->assertSee('Existe conflito de reserva de espaço neste horário.');
+        Livewire::actingAs($user)->test(Index::class)->assertSee('Existe conflito de reserva de ambiente neste horário.');
         expect(count(DB::getQueryLog()))->toBeLessThanOrEqual($initialQueries);
     } finally {
         DB::disableQueryLog();

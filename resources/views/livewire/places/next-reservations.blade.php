@@ -15,7 +15,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-sm text-gray-500 dark:text-dark-400">Nenhuma reserva atual ou futura para este espaço.</p>
+                    <p class="text-sm text-gray-500 dark:text-dark-400">Nenhuma reserva atual ou futura para este ambiente.</p>
                 @endforelse
             </div>
 

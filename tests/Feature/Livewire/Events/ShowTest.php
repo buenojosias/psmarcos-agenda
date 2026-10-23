@@ -135,7 +135,7 @@ it('hides space reservations for external events', function () {
     $event->reservations()->create(['place_id' => $place->id, 'reserved_from' => '2026-10-02 09:00', 'reserved_to' => '2026-10-02 13:00']);
 
     $this->actingAs(User::factory()->create())->get(route('events.show', $event))
-        ->assertOk()->assertDontSee('Reservas de espaços')->assertDontSee('Salão principal');
+        ->assertOk()->assertDontSee('Reservas de ambientes')->assertDontSee('Salão principal');
 });
 
 it('shows an edit link to a user who can update the event', function () {

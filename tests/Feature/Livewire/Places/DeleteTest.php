@@ -64,7 +64,7 @@ it('shows only Fechar when reservations exist before opening or arrive before co
 
     $component->assertNotDispatched('deleted')
         ->assertDispatched('ts-ui:dialog', fn (string $event, array $data): bool => $data['type'] === 'warning'
-            && $data['description'] === 'Este espaço possui reservas vinculadas. Remova ou transfira essas reservas antes de tentar excluí-lo novamente.'
+            && $data['description'] === 'Este ambiente possui reservas vinculadas. Remova ou transfira essas reservas antes de tentar excluí-lo novamente.'
             && ! isset($data['options']['confirm'])
             && $data['options']['cancel']['text'] === 'Fechar');
     $this->assertModelExists($place);

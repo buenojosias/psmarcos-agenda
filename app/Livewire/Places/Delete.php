@@ -40,7 +40,7 @@ class Delete extends Component
 
         $this->placeId = $place->id;
 
-        $this->question('Deseja excluir este espaço? Esta ação não pode ser desfeita.', 'Excluir espaço')
+        $this->question('Deseja excluir este ambiente? Esta ação não pode ser desfeita.', 'Excluir ambiente')
             ->confirm('Confirmar', 'delete')
             ->cancel('Cancelar')
             ->send();
@@ -72,7 +72,7 @@ class Delete extends Component
         }
 
         $this->dispatch('deleted');
-        $this->success('Espaço excluído com sucesso.', 'Concluído');
+        $this->success('Ambiente excluído com sucesso.', 'Concluído');
     }
 
     public function render(): View
@@ -85,8 +85,8 @@ class Delete extends Component
         $this->dispatch('ts-ui:dialog',
             reference: $this->getId(),
             type: 'warning',
-            title: 'Não é possível excluir este espaço',
-            description: 'Este espaço possui reservas vinculadas. Remova ou transfira essas reservas antes de tentar excluí-lo novamente.',
+            title: 'Não é possível excluir este ambiente',
+            description: 'Este ambiente possui reservas vinculadas. Remova ou transfira essas reservas antes de tentar excluí-lo novamente.',
             options: [
                 'cancel' => [
                     'text'   => 'Fechar',
