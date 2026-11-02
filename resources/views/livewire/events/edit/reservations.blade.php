@@ -12,13 +12,20 @@
         <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
     @enderror
 
-    <x-table :$headers :rows="$reservations" :paginate="false" :filter="false" compact>
+    <x-table :$headers :rows="$reservations" :paginate="false" :filter="false" highlight compact>
         @interact('column_place', $row)
-            @if ($row->place?->main)
-                {{ $row->place->main->name }}: {{ $row->place->name }}
-            @else
-                {{ $row->place?->name ?? 'Ambiente não informado' }}
-            @endif
+            <span class="inline-flex items-center gap-2">
+                @if ($row->is_primary)
+                    <x-tooltip icon="tabler.star" color="amber" text="Ambiente principal" />
+                @endif
+                <span>
+                    @if ($row->place?->main)
+                        {{ $row->place->main->name }}: {{ $row->place->name }}
+                    @else
+                        {{ $row->place?->name ?? 'Ambiente não informado' }}
+                    @endif
+                </span>
+            </span>
         @endinteract
 
         @interact('column_reserved_from', $row)
@@ -27,14 +34,6 @@
 
         @interact('column_reserved_to', $row)
             <span class="whitespace-nowrap">{{ $row->reserved_to->format('d/m/Y H:i') }}</span>
-        @endinteract
-
-        @interact('column_is_primary', $row)
-            @if ($row->is_primary)
-                <x-badge text="Principal" color="amber" light />
-            @else
-                <span class="text-gray-400">—</span>
-            @endif
         @endinteract
 
         @interact('column_action', $row)

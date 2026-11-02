@@ -91,12 +91,17 @@
                         ['index' => 'reserved_to', 'label' => 'Fim da reserva', 'sortable' => false],
                     ]" :rows="$reservations" highlight compact empty="Nenhuma reserva de ambiente para este evento.">
                         @interact('column_place', $row)
-                            <p class="font-medium">
-                                @if ($row->place?->main)
-                                    {{ $row->place->main->name }}: {{ $row->place->name }}
-                                @else
-                                    {{ $row->place?->name ?? 'Ambiente não informado' }}
+                            <p class="inline-flex items-center gap-2 font-medium">
+                                @if ($row->is_primary)
+                                    <x-tooltip icon="tabler.star" color="amber" xs text="Ambiente principal" />
                                 @endif
+                                <span>
+                                    @if ($row->place?->main)
+                                        {{ $row->place->main->name }}: {{ $row->place->name }}
+                                    @else
+                                        {{ $row->place?->name ?? 'Ambiente não informado' }}
+                                    @endif
+                                </span>
                             </p>
                         @endinteract
                         @interact('column_reserved_from', $row)

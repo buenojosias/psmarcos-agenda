@@ -40,7 +40,7 @@ class Show extends Component
             : $this->event->reservations()->with('place.main:id,name')
                 ->orderByDesc('is_primary')->orderBy('reserved_from')->orderBy('id')->get()
                 ->each(function (PlaceReservation $reservation): void {
-                    $reservation->setAttribute('highlight', $reservation->is_primary ? 'primary' : null);
+                    $reservation->setAttribute('highlight', $reservation->is_primary ? 'amber' : null);
                 });
 
         $canUpdate = Gate::allows('update', $this->event);

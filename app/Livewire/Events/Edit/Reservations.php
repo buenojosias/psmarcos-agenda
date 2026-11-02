@@ -38,7 +38,6 @@ class Reservations extends Component
         ['index' => 'place', 'label' => 'Ambiente', 'sortable' => false],
         ['index' => 'reserved_from', 'label' => 'Início', 'sortable' => false],
         ['index' => 'reserved_to', 'label' => 'Fim', 'sortable' => false],
-        ['index' => 'is_primary', 'label' => 'Principal', 'sortable' => false, 'align' => 'center'],
         ['index' => 'action', 'label' => 'Ações', 'sortable' => false, 'align' => 'right'],
     ];
 
@@ -165,7 +164,10 @@ class Reservations extends Component
                 ->orderByDesc('is_primary')
                 ->orderBy('reserved_from')
                 ->orderBy('id')
-                ->get(),
+                ->get()
+                ->each(function (PlaceReservation $reservation): void {
+                    $reservation->setAttribute('highlight', $reservation->is_primary ? 'amber' : null);
+                }),
         ]);
     }
 
