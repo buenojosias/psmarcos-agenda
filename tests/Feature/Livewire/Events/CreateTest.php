@@ -17,6 +17,10 @@ use App\Livewire\Events\Forms\External;
 use App\Livewire\Events\Forms\Recurring;
 use App\Livewire\Events\Forms\Occasional;
 
+beforeEach(function () {
+    $this->travelTo('2026-09-21 10:00:00');
+});
+
 function occasionalEventData(Group $group): array
 {
     $community = eventCommunity();
@@ -26,8 +30,10 @@ function occasionalEventData(Group $group): array
         'group_id'            => $group->id,
         'name'                => 'Encontro de formação',
         'type'                => EventTypeEnum::COURSE->value,
-        'starts_at'           => '2026-10-10T09:00',
-        'ends_at'             => '2026-10-10T11:00',
+        'starts_date'         => '2026-10-10',
+        'starts_time'         => '09:00',
+        'ends_date'           => '2026-10-10',
+        'ends_time'           => '11:00',
         'is_public'           => true,
         'advertisable'        => false,
         'confirm_immediately' => false,
@@ -67,8 +73,10 @@ function externalEventData(Group $group): array
         'group_id'                   => $group->id,
         'name'                       => 'Encontro de formação',
         'type'                       => EventTypeEnum::COURSE->value,
-        'starts_at'                  => '2026-10-10T09:00',
-        'ends_at'                    => '2026-10-10T11:00',
+        'starts_date'                => '2026-10-10',
+        'starts_time'                => '09:00',
+        'ends_date'                  => '2026-10-10',
+        'ends_time'                  => '11:00',
         'is_public'                  => true,
         'advertisable'               => false,
         'confirm_immediately'        => false,
@@ -134,16 +142,211 @@ it('validates the required external location and shows optional advertising deta
             ...externalEventData($group),
             'external_location_name'    => '',
             'external_location_address' => '',
-            'ends_at'                   => '2026-10-10T09:00',
         ])
         ->call('validateDraft')
-        ->assertHasErrors(['external_location_name', 'external_location_address', 'ends_at'])
+        ->assertHasErrors(['external_location_name', 'external_location_address'])
         ->assertSet('draftValidated', false);
 
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
     $this->assertDatabaseCount('place_reservations', 0);
 });
+
+it('requires valid date and time fields for occasional and external events', function (string $form) {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set([...$data, 'starts_date' => '', 'starts_time' => '25:00', 'ends_date' => '2026-02-30', 'ends_time' => ''])
+        ->call('validateDraft')
+        ->assertHasErrors(['starts_date', 'starts_time', 'ends_date', 'ends_time'])
+        ->assertSet('draftValidated', false);
+
+    $this->assertDatabaseCount('events', 0);
+})->with([Occasional::class, External::class]);
+
+it('sets the ending date to the selected starting date when the ending is empty or earlier', function (string $form, string $endingDate, string $startingTime, string $endingTime) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('ends_date', $endingDate)
+        ->set('ends_time', $endingTime)
+        ->set('starts_time', $startingTime)
+        ->set('starts_date', '2026-10-10')
+        ->assertSet('ends_date', '2026-10-10');
+})->with([Occasional::class, External::class])->with([
+    'empty ending'                    => ['', '', ''],
+    'earlier ending with later clock' => ['2026-10-09', '23:30', '00:30'],
+]);
+
+it('accepts a cleared starting date without losing the form state', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('starts_date', '2026-10-10')
+        ->set('draftValidated', true)
+        ->set('starts_date', null)
+        ->assertSet('starts_date', null)
+        ->assertSet('draftValidated', false);
+})->with([Occasional::class, External::class]);
+
+it('fills a cleared ending date when the starting date is selected', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('ends_date', null)
+        ->set('starts_date', '2026-10-10')
+        ->assertSet('ends_date', '2026-10-10');
+})->with([Occasional::class, External::class]);
+
+it('keeps an ending date that is the same as or later than the selected starting date', function (string $form, string $endingDate) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('ends_date', $endingDate)
+        ->set('starts_date', '2026-10-10')
+        ->assertSet('ends_date', $endingDate);
+})->with([Occasional::class, External::class])->with([
+    'same date'  => ['2026-10-10'],
+    'later date' => ['2026-10-11'],
+]);
+
+it('sets an empty ending time to one hour after the selected starting time', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('starts_date', '2026-10-10')
+        ->set('starts_time', '09:30')
+        ->assertSet('ends_time', '10:30')
+        ->assertSet('ends_date', '2026-10-10');
+})->with([Occasional::class, External::class]);
+
+it('fills a cleared ending time when the starting time is selected', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('ends_time', null)
+        ->set('starts_time', '09:30')
+        ->assertSet('ends_time', '10:30');
+})->with([Occasional::class, External::class]);
+
+it('accepts a cleared starting time without filling the ending time', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('starts_time', null)
+        ->assertSet('starts_time', null)
+        ->assertSet('ends_time', '');
+})->with([Occasional::class, External::class]);
+
+it('keeps an ending time already selected when the starting time changes', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('ends_time', '12:15')
+        ->set('starts_time', '09:30')
+        ->assertSet('ends_time', '12:15');
+})->with([Occasional::class, External::class]);
+
+it('moves the ending date to the next day when the default ending time crosses midnight', function (string $form) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test($form)
+        ->set('starts_date', '2026-10-10')
+        ->set('starts_time', '23:30')
+        ->assertSet('ends_time', '00:30')
+        ->assertSet('ends_date', '2026-10-11');
+})->with([Occasional::class, External::class]);
+
+it('rejects an event starting in the past or at the current time', function (string $form, string $startsDate, string $startsTime, string $errorField) {
+    $this->travelTo('2026-10-10 10:00:00');
+
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set([...$data, 'starts_date' => $startsDate, 'starts_time' => $startsTime])
+        ->call('validateDraft')
+        ->assertHasErrors([$errorField])
+        ->assertSet('draftValidated', false);
+
+    $this->assertDatabaseCount('events', 0);
+})->with([Occasional::class, External::class])->with([
+    'past date'     => ['2026-10-09', '11:00', 'starts_date'],
+    'earlier today' => ['2026-10-10', '09:00', 'starts_time'],
+    'right now'     => ['2026-10-10', '10:00', 'starts_time'],
+]);
+
+it('accepts an event starting later today', function (string $form) {
+    $this->travelTo('2026-10-10 10:00:00');
+
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set([...$data, 'starts_time' => '10:01'])
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('draftValidated', true);
+})->with([Occasional::class, External::class]);
+
+it('rechecks the start time before saving an already validated event', function (string $form) {
+    $this->travelTo('2026-10-10 08:59:00');
+
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    $component = Livewire::actingAs($user)->test($form)
+        ->set($data)
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->assertSet('draftValidated', true);
+
+    $this->travelTo('2026-10-10 09:00:00');
+
+    $component->call('save')->assertHasErrors(['starts_time']);
+
+    $this->assertDatabaseCount('events', 0);
+})->with([Occasional::class, External::class]);
+
+it('rejects an ending before or at the starting date and time', function (string $form, string $endsDate, string $endsTime) {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set([...$data, 'ends_date' => $endsDate, 'ends_time' => $endsTime])
+        ->call('validateDraft')
+        ->assertHasErrors(['ends_time'])
+        ->assertSet('draftValidated', false);
+
+    $this->assertDatabaseCount('events', 0);
+})->with([Occasional::class, External::class])->with([
+    'same instant' => ['2026-10-10', '09:00'],
+    'earlier date' => ['2026-10-09', '11:00'],
+]);
+
+it('joins separate date and time fields for an event ending the next day', function (string $form) {
+    $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+    $group = Group::factory()->create();
+    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+
+    Livewire::actingAs($user)->test($form)
+        ->set([...$data, 'starts_time' => '23:30', 'ends_date' => '2026-10-11', 'ends_time' => '00:15'])
+        ->call('validateDraft')
+        ->assertHasNoErrors()
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $event = Event::query()->sole();
+
+    expect($event->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 23:30:00')
+        ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-11 00:15:00');
+})->with([Occasional::class, External::class]);
 
 it('keeps public and advertising toggles in sync', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -201,11 +404,44 @@ it('persists a validated external event and redirects to its page', function () 
 
     $component->assertRedirect(route('events.show', $event));
     expect($event->is_external)->toBeTrue()
+        ->and($event->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 09:00:00')
+        ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 11:00:00')
         ->and($event->complement)->toBe('Encontro na praça')
         ->and($event->detail->external_location_name)->toBe('Praça central')
         ->and($event->detail->external_location_address)->toBe('Rua das Flores, 100')
         ->and($event->reservations)->toHaveCount(0)
         ->and($event->logs->sole()->action)->toBe(EventLogActionEnum::CREATED);
+});
+
+it('fills an empty recurring ending time one hour after the starting time', function (?string $endingTime, string $startingTime, string $expectedEndingTime) {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Recurring::class)
+        ->set('ends_time', $endingTime)
+        ->set('starts_time', $startingTime)
+        ->assertSet('ends_time', $expectedEndingTime);
+})->with([
+    'empty ending'         => ['', '09:30', '10:30'],
+    'cleared ending'       => [null, '09:30', '10:30'],
+    'one hour after 23:30' => ['', '23:30', '00:30'],
+]);
+
+it('keeps a recurring ending time already selected when the starting time changes', function () {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Recurring::class)
+        ->set('ends_time', '12:15')
+        ->set('starts_time', '09:30')
+        ->assertSet('ends_time', '12:15');
+});
+
+it('accepts a cleared recurring starting time without filling the ending time', function () {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Recurring::class)
+        ->set('starts_time', null)
+        ->assertSet('starts_time', null)
+        ->assertSet('ends_time', '');
 });
 
 it('generates sorted unique future occurrences without persistence', function () {
@@ -634,12 +870,12 @@ it('validates the event interval and individual place buffers without persistenc
     $place = eventCommunity()->places()->create(['name' => 'Nave']);
 
     Livewire::actingAs($user)->test(Occasional::class)
-        ->set([...occasionalEventData($group), 'ends_at' => '2026-10-10T09:00'])
+        ->set(occasionalEventData($group))
         ->set('community_id', $place->community_id)
         ->set('place_ids', [$place->id])
         ->set("place_hours.{$place->id}.before", -0.25)
         ->call('validateDraft')
-        ->assertHasErrors(['ends_at', "place_hours.{$place->id}.before"]);
+        ->assertHasErrors(["place_hours.{$place->id}.before"]);
 
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('event_details', 0);
@@ -705,13 +941,17 @@ it('persists a validated occasional event and redirects to its page', function (
         ->and($component->get('name'))->toBe('')
         ->and($component->get('complement'))->toBe('')
         ->and($component->get('type'))->toBe('')
-        ->and($component->get('starts_at'))->toBe('')
-        ->and($component->get('ends_at'))->toBe('')
+        ->and($component->get('starts_date'))->toBe('')
+        ->and($component->get('starts_time'))->toBe('')
+        ->and($component->get('ends_date'))->toBe('')
+        ->and($component->get('ends_time'))->toBe('')
         ->and($component->get('community_id'))->toBe('')
         ->and($component->get('place_ids'))->toBe([])
         ->and($component->get('place_hours'))->toBe([])
         ->and($component->get('draftValidated'))->toBeFalse()
         ->and($event->status)->toBe(EventStatusEnum::PENDING)
+        ->and($event->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 09:00:00')
+        ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 11:00:00')
         ->and($event->community_id)->toBe($data['community_id'])
         ->and($event->complement)->toBe('Formação paroquial')
         ->and($event->detail)->toBeNull()

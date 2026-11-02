@@ -36,9 +36,9 @@ class Recurring extends Component
     /** @var list<string> */
     public array $dates = [];
 
-    public string $starts_time = '';
+    public ?string $starts_time = '';
 
-    public string $ends_time = '';
+    public ?string $ends_time = '';
 
     public bool $is_public = false;
 
@@ -93,6 +93,13 @@ class Recurring extends Component
     public function mount(): void
     {
         Gate::authorize('create', Event::class);
+    }
+
+    public function updatedStartsTime(): void
+    {
+        if (blank($this->ends_time) && $this->starts_time !== null && preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $this->starts_time) === 1) {
+            $this->ends_time = CarbonImmutable::parse('2000-01-01 '.$this->starts_time)->addHour()->format('H:i');
+        }
     }
 
     public function updatedCommunityId(): void

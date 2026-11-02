@@ -9,12 +9,14 @@ use App\Models\Event;
 use App\Models\Group;
 use Livewire\Component;
 use App\Enums\UserRoleEnum;
+use Carbon\CarbonImmutable;
 use App\Enums\EventTypeEnum;
 use App\Livewire\Traits\Alert;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use App\Actions\CreateExternalEventAction;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Collection as SupportCollection;
 
 class External extends Component
@@ -27,9 +29,13 @@ class External extends Component
 
     public mixed $type = '';
 
-    public string $starts_at = '';
+    public ?string $starts_date = '';
 
-    public string $ends_at = '';
+    public ?string $starts_time = '';
+
+    public ?string $ends_date = '';
+
+    public ?string $ends_time = '';
 
     public bool $is_public = false;
 
@@ -70,6 +76,33 @@ class External extends Component
         Gate::authorize('create', Event::class);
     }
 
+    public function updatedStartsDate(): void
+    {
+        $this->draftValidated = false;
+
+        if (blank($this->starts_date)) {
+            return;
+        }
+
+        if (blank($this->ends_date) || $this->ends_date < $this->starts_date) {
+            $this->ends_date = $this->starts_date;
+        }
+    }
+
+    public function updatedStartsTime(): void
+    {
+        if (blank($this->ends_time) && $this->starts_time !== null && preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $this->starts_time) === 1) {
+            $end             = CarbonImmutable::parse('2000-01-01 '.$this->starts_time)->addHour();
+            $this->ends_time = $end->format('H:i');
+
+            if (filled($this->starts_date) && $end->day !== 1 && (blank($this->ends_date) || $this->ends_date <= $this->starts_date)) {
+                $this->ends_date = CarbonImmutable::parse($this->starts_date)->addDay()->toDateString();
+            }
+        }
+
+        $this->draftValidated = false;
+    }
+
     public function updatedAdvertisable(): void
     {
         if ($this->advertisable) {
@@ -100,7 +133,7 @@ class External extends Component
         Gate::authorize('create', Event::class);
         $this->draftValidated = false;
 
-        $validated = $this->validate($this->rules(), $this->messages());
+        $validated = $this->validatedEventData();
         $group     = Group::query()->find($validated['group_id']);
 
         Gate::authorize('selectGroup', [Event::class, $group]);
@@ -127,7 +160,7 @@ class External extends Component
         abort_if($user === null, 401);
 
         $event = $createExternalEvent->handle(
-            $this->validate($this->rules(), $this->messages()),
+            $this->validatedEventData(),
             $user,
         );
 
@@ -169,8 +202,10 @@ class External extends Component
             'group_id'                   => ['required', 'integer', Rule::exists('groups', 'id')],
             'name'                       => ['required', 'string', 'max:255'],
             'type'                       => ['required', Rule::enum(EventTypeEnum::class)],
-            'starts_at'                  => ['required', 'date_format:Y-m-d\TH:i'],
-            'ends_at'                    => ['required', 'date_format:Y-m-d\TH:i', 'after:starts_at'],
+            'starts_date'                => ['required', 'date_format:Y-m-d'],
+            'starts_time'                => ['required', 'date_format:H:i'],
+            'ends_date'                  => ['required', 'date_format:Y-m-d'],
+            'ends_time'                  => ['required', 'date_format:H:i'],
             'is_public'                  => ['boolean', 'accepted_if:advertisable,true'],
             'advertisable'               => ['boolean'],
             'confirm_immediately'        => ['boolean'],
@@ -194,9 +229,35 @@ class External extends Component
     private function messages(): array
     {
         return [
-            'ends_at.after'         => 'O encerramento deve ser posterior ao início.',
             'is_public.accepted_if' => 'Um evento com divulgação solicitada deve ser público.',
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function validatedEventData(): array
+    {
+        $validated = $this->validate($this->rules(), $this->messages());
+        $startsAt  = CarbonImmutable::parse($validated['starts_date'].' '.$validated['starts_time']);
+        $endsAt    = CarbonImmutable::parse($validated['ends_date'].' '.$validated['ends_time']);
+
+        $now = CarbonImmutable::now();
+
+        if ($startsAt->lessThanOrEqualTo($now)) {
+            throw ValidationException::withMessages([
+                $startsAt->lessThan($now->startOfDay()) ? 'starts_date' : 'starts_time' => 'O início deve ser posterior ao momento atual.',
+            ]);
+        }
+
+        if ($endsAt->lessThanOrEqualTo($startsAt)) {
+            throw ValidationException::withMessages([
+                'ends_time' => 'O encerramento deve ser posterior ao início.',
+            ]);
+        }
+
+        $validated['starts_at'] = $startsAt->format('Y-m-d H:i:s');
+        $validated['ends_at']   = $endsAt->format('Y-m-d H:i:s');
+
+        return $validated;
     }
 
     /** @return SupportCollection<int, array{label: string, value: list<array{label: string, value: int}>}> */
