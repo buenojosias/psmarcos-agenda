@@ -63,14 +63,8 @@
              center="md">
         <form id="event-reservation-form" wire:submit="saveReservation" class="grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
-                <x-select.native wire:model="place_id" label="Ambiente *">
-                    <option value="">Selecione</option>
-                    @foreach ($places as $place)
-                        <option wire:key="reservation-place-{{ $place['value'] }}" value="{{ $place['value'] }}">
-                            {{ $place['label'] }}
-                        </option>
-                    @endforeach
-                </x-select.native>
+                <x-select.styled wire:model="place_id" label="Ambiente *" placeholder="Selecione"
+                                 :options="$places" select="label:label|value:value" required />
             </div>
 
             <x-input wire:model="reserved_from" type="datetime-local" label="Início da reserva *" />
