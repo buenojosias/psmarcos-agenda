@@ -45,8 +45,8 @@
             @foreach ($selectedPlaces as $place)
                 <section wire:key="recurring-event-place-{{ $place->id }}" class="grid min-w-0 gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 md:col-span-2 md:grid-cols-3">
                     <p class="min-w-0 break-words font-medium md:self-center">{{ $place->main === null ? $place->name : $place->main->name.': '.$place->name }}</p>
-                    <x-reservation-duration model="place_hours.{{ $place->id }}.before" label="Horas antes" />
-                    <x-reservation-duration model="place_hours.{{ $place->id }}.after" label="Horas depois" />
+                    <x-reservation-duration model="place_hours.{{ $place->id }}.before" label="Reserva antes" time-model="starts_time" direction="before" />
+                    <x-reservation-duration model="place_hours.{{ $place->id }}.after" label="Reserva depois" time-model="ends_time" direction="after" />
                 </section>
             @endforeach
         </div>
