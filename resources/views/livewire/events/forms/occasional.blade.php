@@ -1,6 +1,6 @@
 <form wire:submit="validateDraft" class="min-w-0 space-y-6">
     <x-card header="Dados do evento" shadowless bordered>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <x-input wire:model="name" label="Nome do evento *" maxlength="255" required class="md:col-span-2" />
 
             <x-input wire:model="complement" label="Complemento" maxlength="255" class="md:col-span-2" />
@@ -49,7 +49,7 @@
     @endif
 
     <x-card header="Local e ambientes" shadowless bordered>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <x-select.native wire:model.live="community_id" label="Comunidade *" required>
                 <option value="">Selecione uma comunidade</option>
                 @foreach ($communities as $community)
@@ -57,14 +57,14 @@
                 @endforeach
             </x-select.native>
 
-            <div wire:key="event-place-select-{{ $community_id ?: 'none' }}">
+            <div wire:key="event-place-select-{{ $community_id ?: 'none' }}" class="min-w-0">
                 <x-select.styled wire:model.live="place_ids" label="Ambientes" :options="$places"
                                  select="label:label|value:value" multiple searchable :disabled="blank($community_id)" />
             </div>
 
             @foreach ($selectedPlaces as $place)
-                <section wire:key="event-place-{{ $place->id }}" class="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 md:col-span-2 md:grid-cols-3">
-                    <p class="font-medium md:self-center">{{ $place->main === null ? $place->name : $place->main->name.': '.$place->name }}</p>
+                <section wire:key="event-place-{{ $place->id }}" class="grid min-w-0 gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 md:col-span-2 md:grid-cols-3">
+                    <p class="min-w-0 break-words font-medium md:self-center">{{ $place->main === null ? $place->name : $place->main->name.': '.$place->name }}</p>
                     <x-number wire:model="place_hours.{{ $place->id }}.before" label="Horas antes" :min="0" :step="0.25" />
                     <x-number wire:model="place_hours.{{ $place->id }}.after" label="Horas depois" :min="0" :step="0.25" />
                 </section>

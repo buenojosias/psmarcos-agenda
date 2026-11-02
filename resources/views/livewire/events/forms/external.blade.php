@@ -1,6 +1,6 @@
 <form wire:submit="validateDraft" class="min-w-0 space-y-6">
     <x-card header="Dados do evento" shadowless bordered>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <x-input wire:model="name" label="Nome do evento *" maxlength="255" required class="md:col-span-2" />
 
             <x-input wire:model="complement" label="Complemento" maxlength="255" class="md:col-span-2" />
