@@ -42,6 +42,10 @@ class Single extends Component
 
     public ?string $ends_time = '';
 
+    public bool $endingTimeIsAutomatic = false;
+
+    public bool $endingDateIsAutomatic = false;
+
     public bool $is_public = false;
 
     public bool $advertisable = false;
@@ -97,6 +101,12 @@ class Single extends Component
             return;
         }
 
+        if ($this->endingDateIsAutomatic) {
+            $this->ends_date = CarbonImmutable::parse($this->starts_date)->addDay()->toDateString();
+
+            return;
+        }
+
         if (blank($this->ends_date) || $this->ends_date < $this->starts_date) {
             $this->ends_date = $this->starts_date;
         }
@@ -104,16 +114,41 @@ class Single extends Component
 
     public function updatedStartsTime(): void
     {
-        if (blank($this->ends_time) && $this->starts_time !== null && preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $this->starts_time) === 1) {
-            $end             = CarbonImmutable::parse('2000-01-01 '.$this->starts_time)->addHour();
-            $this->ends_time = $end->format('H:i');
+        if ((blank($this->ends_time) || $this->endingTimeIsAutomatic) && $this->starts_time !== null && preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $this->starts_time) === 1) {
+            $end                         = CarbonImmutable::parse('2000-01-01 '.$this->starts_time)->addHour();
+            $this->ends_time             = $end->format('H:i');
+            $this->endingTimeIsAutomatic = true;
 
-            if (filled($this->starts_date) && $end->day !== 1 && (blank($this->ends_date) || $this->ends_date <= $this->starts_date)) {
-                $this->ends_date = CarbonImmutable::parse($this->starts_date)->addDay()->toDateString();
+            if (filled($this->starts_date)) {
+                if ($end->day !== 1 && (blank($this->ends_date) || $this->ends_date <= $this->starts_date || $this->endingDateIsAutomatic)) {
+                    $this->ends_date             = CarbonImmutable::parse($this->starts_date)->addDay()->toDateString();
+                    $this->endingDateIsAutomatic = true;
+                } elseif ($end->day === 1 && $this->endingDateIsAutomatic) {
+                    $this->ends_date             = $this->starts_date;
+                    $this->endingDateIsAutomatic = false;
+                }
             }
         }
 
         $this->draftValidated = false;
+    }
+
+    public function updatedEndsTime(): void
+    {
+        $this->endingTimeIsAutomatic = false;
+
+        if ($this->endingDateIsAutomatic && filled($this->starts_date) && (blank($this->ends_time) || (filled($this->starts_time) && $this->ends_time > $this->starts_time))) {
+            $this->ends_date = $this->starts_date;
+        }
+
+        $this->endingDateIsAutomatic = false;
+        $this->draftValidated        = false;
+    }
+
+    public function updatedEndsDate(): void
+    {
+        $this->endingDateIsAutomatic = false;
+        $this->draftValidated        = false;
     }
 
     public function updatedAdvertisable(): void

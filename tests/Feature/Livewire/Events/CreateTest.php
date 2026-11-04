@@ -233,6 +233,19 @@ it('sets an empty ending time to one hour after the selected starting time', fun
         ->assertSet('ends_date', '2026-10-10');
 })->with([Single::class, External::class]);
 
+it('updates an automatically filled ending time as the starting time is completed but keeps a manual choice', function () {
+    $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
+
+    Livewire::actingAs($user)->test(Single::class)
+        ->set('starts_time', '09:00')
+        ->assertSet('ends_time', '10:00')
+        ->set('starts_time', '09:30')
+        ->assertSet('ends_time', '10:30')
+        ->set('ends_time', '11:15')
+        ->set('starts_time', '10:00')
+        ->assertSet('ends_time', '11:15');
+});
+
 it('fills a cleared ending time when the starting time is selected', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 

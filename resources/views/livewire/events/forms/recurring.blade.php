@@ -48,7 +48,7 @@
             <x-date wire:model="end_date" label="Data de encerramento" format="DD/MM/YYYY" :min-date="today()" hint="Em branco: até o fim do ano corrente." />
             <div class="grid grid-cols-2 gap-4">
                 <x-time wire:model.live="starts_time" label="Horário inicial *" format="24" step-minute="5" />
-                <x-time wire:model="ends_time" label="Horário final *" format="24" step-minute="5" />
+                <x-time wire:model.live="ends_time" label="Horário final *" format="24" step-minute="5" />
             </div>
 
             <x-toggle wire:model="is_public" label="Evento público" />

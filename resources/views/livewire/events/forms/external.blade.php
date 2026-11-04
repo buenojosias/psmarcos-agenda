@@ -18,7 +18,7 @@
             <x-date wire:model.live="starts_date" label="Data de início *" format="DD/MM/YYYY" :min-date="today()" typeable />
             <x-time wire:model.live="starts_time" label="Horário de início *" format="24" step-minute="5" />
             <x-date wire:model="ends_date" label="Data de encerramento *" format="DD/MM/YYYY" typeable />
-            <x-time wire:model="ends_time" label="Horário de encerramento *" format="24" step-minute="5" />
+            <x-time wire:model.live="ends_time" label="Horário de encerramento *" format="24" step-minute="5" />
             <x-toggle wire:model.live="is_public" label="Evento público" />
             <x-toggle wire:model.live="advertisable" label="Solicitar divulgação" />
             @if ($canConfirmImmediately)
