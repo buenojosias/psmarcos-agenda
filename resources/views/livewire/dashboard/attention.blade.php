@@ -13,7 +13,7 @@
             @endforeach
 
             @if ($refusedEvents->isNotEmpty())
-                <x-alert title="Eventos precisam de ajustes" text="Estes eventos foram recusados. Consulte o motivo e faça os ajustes necessários." icon="tabler.alert-circle" color="red" light>
+                <x-alert title="Eventos precisam de ajustes" text="Estes eventos não foram aprovados. Consulte o motivo e faça os ajustes necessários." icon="tabler.alert-circle" color="red" light>
                     <x-slot:footer>
                         <ul class="flex flex-col gap-3">
                             @foreach ($refusedEvents as $event)
@@ -23,7 +23,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        <div class="mt-4"><x-button text="Consultar eventos recusados" :href="route('events.index', ['status' => 'refused', 'period' => 'all'])" color="red" sm flat /></div>
+                        <div class="mt-4"><x-button text="Consultar eventos não aprovados" :href="route('events.index', ['status' => 'refused', 'period' => 'all'])" color="red" sm flat /></div>
                     </x-slot:footer>
                 </x-alert>
             @endif

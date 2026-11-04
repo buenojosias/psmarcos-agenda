@@ -65,7 +65,7 @@ it('shows only the current occurrence logs in descending order with action, user
         ->assertSee('João da Silva')
         ->assertSee('Pendente → Confirmado')
         ->assertSee('Status: Pendente')
-        ->assertDontSee('Evento recusado')
+        ->assertDontSee('Evento não aprovado')
         ->assertDontSee('serie-de-setembro');
 });
 

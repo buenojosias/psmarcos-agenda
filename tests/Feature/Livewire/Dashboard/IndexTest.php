@@ -56,6 +56,8 @@ it('shows only relevant refused events and confirmed commitments for members', f
 
     $this->actingAs($user)->get(route('dashboard'))
         ->assertSee('Retiro precisa de ajustes')
+        ->assertSee('Estes eventos não foram aprovados.')
+        ->assertSee('Consultar eventos não aprovados')
         ->assertSee('Evento geral confirmado')
         ->assertDontSee('Pedido protegido')
         ->assertDontSee('Recusado protegido')

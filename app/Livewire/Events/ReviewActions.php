@@ -60,7 +60,7 @@ class ReviewActions extends Component
         $this->reset('refusalReason');
 
         $this->toast()
-            ->success('Evento recusado', 'O evento foi recusado com sucesso.')
+            ->success('Evento não aprovado', 'O evento foi marcado como não aprovado.')
             ->send();
 
         $this->dispatch('event-reviewed');

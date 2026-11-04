@@ -149,7 +149,7 @@ it('shows an edit link to a user who can update the event', function () {
 
     Livewire::actingAs($creator)->test(Show::class, ['event' => $event])
         ->assertSee('Editar')->assertSee(route('events.edit', $event))
-        ->assertDontSee('Aprovar')->assertDontSee('Recusar');
+        ->assertDontSee('Aprovar')->assertDontSee('Não aprovar');
 });
 
 it('shows the audit button with its link to an authorized user', function () {
@@ -174,7 +174,7 @@ it('shows review buttons and existing editing permissions to active reviewers', 
     $event = Event::factory()->create(['status' => $status]);
 
     $component = Livewire::actingAs(User::factory()->active()->create(['roles' => [$role]]))->test(Show::class, ['event' => $event])
-        ->assertSee('Aprovar')->assertSee('Recusar');
+        ->assertSee('Aprovar')->assertSee('Não aprovar');
 
     if ($canEdit) {
         $component->assertSee('Editar')->assertSee('Remarcar');
@@ -209,7 +209,7 @@ it('approves a reviewable event', function () {
     Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
         ->call('approve')
         ->assertDontSee('Aprovar')
-        ->assertDontSee('Recusar');
+        ->assertDontSee('Não aprovar');
 
     expect($event->refresh()->status)->toBe(EventStatusEnum::CONFIRMED);
 });
@@ -220,6 +220,9 @@ it('refuses a reviewable event and closes the modal', function () {
 
     Livewire::actingAs($user)->test(ReviewActions::class, ['event' => $event])
         ->call('openRefuseModal')
+        ->assertSee('Não aprovar evento')
+        ->assertSee('Motivo da não aprovação')
+        ->assertSee('Confirmar não aprovação')
         ->set('refusalReason', 'O horário conflita com outro evento.')
         ->call('refuse')
         ->assertSet('showRefuseModal', false)
@@ -236,7 +239,7 @@ it('hides review buttons for other statuses', function (EventStatusEnum $status)
     $event = Event::factory()->for($group)->create(['status' => $status]);
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
-        ->assertDontSee('Aprovar')->assertDontSee('Recusar');
+        ->assertDontSee('Aprovar')->assertDontSee('Não aprovar');
 })->with([EventStatusEnum::CONFIRMED, EventStatusEnum::CANCELED, EventStatusEnum::REFUSED]);
 
 it('allows pascom with admin to review while preserving existing edit restrictions', function () {
@@ -246,7 +249,7 @@ it('allows pascom with admin to review while preserving existing edit restrictio
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
         ->assertSee($event->name)->assertDontSee('Editar')->assertDontSee('Remarcar')
-        ->assertDontSee('Cancelar')->assertSee('Aprovar')->assertSee('Recusar');
+        ->assertDontSee('Cancelar')->assertSee('Aprovar')->assertSee('Não aprovar');
 });
 
 it('shows an edit link to a linked member viewing a nonconfirmed event', function () {

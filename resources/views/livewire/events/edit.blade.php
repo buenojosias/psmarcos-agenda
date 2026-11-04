@@ -1,9 +1,9 @@
 <div class="space-y-6">
     @if ($event->status === \App\Enums\EventStatusEnum::REFUSED)
-        <x-alert title="Status: Recusado" color="red" icon="tabler.circle-x" light>
+        <x-alert title="Status: Não aprovado" color="red" icon="tabler.circle-x" light>
             <div class="space-y-2 text-sm">
                 <p>
-                    <span class="font-semibold">Motivo da recusa:</span>
+                    <span class="font-semibold">Motivo da não aprovação:</span>
                     {{ $latestRefusalReason ?: 'Nenhum motivo foi registrado.' }}
                 </p>
 
@@ -14,7 +14,7 @@
                     </p>
                 @endif
 
-                <p>O evento permanece recusado enquanto você realiza os ajustes.</p>
+                <p>O evento permanece não aprovado enquanto você realiza os ajustes.</p>
             </div>
 
             @error('resubmit')

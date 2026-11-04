@@ -70,11 +70,12 @@ it('shows the latest refusal reason and reservation hold while editing a refused
 
     Livewire::actingAs($user)
         ->test(Edit::class, ['event' => $event])
-        ->assertSee('Status: Recusado')
+        ->assertSee('Status: Não aprovado')
+        ->assertSee('Motivo da não aprovação:')
         ->assertSee('Ajuste a reserva principal.')
         ->assertDontSee('Motivo anterior.')
         ->assertSee('15/10/2026 23:59')
-        ->assertSee('O evento permanece recusado enquanto você realiza os ajustes.')
+        ->assertSee('O evento permanece não aprovado enquanto você realiza os ajustes.')
         ->assertSee('Enviar novamente para aprovação');
 });
 

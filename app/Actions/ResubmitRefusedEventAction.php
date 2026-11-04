@@ -38,7 +38,7 @@ class ResubmitRefusedEventAction
 
             if ($event->status !== EventStatusEnum::REFUSED) {
                 throw ValidationException::withMessages([
-                    'resubmit' => 'Somente eventos recusados podem ser reenviados para aprovação.',
+                    'resubmit' => 'Somente eventos não aprovados podem ser reenviados para aprovação.',
                 ]);
             }
 
