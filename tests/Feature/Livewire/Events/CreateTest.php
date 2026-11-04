@@ -105,25 +105,29 @@ function eventCommunity(): Community
     ]);
 }
 
-it('renders the internal single date event form at the create route', function () {
+it('asks for an event type before showing a registration form', function () {
     $user = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
 
     $this->actingAs($user)->get(route('events.create'))
         ->assertSee('Cadastrar evento')
         ->assertSee('Data única')
-        ->assertSee('Dados do evento')
-        ->assertSee('Ambientes');
+        ->assertSee('Selecione o tipo de evento para continuar.')
+        ->assertDontSee('Dados do evento');
 });
 
 it('switches between single date, multiple dates, and external event registrations', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Livewire::actingAs($user)->test(Create::class)
-        ->assertSet('registration_type', 'single')
+        ->assertSet('registration_type', '')
+        ->assertSee('Selecione o tipo de evento para continuar.')
         ->assertSee('Data única')
         ->assertSee('Múltiplas datas')
         ->assertSee('Recorrente')
         ->assertSee('Evento realizado em várias datas escolhidas manualmente.')
+        ->set('registration_type', 'single')
+        ->assertSet('registration_type', 'single')
+        ->assertSee('Dados do evento')
         ->set('registration_type', 'multiple')
         ->assertSet('registration_type', 'multiple')
         ->assertSee('Datas *')
