@@ -6,6 +6,7 @@ namespace App\Livewire\Events;
 
 use App\Models\Group;
 use App\Models\Community;
+use App\Enums\UserRoleEnum;
 use App\Enums\EventTypeEnum;
 use Livewire\Attributes\Url;
 use Illuminate\Contracts\View\View;
@@ -44,6 +45,14 @@ class Index extends Listing
             : ($communityId && Community::query()->whereKey($communityId)->exists() ? (string) $communityId : '');
 
         $query
+            ->when(! $user->hasAnyRole([
+                UserRoleEnum::ADMIN->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::SECRETARY->value,
+                UserRoleEnum::CPP->value,
+            ]), fn (Builder $query): Builder => $query->where(fn (Builder $query): Builder => $query
+                ->where('is_public', true)
+                ->orWhere(fn (Builder $query): Builder => $query->fromUserGroups($user))))
             ->when($this->onlyMyGroups, fn (Builder $query): Builder => $query->fromUserGroups($user))
             ->when($this->type !== '', fn (Builder $query): Builder => $query->where('type', $this->type))
             ->when($this->group !== '', fn (Builder $query): Builder => $query->where('group_id', $this->group))

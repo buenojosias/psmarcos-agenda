@@ -19,7 +19,7 @@ it('requires authentication', function () {
 
 it('displays event details and the reservation period', function () {
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
-    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED, 'starts_at' => '2026-10-02 10:00', 'ends_at' => '2026-10-02 12:00']);
+    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true, 'starts_at' => '2026-10-02 10:00', 'ends_at' => '2026-10-02 12:00']);
     $event->detail()->create(['description' => '<script>alert(1)</script>', 'contact_name' => 'Maria', 'registration_required' => true]);
     $place = $community->places()->create(['name' => 'Salão principal']);
     $event->reservations()->create(['place_id' => $place->id, 'reserved_from' => '2026-10-02 09:00', 'reserved_to' => '2026-10-02 13:00']);
@@ -61,7 +61,7 @@ it('loads notes only after clicking the button', function () {
 });
 
 it('shows notes to a priest but denies the button and action to an unrelated member', function () {
-    $event  = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED]);
+    $event  = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $priest = User::factory()->create(['roles' => ['priest'], 'is_active' => true]);
     $member = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
 
@@ -83,7 +83,7 @@ it('shows the primary space in the information card with its parent when present
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $parent    = $hasParent ? $community->places()->create(['name' => 'Salão principal']) : null;
     $place     = $community->places()->create(['name' => $hasParent ? 'Sala de apoio' : 'Salão principal', 'main_place_id' => $parent?->id]);
-    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED]);
+    $event     = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $event->reservations()->create([
         'place_id'      => $place->id,
         'is_primary'    => true,
@@ -112,7 +112,7 @@ it('shows the primary space in the information card with its parent when present
 it('shows the event community only in its information card, not in the reservations list', function () {
     $community      = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $placeCommunity = Community::create(['name' => 'Outra comunidade', 'alias' => 'outra', 'abbreviation' => 'OT']);
-    $event          = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED]);
+    $event          = Event::factory()->create(['community_id' => $community->id, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $place          = $placeCommunity->places()->create(['name' => 'Salão principal']);
     $event->reservations()->create([
         'place_id'      => $place->id,
@@ -129,7 +129,7 @@ it('shows the event community only in its information card, not in the reservati
 });
 
 it('hides space reservations for external events', function () {
-    $event     = Event::factory()->create(['is_external' => true, 'status' => EventStatusEnum::CONFIRMED]);
+    $event     = Event::factory()->create(['is_external' => true, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
     $place     = $community->places()->create(['name' => 'Salão principal']);
     $event->reservations()->create(['place_id' => $place->id, 'reserved_from' => '2026-10-02 09:00', 'reserved_to' => '2026-10-02 13:00']);
@@ -163,11 +163,63 @@ it('shows the audit button with its link to an authorized user', function () {
 
 it('hides the audit button from a user without audit permission', function () {
     $user  = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
-    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+    $event = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
 
     Livewire::actingAs($user)->test(Show::class, ['event' => $event])
         ->assertDontSee('Auditoria')
         ->assertDontSee(route('events.audit', $event));
+});
+
+it('allows privileged roles to view a confirmed private event', function (string $role) {
+    $event = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    $user  = User::factory()->create(['roles' => [$role]]);
+
+    $this->actingAs($user)->get(route('events.show', $event))
+        ->assertOk()->assertSee($event->name);
+})->with(['admin', 'priest', 'secretary', 'cpp']);
+
+it('allows an organizer to view a confirmed private event', function (array $roles) {
+    $group = Group::factory()->create();
+    $user  = User::factory()->create(['roles' => $roles]);
+    $group->users()->attach($user);
+    $event = Event::factory()->for($group)->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+
+    $this->actingAs($user)->get(route('events.show', $event))
+        ->assertOk()->assertSee($event->name);
+})->with([[['member']], [['pascom']]]);
+
+it('returns 404 for a confirmed private event outside the organizers group', function (array $roles) {
+    $user  = User::factory()->create(['roles' => $roles]);
+    $event = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    Group::factory()->create()->users()->attach($user);
+
+    $this->actingAs($user)->get(route('events.show', $event))->assertNotFound();
+})->with([[['member']], [['pascom']], [['member', 'pascom']]]);
+
+it('returns 404 for a confirmed private event without an organizing group', function () {
+    $event = Event::factory()->create(['group_id' => null, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+
+    $this->actingAs(User::factory()->create(['roles' => ['member']]))
+        ->get(route('events.show', $event))->assertNotFound();
+});
+
+it('rechecks access to a confirmed private event after organizer membership is removed', function () {
+    $group = Group::factory()->create();
+    $user  = User::factory()->create(['roles' => ['pascom']]);
+    $group->users()->attach($user);
+    $event = Event::factory()->for($group)->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+
+    $component = Livewire::actingAs($user)->test(Show::class, ['event' => $event]);
+    $group->users()->detach($user);
+
+    $component->call('$refresh')->assertNotFound();
+});
+
+it('allows unrelated members to view a confirmed public event', function () {
+    $event = Event::factory()->for(Group::factory())->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
+
+    $this->actingAs(User::factory()->create(['roles' => ['member']]))
+        ->get(route('events.show', $event))->assertOk();
 });
 
 it('shows review buttons and existing editing permissions to active reviewers', function (string $role, bool $canEdit, EventStatusEnum $status) {
@@ -291,7 +343,7 @@ it('rechecks visibility when group membership is removed', function () {
 });
 
 it('lists the primary space first even when other reservations start earlier', function () {
-    $event     = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED]);
+    $event     = Event::factory()->create(['status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $community = Community::create(['name' => 'Matriz', 'alias' => 'matriz', 'abbreviation' => 'MT']);
 
     foreach ([

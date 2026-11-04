@@ -51,7 +51,8 @@ it('shows only relevant refused events and confirmed commitments for members', f
     Event::factory()->for($ownGroup)->create(['name' => 'Meu pedido em análise', 'status' => EventStatusEnum::PENDING]);
     Event::factory()->for($otherGroup)->create(['name' => 'Pedido protegido', 'status' => EventStatusEnum::PENDING]);
     Event::factory()->for($otherGroup)->create(['name' => 'Recusado protegido', 'status' => EventStatusEnum::REFUSED]);
-    Event::factory()->for($otherGroup)->create(['name' => 'Evento geral confirmado', 'status' => EventStatusEnum::CONFIRMED]);
+    Event::factory()->for($otherGroup)->create(['name' => 'Evento geral confirmado', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
+    Event::factory()->for($otherGroup)->create(['name' => 'Evento privado confirmado', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
     User::factory()->pending()->create();
 
     $this->actingAs($user)->get(route('dashboard'))
@@ -61,6 +62,7 @@ it('shows only relevant refused events and confirmed commitments for members', f
         ->assertSee('Evento geral confirmado')
         ->assertDontSee('Pedido protegido')
         ->assertDontSee('Recusado protegido')
+        ->assertDontSee('Evento privado confirmado')
         ->assertDontSee('Meu pedido em análise')
         ->assertDontSee('Revisar eventos')
         ->assertDontSee('Aprovar usuários')
@@ -134,8 +136,8 @@ it('shows event review and real upcoming masses without user approval for priest
 
 it('shows Pascom advertising and recent changes without approval actions', function () {
     $user         = User::factory()->create(['roles' => ['pascom']]);
-    $advertisable = Event::factory()->create(['name' => 'Festa para divulgar', 'advertisable' => true, 'status' => EventStatusEnum::CONFIRMED]);
-    $changed      = Event::factory()->create(['name' => 'Retiro remarcado', 'status' => EventStatusEnum::RESCHEDULED]);
+    $advertisable = Event::factory()->create(['name' => 'Festa para divulgar', 'advertisable' => true, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
+    $changed      = Event::factory()->create(['name' => 'Retiro remarcado', 'status' => EventStatusEnum::RESCHEDULED, 'is_public' => true]);
     EventLog::create(['event_id' => $changed->id, 'action' => EventLogActionEnum::RESCHEDULED]);
     EventLog::create(['event_id' => $advertisable->id, 'action' => EventLogActionEnum::APPROVED]);
     $deleted = Event::factory()->create(['name' => 'Evento excluído protegido']);
@@ -216,7 +218,7 @@ it('prioritizes confirmed events from member groups and excludes canceled or ten
     $user  = User::factory()->create();
     $group = Group::factory()->create();
     $group->users()->attach($user);
-    Event::factory()->create(['group_id' => null, 'name' => 'Evento geral primeiro', 'status' => EventStatusEnum::CONFIRMED,
+    Event::factory()->create(['group_id' => null, 'name' => 'Evento geral primeiro', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true,
         'starts_at'                      => now()->addDay(), 'ends_at' => now()->addDay()->addHour()]);
     Event::factory()->for($group)->create(['name' => 'Compromisso do meu grupo', 'status' => EventStatusEnum::CONFIRMED,
         'starts_at'                               => now()->addDays(2), 'ends_at' => now()->addDays(2)->addHour()]);
@@ -232,6 +234,56 @@ it('prioritizes confirmed events from member groups and excludes canceled or ten
         ->assertDontSee('Evento recusado')
         ->assertDontSee('Compromisso passado');
 });
+
+it('shows upcoming private events only to privileged roles and organizers', function (array $roles, bool $canSeeOtherPrivate) {
+    $user  = User::factory()->create(['roles' => $roles]);
+    $group = Group::factory()->create();
+    $group->users()->attach($user);
+
+    $own    = Event::factory()->for($group)->create(['name' => 'Evento privado do grupo', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    $other  = Event::factory()->for(Group::factory())->create(['name' => 'Evento privado de outro grupo', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    $public = Event::factory()->for(Group::factory())->create(['name' => 'Evento público', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
+
+    Livewire::actingAs($user)->test(UpcomingEvents::class)
+        ->assertViewHas('events', fn ($events): bool => $events->count() === ($canSeeOtherPrivate ? 3 : 2)
+            && $events->contains('id', $own->id)
+            && $events->contains('id', $public->id)
+            && $events->contains('id', $other->id) === $canSeeOtherPrivate);
+})->with([
+    [['member'], false],
+    [['pascom'], false],
+    [['member', 'pascom'], false],
+    [['admin'], true],
+    [['priest'], true],
+    [['secretary'], true],
+    [['cpp'], true],
+]);
+
+it('filters Pascom event links and recent changes by event visibility', function (array $roles, bool $canSeeOtherPrivate) {
+    $user  = User::factory()->create(['roles' => $roles]);
+    $group = Group::factory()->create();
+    $group->users()->attach($user);
+
+    $own    = Event::factory()->for($group)->create(['name' => 'Divulgação do grupo', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true, 'is_public' => false]);
+    $other  = Event::factory()->for(Group::factory())->create(['name' => 'Divulgação privada de outro grupo', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true, 'is_public' => false]);
+    $public = Event::factory()->for(Group::factory())->create(['name' => 'Divulgação pública', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true, 'is_public' => true]);
+
+    foreach ([$own, $other, $public] as $event) {
+        EventLog::create(['event_id' => $event->id, 'action' => EventLogActionEnum::APPROVED]);
+    }
+
+    $component = Livewire::actingAs($user)->test(PascomOverview::class)
+        ->assertSee($own->name)
+        ->assertSee($public->name)
+        ->assertViewHas('logs', fn ($logs): bool => $logs->count() === ($canSeeOtherPrivate ? 3 : 2))
+        ->assertViewHas('events', fn ($events): bool => $events->count() === ($canSeeOtherPrivate ? 3 : 2));
+
+    if ($canSeeOtherPrivate) {
+        $component->assertSee($other->name);
+    } else {
+        $component->assertDontSee($other->name);
+    }
+})->with([[['pascom'], false], [['pascom', 'cpp'], true]]);
 
 it('limits upcoming events and eagerly loads their displayed relations', function () {
     $user      = User::factory()->create(['roles' => ['admin']]);
@@ -268,7 +320,7 @@ it('shows simple empty states when there are no relevant records', function () {
 });
 
 it('escapes event names in the dashboard', function () {
-    Event::factory()->create(['name' => '<script>alert(1)</script>', 'status' => EventStatusEnum::CONFIRMED]);
+    Event::factory()->create(['name' => '<script>alert(1)</script>', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
 
     $this->actingAs(User::factory()->create())->get(route('dashboard'))
         ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)
@@ -289,7 +341,7 @@ it('does not load external details for internal commitments', function () {
 });
 
 it('loads external locations without querying reservations for external commitments', function () {
-    $event = Event::factory()->create(['is_external' => true, 'status' => EventStatusEnum::CONFIRMED]);
+    $event = Event::factory()->create(['is_external' => true, 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
     $event->detail()->create(['external_location_name' => 'Casa de retiros']);
     $user = User::factory()->create();
     DB::enableQueryLog();
@@ -304,7 +356,7 @@ it('loads external locations without querying reservations for external commitme
 
 it('filters advertising events by confirmation, future date and advertising permission', function () {
     $user = User::factory()->create(['roles' => ['pascom']]);
-    Event::factory()->create(['name' => 'Festa anunciável', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true]);
+    Event::factory()->create(['name' => 'Festa anunciável', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true, 'is_public' => true]);
     Event::factory()->create(['name' => 'Evento sem divulgação', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => false]);
     Event::factory()->create(['name' => 'Pedido de divulgação pendente', 'status' => EventStatusEnum::PENDING, 'advertisable' => true]);
     Event::factory()->create(['name' => 'Festa já encerrada', 'status' => EventStatusEnum::CONFIRMED, 'advertisable' => true,

@@ -6,6 +6,7 @@ namespace App\Livewire\Dashboard;
 
 use App\Models\Event;
 use Livewire\Component;
+use App\Enums\UserRoleEnum;
 use App\Enums\EventStatusEnum;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +20,17 @@ class UpcomingEvents extends Component
         $user  = user();
         $query = Event::query()->visibleTo($user)->upcoming()->where('status', EventStatusEnum::CONFIRMED)
             ->with(['group:id,name', 'community:id,name']);
+
+        if (! $user->hasAnyRole([
+            UserRoleEnum::ADMIN->value,
+            UserRoleEnum::PRIEST->value,
+            UserRoleEnum::SECRETARY->value,
+            UserRoleEnum::CPP->value,
+        ])) {
+            $query->where(fn (Builder $query): Builder => $query
+                ->where('is_public', true)
+                ->orWhere(fn (Builder $query): Builder => $query->fromUserGroups($user)));
+        }
 
         if ($user->isMemberOnly()) {
             $query->withExists(['group as belongs_to_user_group' => fn (Builder $groups): Builder => $groups

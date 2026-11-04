@@ -40,6 +40,30 @@ it('applies member visibility before status and ignores the removed review filte
         ->assertDontSee('Aguardando análise');
 });
 
+it('shows confirmed private events only to privileged roles and organizers', function (array $roles, bool $canSeePrivate) {
+    $user  = User::factory()->create(['roles' => $roles]);
+    $group = Group::factory()->create();
+    $group->users()->attach($user);
+
+    $own    = Event::factory()->for($group)->create(['name' => 'Evento do meu grupo', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    $other  = Event::factory()->for(Group::factory())->create(['name' => 'Evento privado de outro grupo', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => false]);
+    $public = Event::factory()->for(Group::factory())->create(['name' => 'Evento público de outro grupo', 'status' => EventStatusEnum::CONFIRMED, 'is_public' => true]);
+
+    Livewire::actingAs($user)->test(Index::class)
+        ->assertViewHas('events', fn ($events): bool => $events->total() === ($canSeePrivate ? 3 : 2)
+            && in_array($own->id, $events->modelKeys(), true)
+            && in_array($public->id, $events->modelKeys(), true)
+            && in_array($other->id, $events->modelKeys(), true) === $canSeePrivate);
+})->with([
+    [['member'], false],
+    [['pascom'], false],
+    [['member', 'pascom'], false],
+    [['admin'], true],
+    [['priest'], true],
+    [['secretary'], true],
+    [['cpp'], true],
+]);
+
 it('restricts mine to user groups for all profiles', function (array $roles) {
     $user  = User::factory()->create(['is_active' => true, 'roles' => $roles]);
     $group = Group::factory()->create();

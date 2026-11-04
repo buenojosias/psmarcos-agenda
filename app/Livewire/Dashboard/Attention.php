@@ -60,6 +60,14 @@ class Attention extends Component
         $refusedEvents          = Event::query()->visibleTo($user)->where('status', EventStatusEnum::REFUSED)
             ->where(fn (Builder $query): Builder => $query->fromUserGroups($user)
                 ->when($canAdjustCreatedEvents, fn (Builder $query): Builder => $query->orWhere('created_by_user_id', $user->id)))
+            ->when(! $user->hasAnyRole([
+                UserRoleEnum::ADMIN->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::SECRETARY->value,
+                UserRoleEnum::CPP->value,
+            ]), fn (Builder $query): Builder => $query->where(fn (Builder $query): Builder => $query
+                ->where('is_public', true)
+                ->orWhere(fn (Builder $query): Builder => $query->fromUserGroups($user))))
             ->orderByDesc('updated_at')->orderByDesc('id')->limit(3)->get(['id', 'name']);
 
         return view('livewire.dashboard.attention', compact('decisions', 'refusedEvents'));

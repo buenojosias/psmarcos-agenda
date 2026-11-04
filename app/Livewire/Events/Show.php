@@ -24,7 +24,7 @@ class Show extends Component
 
     public function openNotes(): void
     {
-        Gate::authorize('view', $this->event);
+        $this->authorizeView();
         abort_unless($this->canAccessNotes(), 403);
 
         $this->showNotes = true;
@@ -32,7 +32,7 @@ class Show extends Component
 
     public function render(): View
     {
-        Gate::authorize('view', $this->event);
+        $this->authorizeView();
         $this->event->load(['group', 'detail', 'community']);
 
         $reservations = $this->event->is_external
@@ -63,5 +63,23 @@ class Show extends Component
         return $user !== null
             && $user->is_active
             && (($canUpdate ?? Gate::allows('update', $this->event)) || $user->hasRole(UserRoleEnum::PRIEST->value));
+    }
+
+    private function authorizeView(): void
+    {
+        Gate::authorize('view', $this->event);
+
+        $user = user();
+
+        abort_unless($user !== null && (
+            $user->hasAnyRole([
+                UserRoleEnum::ADMIN->value,
+                UserRoleEnum::PRIEST->value,
+                UserRoleEnum::SECRETARY->value,
+                UserRoleEnum::CPP->value,
+            ])
+            || $this->event->is_public
+            || ($this->event->group_id !== null && $user->groups()->whereKey($this->event->group_id)->exists())
+        ), 404);
     }
 }
