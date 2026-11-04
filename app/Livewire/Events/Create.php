@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 
 class Create extends Component
 {
-    public string $registration_type = 'occasional';
+    public string $registration_type = 'single';
 
     public function mount(): void
     {

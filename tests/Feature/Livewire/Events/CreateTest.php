@@ -13,9 +13,9 @@ use App\Livewire\Events\Create;
 use App\Models\PlaceReservation;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
+use App\Livewire\Events\Forms\Single;
 use App\Livewire\Events\Forms\External;
 use App\Livewire\Events\Forms\Multiple;
-use App\Livewire\Events\Forms\Occasional;
 
 beforeEach(function () {
     $this->travelTo('2026-09-21 10:00:00');
@@ -105,20 +105,22 @@ function eventCommunity(): Community
     ]);
 }
 
-it('renders the internal occasional event form at the create route', function () {
+it('renders the internal single date event form at the create route', function () {
     $user = User::factory()->create(['roles' => ['member'], 'is_active' => true]);
 
     $this->actingAs($user)->get(route('events.create'))
         ->assertSee('Cadastrar evento')
+        ->assertSee('Data única')
         ->assertSee('Dados do evento')
         ->assertSee('Ambientes');
 });
 
-it('switches between occasional, multiple dates, and external event registrations', function () {
+it('switches between single date, multiple dates, and external event registrations', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Livewire::actingAs($user)->test(Create::class)
-        ->assertSet('registration_type', 'occasional')
+        ->assertSet('registration_type', 'single')
+        ->assertSee('Data única')
         ->assertSee('Múltiplas datas')
         ->assertSee('Evento realizado em várias datas escolhidas manualmente.')
         ->set('registration_type', 'multiple')
@@ -156,7 +158,7 @@ it('validates the required external location and shows optional advertising deta
 it('requires valid date and time fields for occasional and external events', function (string $form) {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set([...$data, 'starts_date' => '', 'starts_time' => '25:00', 'ends_date' => '2026-02-30', 'ends_time' => ''])
@@ -165,7 +167,7 @@ it('requires valid date and time fields for occasional and external events', fun
         ->assertSet('draftValidated', false);
 
     $this->assertDatabaseCount('events', 0);
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('sets the ending date to the selected starting date when the ending is empty or earlier', function (string $form, string $endingDate, string $startingTime, string $endingTime) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -176,7 +178,7 @@ it('sets the ending date to the selected starting date when the ending is empty 
         ->set('starts_time', $startingTime)
         ->set('starts_date', '2026-10-10')
         ->assertSet('ends_date', '2026-10-10');
-})->with([Occasional::class, External::class])->with([
+})->with([Single::class, External::class])->with([
     'empty ending'                    => ['', '', ''],
     'earlier ending with later clock' => ['2026-10-09', '23:30', '00:30'],
 ]);
@@ -190,7 +192,7 @@ it('accepts a cleared starting date without losing the form state', function (st
         ->set('starts_date', null)
         ->assertSet('starts_date', null)
         ->assertSet('draftValidated', false);
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('fills a cleared ending date when the starting date is selected', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -199,7 +201,7 @@ it('fills a cleared ending date when the starting date is selected', function (s
         ->set('ends_date', null)
         ->set('starts_date', '2026-10-10')
         ->assertSet('ends_date', '2026-10-10');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('keeps an ending date that is the same as or later than the selected starting date', function (string $form, string $endingDate) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -208,7 +210,7 @@ it('keeps an ending date that is the same as or later than the selected starting
         ->set('ends_date', $endingDate)
         ->set('starts_date', '2026-10-10')
         ->assertSet('ends_date', $endingDate);
-})->with([Occasional::class, External::class])->with([
+})->with([Single::class, External::class])->with([
     'same date'  => ['2026-10-10'],
     'later date' => ['2026-10-11'],
 ]);
@@ -221,7 +223,7 @@ it('sets an empty ending time to one hour after the selected starting time', fun
         ->set('starts_time', '09:30')
         ->assertSet('ends_time', '10:30')
         ->assertSet('ends_date', '2026-10-10');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('fills a cleared ending time when the starting time is selected', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -230,7 +232,7 @@ it('fills a cleared ending time when the starting time is selected', function (s
         ->set('ends_time', null)
         ->set('starts_time', '09:30')
         ->assertSet('ends_time', '10:30');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('accepts a cleared starting time without filling the ending time', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -239,7 +241,7 @@ it('accepts a cleared starting time without filling the ending time', function (
         ->set('starts_time', null)
         ->assertSet('starts_time', null)
         ->assertSet('ends_time', '');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('keeps an ending time already selected when the starting time changes', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -248,7 +250,7 @@ it('keeps an ending time already selected when the starting time changes', funct
         ->set('ends_time', '12:15')
         ->set('starts_time', '09:30')
         ->assertSet('ends_time', '12:15');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('moves the ending date to the next day when the default ending time crosses midnight', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -258,14 +260,14 @@ it('moves the ending date to the next day when the default ending time crosses m
         ->set('starts_time', '23:30')
         ->assertSet('ends_time', '00:30')
         ->assertSet('ends_date', '2026-10-11');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('rejects an event starting in the past or at the current time', function (string $form, string $startsDate, string $startsTime, string $errorField) {
     $this->travelTo('2026-10-10 10:00:00');
 
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set([...$data, 'starts_date' => $startsDate, 'starts_time' => $startsTime])
@@ -274,7 +276,7 @@ it('rejects an event starting in the past or at the current time', function (str
         ->assertSet('draftValidated', false);
 
     $this->assertDatabaseCount('events', 0);
-})->with([Occasional::class, External::class])->with([
+})->with([Single::class, External::class])->with([
     'past date'     => ['2026-10-09', '11:00', 'starts_date'],
     'earlier today' => ['2026-10-10', '09:00', 'starts_time'],
     'right now'     => ['2026-10-10', '10:00', 'starts_time'],
@@ -285,21 +287,21 @@ it('accepts an event starting later today', function (string $form) {
 
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set([...$data, 'starts_time' => '10:01'])
         ->call('validateDraft')
         ->assertHasNoErrors()
         ->assertSet('draftValidated', true);
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('rechecks the start time before saving an already validated event', function (string $form) {
     $this->travelTo('2026-10-10 08:59:00');
 
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     $component = Livewire::actingAs($user)->test($form)
         ->set($data)
@@ -312,12 +314,12 @@ it('rechecks the start time before saving an already validated event', function 
     $component->call('save')->assertHasErrors(['starts_time']);
 
     $this->assertDatabaseCount('events', 0);
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('rejects an ending before or at the starting date and time', function (string $form, string $endsDate, string $endsTime) {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set([...$data, 'ends_date' => $endsDate, 'ends_time' => $endsTime])
@@ -326,7 +328,7 @@ it('rejects an ending before or at the starting date and time', function (string
         ->assertSet('draftValidated', false);
 
     $this->assertDatabaseCount('events', 0);
-})->with([Occasional::class, External::class])->with([
+})->with([Single::class, External::class])->with([
     'same instant' => ['2026-10-10', '09:00'],
     'earlier date' => ['2026-10-09', '11:00'],
 ]);
@@ -334,7 +336,7 @@ it('rejects an ending before or at the starting date and time', function (string
 it('joins separate date and time fields for an event ending the next day', function (string $form) {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set([...$data, 'starts_time' => '23:30', 'ends_date' => '2026-10-11', 'ends_time' => '00:15'])
@@ -347,7 +349,7 @@ it('joins separate date and time fields for an event ending the next day', funct
 
     expect($event->starts_at->format('Y-m-d H:i:s'))->toBe('2026-10-10 23:30:00')
         ->and($event->ends_at->format('Y-m-d H:i:s'))->toBe('2026-10-11 00:15:00');
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('keeps public and advertising toggles in sync', function (string $form) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -366,12 +368,12 @@ it('keeps public and advertising toggles in sync', function (string $form) {
         ->set('advertisable', true)
         ->set('advertisable', false)
         ->assertSet('is_public', true);
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('saves private events without advertising after public is turned off', function (string $form) {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
-    $data  = $form === Occasional::class ? occasionalEventData($group) : externalEventData($group);
+    $data  = $form === Single::class ? occasionalEventData($group) : externalEventData($group);
 
     Livewire::actingAs($user)->test($form)
         ->set($data)
@@ -386,7 +388,7 @@ it('saves private events without advertising after public is turned off', functi
 
     expect($event->is_public)->toBeFalse()
         ->and($event->advertisable)->toBeFalse();
-})->with([Occasional::class, External::class]);
+})->with([Single::class, External::class]);
 
 it('persists a validated external event and redirects to its page', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
@@ -687,12 +689,12 @@ it('allows a member exclusive user to select only their groups', function () {
     $unrelated = Group::factory()->create(['name' => 'Grupo não vinculado']);
     $user->groups()->attach($allowed);
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set(occasionalEventData($unrelated))
         ->call('validateDraft')
         ->assertForbidden();
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set(occasionalEventData($allowed))
         ->call('validateDraft')
         ->assertOk()
@@ -724,7 +726,7 @@ it('groups event organizers by community id, shows abbreviations, and places ung
             'value' => [['label' => 'Grupo sem comunidade', 'value' => $ungrouped->id]],
         ],
     ]);
-})->with([Occasional::class, Multiple::class, External::class]);
+})->with([Single::class, Multiple::class, External::class]);
 
 it('shows organizer search only to roles with broad group access', function (string $form, array $roles, bool $canSearch) {
     $user = User::factory()->create(['roles' => $roles, 'is_active' => true]);
@@ -732,7 +734,7 @@ it('shows organizer search only to roles with broad group access', function (str
     $component = Livewire::actingAs($user)->test($form);
 
     expect($component->viewData('canSearchGroups'))->toBe($canSearch);
-})->with([Occasional::class, Multiple::class, External::class])->with([
+})->with([Single::class, Multiple::class, External::class])->with([
     'CPP'               => [['cpp'], true],
     'secretary'         => [['secretary'], true],
     'priest'            => [['priest'], true],
@@ -747,7 +749,7 @@ it('allows a user with another role to select any group', function () {
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
     $group = Group::factory()->create(['name' => 'Grupo disponível']);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class);
+    $component = Livewire::actingAs($user)->test(Single::class);
 
     expect($component->viewData('canSearchGroups'))->toBeTrue();
 
@@ -762,7 +764,7 @@ it('does not expose immediate confirmation and discards it for unauthorized user
     $user  = User::factory()->create(['roles' => ['secretary'], 'is_active' => true]);
     $group = Group::factory()->create();
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->assertDontSee('Confirmar imediatamente')
         ->set([...occasionalEventData($group), 'confirm_immediately' => true])
         ->assertSet('confirm_immediately', false)
@@ -775,7 +777,7 @@ it('shows optional details for advertisable events without requiring a descripti
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->assertDontSee('Detalhes do evento')
         ->set('advertisable', true)
         ->assertSee('Detalhes do evento')
@@ -809,7 +811,7 @@ it('orders communities by their ID in the environment selector', function () {
         'abbreviation' => 'ALF',
     ]);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class);
+    $component = Livewire::actingAs($user)->test(Single::class);
 
     expect($component->viewData('communities')->all())->toBe([
         ['label' => $first->name, 'value' => $first->id],
@@ -828,7 +830,7 @@ it('orders spaces by their displayed names with rooms after their main space', f
     $roomTwo   = $community->places()->create(['name' => 'Sala 2', 'main_place_id' => $center->id]);
     $roomOne   = $community->places()->create(['name' => 'Sala 1', 'main_place_id' => $center->id]);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class)
+    $component = Livewire::actingAs($user)->test(Single::class)
         ->set('community_id', $community->id);
 
     expect($component->viewData('places')->all())->toBe([
@@ -848,7 +850,7 @@ it('maintains a buffer configuration for each selected place without creating re
     $nave      = $community->places()->create(['name' => 'Nave']);
     $hall      = $community->places()->create(['name' => 'Salão']);
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set('community_id', $community->id)
         ->set('place_ids', [$nave->id, $hall->id])
         ->assertSet('place_hours', [
@@ -870,7 +872,7 @@ it('validates the event interval and individual place buffers without persistenc
     $group = Group::factory()->create();
     $place = eventCommunity()->places()->create(['name' => 'Nave']);
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set(occasionalEventData($group))
         ->set('community_id', $place->community_id)
         ->set('place_ids', [$place->id])
@@ -887,7 +889,7 @@ it('requires at least one place before validating availability', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set(occasionalEventData($group))
         ->set('place_ids', [])
         ->call('validateDraft')
@@ -903,7 +905,7 @@ it('requires a community before validating availability', function () {
     $user  = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
     $group = Group::factory()->create();
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set(occasionalEventData($group))
         ->set('community_id', '')
         ->call('validateDraft')
@@ -919,7 +921,7 @@ it('persists a validated occasional event and redirects to its page', function (
     $group = Group::factory()->create();
     $data  = occasionalEventData($group);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class)
+    $component = Livewire::actingAs($user)->test(Single::class)
         ->set([...$data, 'complement' => 'Formação paroquial'])
         ->call('validateDraft')
         ->assertHasNoErrors()
@@ -969,7 +971,7 @@ it('reopens the conflict slide without persisting when final availability change
     $parent = $place->community->places()->create(['name' => 'Centro Catequético']);
     $place->update(['name' => 'Sala 2', 'main_place_id' => $parent->id]);
 
-    $component = Livewire::actingAs($user)->test(Occasional::class)
+    $component = Livewire::actingAs($user)->test(Single::class)
         ->set($data)
         ->call('validateDraft')
         ->assertSet('draftValidated', true);
@@ -1008,7 +1010,7 @@ it('filters places by community and clears the selection when the community chan
     $child      = $community->places()->create(['name' => 'Sala 2', 'main_place_id' => $parent->id]);
     $otherPlace = $other->places()->create(['name' => 'Salão']);
 
-    Livewire::actingAs($user)->test(Occasional::class)
+    Livewire::actingAs($user)->test(Single::class)
         ->set('community_id', $community->id)
         ->set('place_ids', [$child->id, $otherPlace->id])
         ->assertSet('place_ids', [$child->id])

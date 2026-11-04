@@ -24,7 +24,7 @@ use App\Actions\CheckPlaceAvailabilityAction;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Collection as SupportCollection;
 
-class Occasional extends Component
+class Single extends Component
 {
     use Alert;
 
@@ -296,7 +296,7 @@ class Occasional extends Component
         $user   = auth()->user();
         $places = $this->places();
 
-        return view('livewire.events.forms.occasional', [
+        return view('livewire.events.forms.single', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
             'groups'                => $this->groups($user),
             'canSearchGroups'       => $user->hasAnyRole([
