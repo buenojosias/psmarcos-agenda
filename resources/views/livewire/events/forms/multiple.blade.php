@@ -8,7 +8,7 @@
             <x-select.native wire:model="type" label="Tipo *" required>
                 <option value="">Selecione</option>
                 @foreach ($types as $eventType)
-                    <option wire:key="recurring-event-type-{{ $eventType->value }}" value="{{ $eventType->value }}">{{ $eventType->label() }}</option>
+                    <option wire:key="multiple-event-type-{{ $eventType->value }}" value="{{ $eventType->value }}">{{ $eventType->label() }}</option>
                 @endforeach
             </x-select.native>
 
@@ -33,17 +33,17 @@
             <x-select.native wire:model.live="community_id" label="Comunidade *" required>
                 <option value="">Selecione uma comunidade</option>
                 @foreach ($communities as $community)
-                    <option wire:key="recurring-event-community-{{ $community['value'] }}" value="{{ $community['value'] }}">{{ $community['label'] }}</option>
+                    <option wire:key="multiple-event-community-{{ $community['value'] }}" value="{{ $community['value'] }}">{{ $community['label'] }}</option>
                 @endforeach
             </x-select.native>
 
-            <div wire:key="recurring-event-place-select-{{ $community_id ?: 'none' }}" class="min-w-0">
+            <div wire:key="multiple-event-place-select-{{ $community_id ?: 'none' }}" class="min-w-0">
                 <x-select.styled wire:model.live="place_ids" label="Ambientes" :options="$places"
                                  select="label:label|value:value" multiple searchable :disabled="blank($community_id)" />
             </div>
 
             @foreach ($selectedPlaces as $place)
-                <section wire:key="recurring-event-place-{{ $place->id }}" class="grid min-w-0 gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 md:col-span-2 md:grid-cols-3">
+                <section wire:key="multiple-event-place-{{ $place->id }}" class="grid min-w-0 gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 md:col-span-2 md:grid-cols-3">
                     <p class="min-w-0 break-words font-medium md:self-center">{{ $place->main === null ? $place->name : $place->main->name.': '.$place->name }}</p>
                     <x-reservation-duration model="place_hours.{{ $place->id }}.before" label="Reserva antes" time-model="starts_time" direction="before" />
                     <x-reservation-duration model="place_hours.{{ $place->id }}.after" label="Reserva depois" time-model="ends_time" direction="after" />
@@ -63,7 +63,7 @@
             </p>
 
             @foreach ($occurrences as $date => $occurrence)
-                <section wire:key="recurring-occurrence-{{ $date }}" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+                <section wire:key="multiple-occurrence-{{ $date }}" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h3 class="font-semibold text-gray-900 dark:text-white">
                             {{ \Carbon\CarbonImmutable::parse($date)->format('d/m/Y') }}
@@ -91,7 +91,7 @@
                     @endif
 
                     @foreach ($occurrence['conflicts'] as $requestedConflict)
-                        <div wire:key="recurring-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}" class="space-y-2 rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
+                        <div wire:key="multiple-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}" class="space-y-2 rounded-md bg-gray-50 p-3 text-sm dark:bg-dark-700">
                             <div>
                                 <p class="font-medium text-gray-800 dark:text-dark-100">
                                     Ambiente solicitado: {{ $conflictPlaceNames[$requestedConflict['requested_place']['id']] ?? $requestedConflict['requested_place']['name'] }}
@@ -103,7 +103,7 @@
                             </div>
 
                             @foreach ($requestedConflict['conflicts'] as $conflict)
-                                <div wire:key="recurring-reservation-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="border-t border-gray-200 pt-2 dark:border-dark-600">
+                                <div wire:key="multiple-reservation-conflict-{{ $date }}-{{ $requestedConflict['requested_place']['id'] }}-{{ $loop->index }}" class="border-t border-gray-200 pt-2 dark:border-dark-600">
                                     <p class="font-medium text-gray-800 dark:text-dark-100">
                                         Ambiente reservado: {{ $conflictPlaceNames[$conflict['reserved_place']['id']] ?? $conflict['reserved_place']['name'] }}
                                     </p>

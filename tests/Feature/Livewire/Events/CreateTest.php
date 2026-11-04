@@ -14,7 +14,7 @@ use App\Models\PlaceReservation;
 use App\Enums\EventLogActionEnum;
 use Illuminate\Support\Facades\Gate;
 use App\Livewire\Events\Forms\External;
-use App\Livewire\Events\Forms\Recurring;
+use App\Livewire\Events\Forms\Multiple;
 use App\Livewire\Events\Forms\Occasional;
 
 beforeEach(function () {
@@ -114,15 +114,16 @@ it('renders the internal occasional event form at the create route', function ()
         ->assertSee('Ambientes');
 });
 
-it('switches between occasional, recurring, and external event registrations', function () {
+it('switches between occasional, multiple dates, and external event registrations', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
     Livewire::actingAs($user)->test(Create::class)
         ->assertSet('registration_type', 'occasional')
-        ->assertSee('Evento recorrente')
-        ->assertSee('Mesmo evento realizado em várias datas.')
-        ->set('registration_type', 'recurring')
-        ->assertSet('registration_type', 'recurring')
+        ->assertSee('Múltiplas datas')
+        ->assertSee('Evento realizado em várias datas escolhidas manualmente.')
+        ->set('registration_type', 'multiple')
+        ->assertSet('registration_type', 'multiple')
+        ->assertSee('Datas *')
         ->set('registration_type', 'external')
         ->assertSet('registration_type', 'external')
         ->assertSee('Local externo');
@@ -416,7 +417,7 @@ it('persists a validated external event and redirects to its page', function () 
 it('fills an empty recurring ending time one hour after the starting time', function (?string $endingTime, string $startingTime, string $expectedEndingTime) {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
-    Livewire::actingAs($user)->test(Recurring::class)
+    Livewire::actingAs($user)->test(Multiple::class)
         ->set('ends_time', $endingTime)
         ->set('starts_time', $startingTime)
         ->assertSet('ends_time', $expectedEndingTime);
@@ -429,7 +430,7 @@ it('fills an empty recurring ending time one hour after the starting time', func
 it('keeps a recurring ending time already selected when the starting time changes', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
-    Livewire::actingAs($user)->test(Recurring::class)
+    Livewire::actingAs($user)->test(Multiple::class)
         ->set('ends_time', '12:15')
         ->set('starts_time', '09:30')
         ->assertSet('ends_time', '12:15');
@@ -438,7 +439,7 @@ it('keeps a recurring ending time already selected when the starting time change
 it('accepts a cleared recurring starting time without filling the ending time', function () {
     $user = User::factory()->create(['roles' => ['admin'], 'is_active' => true]);
 
-    Livewire::actingAs($user)->test(Recurring::class)
+    Livewire::actingAs($user)->test(Multiple::class)
         ->set('starts_time', null)
         ->assertSet('starts_time', null)
         ->assertSet('ends_time', '');
@@ -452,7 +453,7 @@ it('generates sorted unique future occurrences without persistence', function ()
     $data    = recurringEventData($group);
     $placeId = $data['place_ids'][0];
 
-    $component = Livewire::actingAs($user)->test(Recurring::class)
+    $component = Livewire::actingAs($user)->test(Multiple::class)
         ->set([...$data, 'dates' => ['2026-09-20', '2026-09-25']])
         ->call('validateDraft')
         ->assertHasErrors(['dates.0'])
@@ -533,7 +534,7 @@ it('groups conflicts by date and removes conflicting places only from their occu
         'is_primary'    => false,
     ]);
 
-    $component = Livewire::actingAs($user)->test(Recurring::class)
+    $component = Livewire::actingAs($user)->test(Multiple::class)
         ->set([
             ...$data,
             'dates'       => ['2026-10-24', '2026-10-17', '2026-10-10'],
@@ -597,7 +598,7 @@ it('persists the validated recurring series and redirects to the event list', fu
     $group = Group::factory()->create();
     $data  = [...recurringEventData($group), 'complement' => 'Formação paroquial'];
 
-    $component = Livewire::actingAs($user)->test(Recurring::class)
+    $component = Livewire::actingAs($user)->test(Multiple::class)
         ->set($data)
         ->call('validateDraft')
         ->assertSet('draftValidated', true)
@@ -629,7 +630,7 @@ it('reopens recurring conflicts without partial persistence when availability ch
     $group = Group::factory()->create();
     $data  = recurringEventData($group);
 
-    $component = Livewire::actingAs($user)->test(Recurring::class)
+    $component = Livewire::actingAs($user)->test(Multiple::class)
         ->set($data)
         ->call('validateDraft')
         ->assertSet('draftValidated', true);
@@ -723,7 +724,7 @@ it('groups event organizers by community id, shows abbreviations, and places ung
             'value' => [['label' => 'Grupo sem comunidade', 'value' => $ungrouped->id]],
         ],
     ]);
-})->with([Occasional::class, Recurring::class, External::class]);
+})->with([Occasional::class, Multiple::class, External::class]);
 
 it('shows organizer search only to roles with broad group access', function (string $form, array $roles, bool $canSearch) {
     $user = User::factory()->create(['roles' => $roles, 'is_active' => true]);
@@ -731,7 +732,7 @@ it('shows organizer search only to roles with broad group access', function (str
     $component = Livewire::actingAs($user)->test($form);
 
     expect($component->viewData('canSearchGroups'))->toBe($canSearch);
-})->with([Occasional::class, Recurring::class, External::class])->with([
+})->with([Occasional::class, Multiple::class, External::class])->with([
     'CPP'               => [['cpp'], true],
     'secretary'         => [['secretary'], true],
     'priest'            => [['priest'], true],

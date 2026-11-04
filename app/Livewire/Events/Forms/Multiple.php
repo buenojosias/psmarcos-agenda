@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Collection;
 use App\Actions\CheckPlaceAvailabilityAction;
 use Illuminate\Support\Collection as SupportCollection;
 
-class Recurring extends Component
+class Multiple extends Component
 {
     use Alert;
 
@@ -260,7 +260,7 @@ class Recurring extends Component
 
         $this->toast()
             ->success('Eventos cadastrados', $createdCount === 1
-                ? 'O evento recorrente foi cadastrado com sucesso.'
+                ? 'O evento foi cadastrado com sucesso.'
                 : "As {$createdCount} ocorrências foram cadastradas com sucesso.")
             ->flash()
             ->send();
@@ -275,7 +275,7 @@ class Recurring extends Component
         $user   = auth()->user();
         $places = $this->places();
 
-        return view('livewire.events.forms.recurring', [
+        return view('livewire.events.forms.multiple', [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
             'groups'                => $this->groups($user),
             'canSearchGroups'       => $user->hasAnyRole([
