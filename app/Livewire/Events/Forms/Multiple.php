@@ -275,7 +275,7 @@ class Multiple extends Component
         $user   = auth()->user();
         $places = $this->places();
 
-        return view('livewire.events.forms.multiple', [
+        return view($this->formView(), [
             'canConfirmImmediately' => Gate::allows('confirmImmediately', Event::class),
             'groups'                => $this->groups($user),
             'canSearchGroups'       => $user->hasAnyRole([
@@ -294,7 +294,7 @@ class Multiple extends Component
     }
 
     /** @return array<string, array<int, mixed>> */
-    private function rules(): array
+    protected function rules(): array
     {
         return [
             'group_id'                   => ['required', 'integer', Rule::exists('groups', 'id')],
@@ -326,13 +326,18 @@ class Multiple extends Component
     }
 
     /** @return array<string, string> */
-    private function messages(): array
+    protected function messages(): array
     {
         return [
             'dates.min'              => 'Selecione pelo menos duas datas.',
             'dates.*.after_or_equal' => 'As datas devem ser hoje ou futuras.',
             'ends_time.after'        => 'O encerramento deve ser posterior ao início.',
         ];
+    }
+
+    protected function formView(): string
+    {
+        return 'livewire.events.forms.multiple';
     }
 
     /** @return array<string, array<string, mixed>> */
